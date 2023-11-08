@@ -21,6 +21,51 @@ scheduler_class = {"CosineAnnealingLR": CosineAnnealingLR, "LinearLR": LinearLR}
 class LanguageModelTrainer:
     def __init__(self, config):
         self.config = config
+        self.setup()
+
+    def run(self):
+        self.test()
+        for epoch in range(1, 1+self.train_config['num_epochs']):
+            self.epoch = epoch
+            self.train()
+            self.test()
+    
+    def setup(self):
+        config = self.config
+        print_args(config)
+        train_config = config['training']
+        dataset_config = config['dataset']
+        model = AutoModelForCausalLM.from_pretrained(train_config['model_name_or_path'])
+        tokenizer = AutoTokenizer.from_pretrained(train_config['model_name_or_path'])
+        tokenizer.pad_token = tokenizer.eos_token
+        freeze_bottom_causal_layers(model.base_model, train_config['num_layers_unfrozen'])
+        model.base_model.embed_tokens.weight.requires_grad = False
+        print_trainable_params_stats(model)
+        train_config["optimizer"]["kwargs"]['eps'] = float(train_config["optimizer"]["kwargs"]['eps'])
+        optimizer = optimizer_class[train_config["optimizer"]["name"]](
+            model.parameters(),
+            **train_config["optimizer"]["kwargs"],
+        )
+        scheduler = scheduler_class[train_config["scheduler"]["name"]](optimizer, **train_config["scheduler"]["kwargs"])
+        train_dataset = DialogSFTDataset(tokenizer, dataset_config['train'])
+        train_dataloader = DataLoader(train_dataset, batch_size=train_config['batch_size'], shuffle=False, collate_fn=train_dataset._collate_fn)
+        test_dataset = DialogSFTDataset(tokenizer, dataset_config['test'])
+        test_dataloader = DataLoader(test_dataset, batch_size=train_config['batch_size'], shuffle=False, collate_fn=test_dataset._collate_fn)
+        accelerator = Accelerator(log_with=train_config['log_with'], project_dir=train_config['project_dir'])
+        current_time = datetime.datetime.now()
+        timestamp = current_time.strftime("%Y-%m-%d-%H-%M-%S")
+        accelerator.init_trackers(project_name=f'{train_config["project_name"]}_{timestamp}')
+        (model, optimizer, train_dataloader, test_dataloader) = accelerator.prepare(model, optimizer, train_dataloader, test_dataloader)
+        self.model = model
+        self.tokenizer = tokenizer
+        self.optimizer = optimizer
+        self.scheduler = scheduler
+        self.train_dataloader = train_dataloader
+        self.test_dataloader = test_dataloader
+        self.accelerator = accelerator
+        self.train_config = train_config
+        self.dataset_config = dataset_config
+        self.epoch = 0
         self.iter_count = 0
 
     def train(self):
@@ -74,47 +119,6 @@ class LanguageModelTrainer:
         if accelerator.is_main_process:
             accelerator.unwrap_model(model).save_pretrained(directory)
             tokenizer.save_pretrained(directory)
-
-    def run(self):
-        config = self.config
-        print_args(config)
-        train_config = config['training']
-        dataset_config = config['dataset']
-        model = AutoModelForCausalLM.from_pretrained(train_config['model_name_or_path'])
-        tokenizer = AutoTokenizer.from_pretrained(train_config['model_name_or_path'])
-        tokenizer.pad_token = tokenizer.eos_token
-        freeze_bottom_causal_layers(model.base_model, train_config['num_layers_unfrozen'])
-        model.base_model.embed_tokens.weight.requires_grad = False
-        print_trainable_params_stats(model)
-        train_config["optimizer"]["kwargs"]['eps'] = float(train_config["optimizer"]["kwargs"]['eps'])
-        optimizer = optimizer_class[train_config["optimizer"]["name"]](
-            model.parameters(),
-            **train_config["optimizer"]["kwargs"],
-        )
-        scheduler = scheduler_class[train_config["scheduler"]["name"]](optimizer, **train_config["scheduler"]["kwargs"])
-        train_dataset = DialogSFTDataset(tokenizer, dataset_config['train'])
-        train_dataloader = DataLoader(train_dataset, batch_size=train_config['batch_size'], shuffle=False, collate_fn=train_dataset._collate_fn)
-        test_dataset = DialogSFTDataset(tokenizer, dataset_config['test'])
-        test_dataloader = DataLoader(test_dataset, batch_size=train_config['batch_size'], shuffle=False, collate_fn=test_dataset._collate_fn)
-        accelerator = Accelerator(log_with=train_config['log_with'], project_dir=train_config['project_dir'])
-        current_time = datetime.datetime.now()
-        timestamp = current_time.strftime("%Y-%m-%d-%H-%M-%S")
-        accelerator.init_trackers(project_name=f'{train_config["project_name"]}_{timestamp}')
-        (model, optimizer, train_dataloader, test_dataloader) = accelerator.prepare(model, optimizer, train_dataloader, test_dataloader)
-        self.model = model
-        self.tokenizer = tokenizer
-        self.optimizer = optimizer
-        self.scheduler = scheduler
-        self.train_dataloader = train_dataloader
-        self.test_dataloader = test_dataloader
-        self.accelerator = accelerator
-        self.epoch = 0
-
-        self.test()
-        for epoch in range(1, 1+train_config['num_epochs']):
-            self.epoch = epoch
-            self.train()
-            self.test()
 
 if __name__ == "__main__":
     config = get_config()
