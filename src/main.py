@@ -24,7 +24,7 @@ class LanguageModelTrainer:
         self.setup()
 
     def run(self):
-        self.test()
+        # self.test()
         for epoch in range(1, 1+self.train_config['num_epochs']):
             self.epoch = epoch
             self.train()
@@ -80,7 +80,7 @@ class LanguageModelTrainer:
             outputs = model(**batch)
             forward_time = time() - forward_time
             loss = outputs.loss
-            stats = {"loss": loss.cpu().detach().numpy()}
+            stats = {"loss": float(loss.cpu().detach().numpy())}
             backward_time = time()
             accelerator.backward(loss)
             backward_time = time() - backward_time
