@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 import numpy as np
 
-optimizer_class = {"adam": optim.AdamW, "lamb": optim.Lamb}
+optimizer_class = {"AdamW": torch.optim.AdamW, "Lamb": optim.Lamb}
 scheduler_class = {"CosineAnnealingLR": CosineAnnealingLR, "LinearLR": LinearLR}
 
 def main():
@@ -18,8 +18,8 @@ def main():
     print_args(config)
     train_config = config['training']
     dataset_config = config['dataset']
-    model = AutoModelForCausalLM.from_pretrained(train_config['data_name_or_path'])
-    tokenizer = AutoTokenizer.from_pretrained(train_config['data_name_or_path'])
+    model = AutoModelForCausalLM.from_pretrained(train_config['model_name_or_path'])
+    tokenizer = AutoTokenizer.from_pretrained(train_config['model_name_or_path'])
     tokenizer.pad_token = tokenizer.eos_token
     freeze_bottom_causal_layers(model.base_model, train_config['num_layers_unfrozen'])
     model.base_model.embed_tokens.weight.requires_grad = False
