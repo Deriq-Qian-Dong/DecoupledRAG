@@ -1,5 +1,6 @@
 from torch.utils.data import DataLoader, Dataset
 from transformers import DataCollatorWithPadding
+from datasets import load_dataset, load_from_disk
 
 class DialogSFTDataset(Dataset):
     def __init__(self, tokenizer, args):
@@ -17,8 +18,8 @@ class DialogSFTDataset(Dataset):
 
     def __getitem__(self, idx):
         sample = self.datasets[self.split][idx]
-        text = sample['prompt'] + sample['chosen']+tokenizer.eos_token
-        tokenized_text = tokenizer(text,
+        text = sample['prompt'] + sample['chosen']+self.tokenizer.eos_token
+        tokenized_text = self.tokenizer(text,
                                    max_length=self.args['max_seq_len'],
                                    padding=True,
                                    truncation=True,

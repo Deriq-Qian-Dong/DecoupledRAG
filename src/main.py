@@ -4,7 +4,6 @@ from accelerate import Accelerator
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch_optimizer as optim
 from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR
-from datasets import load_dataset, load_from_disk
 from dataset_factory import DialogSFTDataset
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
@@ -24,6 +23,7 @@ def main():
     freeze_bottom_causal_layers(model.base_model, train_config['num_layers_unfrozen'])
     model.base_model.embed_tokens.weight.requires_grad = False
     print_trainable_params_stats(model)
+    train_config["optimizer"]["kwargs"]['eps'] = float(train_config["optimizer"]["kwargs"]['eps'])
     optimizer = optimizer_class[train_config["optimizer"]["name"]](
         model.parameters(),
         **train_config["optimizer"]["kwargs"],
