@@ -51,16 +51,17 @@ def train(model, optimizer, train_dataloader, scheduler, accelerator, epoch):
         optimizer.step()
         scheduler.step()
         optimizer.zero_grad()
-        pbar.update(1)
-        step += 1
-        pbar.set_description(f"Epoch {epoch} | Step {step} |  Loss: {loss.cpu().detach().numpy():.4f}", disable=dist.get_rank() != 0)
+        if accelerator.is_main_process:
+            pbar.update(1)
+            step += 1
+            pbar.set_description(f"Epoch {epoch} | Step {step} |  Loss: {loss.cpu().detach().numpy():.4f}")
     pbar.close()
 
 def test(model, tokenizer, optimizer, scheduler, test_dataloader, accelerator, epoch):
     model.eval()
     total_loss = 0
     with torch.no_grad():
-        for batch in tqdm(test_dataloader, desc=f"Evaluation of epoch {epoch}", disable=dist.get_rank() != 0):
+        for batch in tqdm(test_dataloader, desc=f"Evaluation of epoch {epoch}"):
             batch = accelerator.prepare(batch)
             outputs = model(**batch)
             loss = outputs.loss

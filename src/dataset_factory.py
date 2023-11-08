@@ -9,7 +9,7 @@ class DialogSFTDataset(Dataset):
             self.n_procs = torch.distributed.get_world_size() 
         except:
             self.rank = self.n_procs = 0
-        self.datasets = load_dataset(args['dataset_name_or_path'])
+        self.datasets = load_dataset(args['data_name_or_path'])
         self.split = args['train_or_test']
         self.tokenizer = tokenizer
         self.num_samples = len(self.datasets[self.split])
