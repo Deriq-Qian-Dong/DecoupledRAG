@@ -108,6 +108,7 @@ class LanguageModelTrainer:
         self.train_dataloader = train_dataloader
         self.test_dataloader = test_dataloader
         self.accelerator = accelerator
+        self.epoch = 0
 
         self.test()
         for epoch in range(1, 1+train_config['num_epochs']):
