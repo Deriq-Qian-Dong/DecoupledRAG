@@ -1,5 +1,6 @@
 import os
 import torch
+import datetime
 import numpy as np
 from utils import *
 from tqdm import tqdm
@@ -39,6 +40,10 @@ def main():
     test_dataset = DialogSFTDataset(tokenizer, dataset_config['test'])
     test_dataloader = DataLoader(test_dataset, batch_size=train_config['batch_size'], shuffle=False, collate_fn=test_dataset._collate_fn)
     accelerator = Accelerator(log_with=train_config['log_with'], project_dir=train_config['project_dir'])
+    current_time = datetime.datetime.now()
+    # 格式化日期和时间为字符串，例如：2023-10-30-15-30-45
+    timestamp = current_time.strftime("%Y-%m-%d-%H-%M-%S")
+    accelerator.init_trackers(project_name=f'{train_config["project_name"]}_{timestamp}')
     (model, optimizer, train_dataloader, test_dataloader) = accelerator.prepare(model, optimizer, train_dataloader, test_dataloader)
     test(model, tokenizer, optimizer, scheduler, test_dataloader, accelerator, 0)
     for epoch in range(1, 1+train_config['num_epochs']):
