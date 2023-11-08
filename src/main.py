@@ -109,7 +109,7 @@ class LanguageModelTrainer:
         self.test_dataloader = test_dataloader
         self.accelerator = accelerator
 
-        self.test(model, tokenizer, optimizer, scheduler, test_dataloader, accelerator, 0)
+        self.test()
         for epoch in range(1, 1+train_config['num_epochs']):
             self.epoch = epoch
             self.train()
