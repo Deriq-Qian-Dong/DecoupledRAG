@@ -76,8 +76,6 @@ def test(model, tokenizer, optimizer, scheduler, test_dataloader, accelerator, e
     accelerator.print(f"Epoch {epoch} | Perplexity: {perplexity:.4f} | Loss: {total_loss:.4f}")
     directory = f"output/SFT-{epoch}/"
     accelerator.wait_for_everyone()
-    accelerator.save(optimizer.state_dict(), directory)
-    accelerator.save(scheduler.state_dict(), directory)
     if accelerator.is_main_process:
         accelerator.unwrap_model(model).save_pretrained(directory)
         tokenizer.save_pretrained(directory)
