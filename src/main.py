@@ -74,7 +74,7 @@ def test(model, tokenizer, optimizer, scheduler, test_dataloader, accelerator, e
     total_loss /= len(test_dataloader)
     perplexity = np.exp(total_loss)
     accelerator.print(f"Epoch {epoch} | Perplexity: {perplexity:.4f} | Loss: {total_loss:.4f}")
-    directory = f"output/SFT-{epoch}"
+    directory = f"output/SFT-{epoch}/"
     accelerator.wait_for_everyone()
     accelerator.save(optimizer.state_dict(), directory)
     accelerator.save(scheduler.state_dict(), directory)
