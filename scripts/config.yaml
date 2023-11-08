@@ -28,3 +28,11 @@ dataset:
     data_name_or_path: Dahoas/rm-static
     max_seq_len: 512
     train_or_test: test
+
+generation_kwargs:
+  min_length: 0
+  max_length: 512
+  do_sample: false
+  top_k: 1
+  top_p: 1.0
+  num_return_sequences: 1
