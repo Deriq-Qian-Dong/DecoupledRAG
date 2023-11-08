@@ -1,4 +1,5 @@
 training:
+  project_name: llama2-7b-sft
   model_name_or_path: meta-llama/Llama-2-7b-hf
   num_layers_unfrozen: 2
   optimizer: 
