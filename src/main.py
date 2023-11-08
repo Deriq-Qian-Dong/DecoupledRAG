@@ -8,6 +8,9 @@ from dataset_factory import DialogSFTDataset
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 import numpy as np
+import os
+os.environ['http_proxy'] = 'http://172.19.57.45:3128'
+os.environ['https_proxy'] = 'http://172.19.57.45:3128'
 
 optimizer_class = {"AdamW": torch.optim.AdamW, "Lamb": optim.Lamb}
 scheduler_class = {"CosineAnnealingLR": CosineAnnealingLR, "LinearLR": LinearLR}
@@ -35,7 +38,8 @@ def main():
     test_dataloader = DataLoader(test_dataset, batch_size=train_config['batch_size'], shuffle=False, collate_fn=test_dataset._collate_fn)
     accelerator = Accelerator()
     (model, optimizer, train_dataloader, test_dataloader) = accelerator.prepare(model, optimizer, train_dataloader, test_dataloader)
-    for epoch in range(train_config['num_epochs']):
+    test(model, tokenizer, optimizer, scheduler, test_dataloader, accelerator, 0)
+    for epoch in range(1, 1+train_config['num_epochs']):
         train(model, optimizer, train_dataloader, scheduler, accelerator, epoch)
         test(model, tokenizer, optimizer, scheduler, test_dataloader, accelerator, epoch)
 
