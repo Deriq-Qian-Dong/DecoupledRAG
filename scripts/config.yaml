@@ -2,8 +2,9 @@ training:
   project_name: llama2-7b-sft
   model_name_or_path: meta-llama/Llama-2-7b-hf
   num_layers_unfrozen: 2
+  gradient_checkpointing: true
   optimizer: 
-    name: Lamb
+    name: AdamW
     kwargs:
       lr: 0.001
       weight_decay: 0.0

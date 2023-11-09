@@ -9,13 +9,14 @@ import torch_optimizer as optim
 from accelerate import Accelerator
 from dataset_factory import DialogSFTDataset
 from torch.utils.data import DataLoader, Dataset
+from deepspeed.ops.adam import DeepSpeedCPUAdam, FusedAdam
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR
 
 os.environ['http_proxy'] = 'http://172.19.57.45:3128'
 os.environ['https_proxy'] = 'http://172.19.57.45:3128'
 
-optimizer_class = {"AdamW": torch.optim.AdamW, "Lamb": optim.Lamb}
+optimizer_class = {"AdamW": FusedAdam, "Lamb": optim.Lamb, "DeepSpeedCPUAdam": DeepSpeedCPUAdam}
 scheduler_class = {"CosineAnnealingLR": CosineAnnealingLR, "LinearLR": LinearLR}
 
 class LanguageModelTrainer:
@@ -42,8 +43,10 @@ class LanguageModelTrainer:
         model.base_model.embed_tokens.weight.requires_grad = False
         print_trainable_params_stats(model)
         train_config["optimizer"]["kwargs"]['eps'] = float(train_config["optimizer"]["kwargs"]['eps'])
+        params = [(k, v) for k, v in model.named_parameters() if v.requires_grad]
+        params = {'params': [v for k, v in params]}
         optimizer = optimizer_class[train_config["optimizer"]["name"]](
-            model.parameters(),
+            [params],
             **train_config["optimizer"]["kwargs"],
         )
         scheduler = scheduler_class[train_config["scheduler"]["name"]](optimizer, **train_config["scheduler"]["kwargs"])
@@ -56,6 +59,8 @@ class LanguageModelTrainer:
         timestamp = current_time.strftime("%Y-%m-%d-%H-%M-%S")
         accelerator.init_trackers(project_name=f'{train_config["project_name"]}_{timestamp}')
         (model, optimizer, train_dataloader, test_dataloader) = accelerator.prepare(model, optimizer, train_dataloader, test_dataloader)
+        if train_config['gradient_checkpointing']:
+            model.gradient_checkpointing_enable()
         self.model = model
         self.tokenizer = tokenizer
         self.optimizer = optimizer
@@ -122,5 +127,7 @@ class LanguageModelTrainer:
 
 if __name__ == "__main__":
     config = get_config()
+    deepspeed_config = get_config("scripts/default_config.yaml")
+    print_args(deepspeed_config)
     trainer = LanguageModelTrainer(config)
     trainer.run()

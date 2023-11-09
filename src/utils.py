@@ -38,8 +38,8 @@ def print_trainable_params_stats(model: nn.Module):
 
 
 # 加载 YAML 配置文件
-def get_config():
-    with open("scripts/config.yaml", "r") as yaml_file:
+def get_config(path="scripts/config.yaml"):
+    with open(path, "r") as yaml_file:
         config = yaml.safe_load(yaml_file)
     return config
 
