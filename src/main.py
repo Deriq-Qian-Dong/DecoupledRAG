@@ -36,7 +36,7 @@ class LanguageModelTrainer:
         print_args(config)
         train_config = config['training']
         dataset_config = config['dataset']
-        model = AutoModelForCausalLM.from_pretrained(train_config['model_name_or_path'])
+        model = AutoModelForCausalLM.from_pretrained(train_config['model_name_or_path'], use_cache=not train_config['gradient_checkpointing'])
         tokenizer = AutoTokenizer.from_pretrained(train_config['model_name_or_path'])
         tokenizer.pad_token = tokenizer.eos_token
         freeze_bottom_causal_layers(model.base_model, train_config['num_layers_unfrozen'])

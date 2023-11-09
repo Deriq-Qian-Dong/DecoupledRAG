@@ -15,7 +15,7 @@ training:
     kwargs:
       T_max: 1000
       eta_min: 0.0001
-  batch_size: 4
+  batch_size: 32
   num_epochs: 10
   log_with: tensorboard
   project_dir: output/
@@ -23,11 +23,11 @@ training:
 dataset:
   train:
     data_name_or_path: Dahoas/rm-static
-    max_seq_len: 512
+    max_seq_len: 128
     train_or_test: train
   test:
     data_name_or_path: Dahoas/rm-static
-    max_seq_len: 512
+    max_seq_len: 128
     train_or_test: test
 
 generation_kwargs:
