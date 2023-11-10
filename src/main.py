@@ -43,11 +43,11 @@ class LanguageModelTrainer:
         freeze_bottom_causal_layers(model.base_model, train_config['num_layers_unfrozen'])
         try:
             # llama2
-            model.base_model.embed_tokens.weight.requires_grad = train_config['num_layers_unfrozen']>0
+            model.base_model.embed_tokens.weight.requires_grad = train_config['num_layers_unfrozen']<=0
         except:
             # gpt2
-            model.base_model.wte.weight.requires_grad = train_config['num_layers_unfrozen']>0
-            model.base_model.wpe.weight.requires_grad = train_config['num_layers_unfrozen']>0
+            model.base_model.wte.weight.requires_grad = train_config['num_layers_unfrozen']<=0
+            model.base_model.wpe.weight.requires_grad = train_config['num_layers_unfrozen']<=0
         print_trainable_params_stats(model)
         train_config["optimizer"]["kwargs"]['eps'] = float(train_config["optimizer"]["kwargs"]['eps'])
         params = [(k, v) for k, v in model.named_parameters() if v.requires_grad]
