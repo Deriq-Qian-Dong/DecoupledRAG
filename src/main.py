@@ -1,4 +1,5 @@
 import os
+import sys
 import torch
 import datetime
 import numpy as np
@@ -40,7 +41,13 @@ class LanguageModelTrainer:
         tokenizer = AutoTokenizer.from_pretrained(train_config['model_name_or_path'])
         tokenizer.pad_token = tokenizer.eos_token
         freeze_bottom_causal_layers(model.base_model, train_config['num_layers_unfrozen'])
-        # model.base_model.embed_tokens.weight.requires_grad = False
+        try:
+            # llama2
+            model.base_model.embed_tokens.weight.requires_grad = train_config['num_layers_unfrozen']>0
+        except:
+            # gpt2
+            model.base_model.wte.weight.requires_grad = train_config['num_layers_unfrozen']>0
+            model.base_model.wpe.weight.requires_grad = train_config['num_layers_unfrozen']>0
         print_trainable_params_stats(model)
         train_config["optimizer"]["kwargs"]['eps'] = float(train_config["optimizer"]["kwargs"]['eps'])
         params = [(k, v) for k, v in model.named_parameters() if v.requires_grad]
@@ -126,8 +133,7 @@ class LanguageModelTrainer:
             tokenizer.save_pretrained(directory)
 
 if __name__ == "__main__":
-    config = get_config()
-    deepspeed_config = get_config("scripts/default_config.yaml")
-    print_args(deepspeed_config)
+    config_path = sys.argv[1]
+    config = get_config(config_path)
     trainer = LanguageModelTrainer(config)
     trainer.run()
