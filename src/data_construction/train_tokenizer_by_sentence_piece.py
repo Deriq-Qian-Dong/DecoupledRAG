@@ -74,7 +74,6 @@ spm.SentencePieceTrainer.train(
     train_extremely_large_corpus=True,
     # hyperparameters of tokenizer
     max_sentence_length=16384,  # 句子最大长度
-    pad_id=2,
     model_type="BPE",
     vocab_size=1000000,
     split_digits=True,
