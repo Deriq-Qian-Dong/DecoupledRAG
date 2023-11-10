@@ -40,7 +40,7 @@ class LanguageModelTrainer:
         tokenizer = AutoTokenizer.from_pretrained(train_config['model_name_or_path'])
         tokenizer.pad_token = tokenizer.eos_token
         freeze_bottom_causal_layers(model.base_model, train_config['num_layers_unfrozen'])
-        model.base_model.embed_tokens.weight.requires_grad = False
+        # model.base_model.embed_tokens.weight.requires_grad = False
         print_trainable_params_stats(model)
         train_config["optimizer"]["kwargs"]['eps'] = float(train_config["optimizer"]["kwargs"]['eps'])
         params = [(k, v) for k, v in model.named_parameters() if v.requires_grad]
