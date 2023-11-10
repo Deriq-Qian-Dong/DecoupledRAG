@@ -68,7 +68,7 @@ normalizer_spec {
 """
 start_time = time.time()
 spm.SentencePieceTrainer.train(
-    input='../En-Wiki/corpus.txt',  # 输入文件
+    input='../En-Wiki/corpus.tsv',  # 输入文件
     model_prefix='gogpt',  # 模型前缀
     shuffle_input_sentence=True,  # 是否打乱句子
     train_extremely_large_corpus=True,
