@@ -38,6 +38,8 @@ class ReGPTForCausalLM(nn.Module):
             model.base_model.wte.weight.requires_grad = False
             model.base_model.wpe.weight.requires_grad = False
         print_trainable_params_stats(model)
+        if train_config['gradient_checkpointing']:
+            model.gradient_checkpointing_enable()
         self.model = model
         self.searcher = Searcher(train_config['faiss']['index_type'], dimension=train_config['faiss']['dimension'], nprobe=train_config['faiss']['nprobe'])
         phrases = np.load(open(train_config['faiss']['phrases_path'], 'rb'))
@@ -103,6 +105,8 @@ class LanguageModelTrainer:
             model.base_model.wte.weight.requires_grad = train_config['num_layers_unfrozen']<=0
             model.base_model.wpe.weight.requires_grad = train_config['num_layers_unfrozen']<=0
         print_trainable_params_stats(model)
+        if train_config['gradient_checkpointing']:
+            model.gradient_checkpointing_enable()
         self.model = model
 
     def setup_dataloader(self, dataset_config, tokenizer):
@@ -138,9 +142,6 @@ class LanguageModelTrainer:
         timestamp = current_time.strftime("%Y-%m-%d-%H-%M-%S")
         accelerator.init_trackers(project_name=f'{train_config["project_name"]}_{timestamp}')
         (model, optimizer, self.train_dataloader, self.test_dataloader) = accelerator.prepare(model, optimizer, self.train_dataloader, self.test_dataloader)
-        if train_config['gradient_checkpointing']:
-            model.gradient_checkpointing_enable()
-        
         self.model = model
         self.tokenizer = tokenizer
         self.optimizer = optimizer
