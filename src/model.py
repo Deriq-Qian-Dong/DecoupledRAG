@@ -136,6 +136,7 @@ class LanguageModelTrainer:
         model = self.model
 
         train_config["optimizer"]["kwargs"]['eps'] = float(train_config["optimizer"]["kwargs"]['eps'])
+        train_config["optimizer"]["kwargs"]['lr'] = float(train_config["optimizer"]["kwargs"]['lr'])
         params = [(k, v) for k, v in model.named_parameters() if v.requires_grad]
         params = {'params': [v for k, v in params]}
         optimizer = optimizer_class[train_config["optimizer"]["name"]](
