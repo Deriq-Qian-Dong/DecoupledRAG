@@ -1,3 +1,5 @@
+import torch
+import numpy as np
 from torch.utils.data import DataLoader, Dataset
 from transformers import DataCollatorWithPadding
 from datasets import load_dataset, load_from_disk
@@ -24,7 +26,7 @@ class DialogSFTDataset(Dataset):
                                    padding=True,
                                    truncation=True,
                                    return_tensors="pt")
-        tokenized_text['input_ids'] = tokenized_text['input_ids'].squeeze(0)
+        tokenized_text['input_ids'] = tokenized_text['input_ids'].squeeze(0) # (1, L) -> (L)
         tokenized_text['attention_mask'] = tokenized_text['attention_mask'].squeeze(0)
         return tokenized_text
 
@@ -37,3 +39,27 @@ class DialogSFTDataset(Dataset):
             )
         batch["labels"] = batch['input_ids']
         return batch
+    
+
+class ReGPTDialogSFTDataset(DialogSFTDataset):
+    def __init__(self, tokenizer, args):
+        super().__init__(tokenizer, args)
+        self.negatives = np.loadtxt(args['negatives_path']).reshape((-1, args['negative_depth_in_pool'], 4))
+
+    def __getitem__(self, idx):
+        tokenized_text = super().__getitem__(idx)
+        input_ids = tokenized_text['input_ids'].tolist()
+        negative_infos = self.negatives[input_ids[1:]]  # (L-1, negative_depth_in_pool, 4)
+        # 取第FNTP_threshold个以后的负样本，过滤False Negative和True Positive
+        negative_infos = negative_infos[:, self.args['FNTP_threshold']:, :]
+        negative_ids = negative_infos[:, :, 1] # (L-1, negative_depth_in_pool)
+        # 从负样本中随机选取self.args['negative_depth']个
+        negative_ids = negative_ids[:, np.random.choice(negative_ids.shape[1], self.args['negative_depth'], replace=False)].astype(int) # (L-1, negative_depth)
+        tokenized_text['negative_ids'] = torch.LongTensor(negative_ids)
+        return tokenized_text
+    
+    def _collate_fn(self, elems):
+        batch = super()._collate_fn(elems)
+        batch['negative_ids'] = torch.stack([e['negative_ids'] for e in elems], dim=0)
+        return batch
+    

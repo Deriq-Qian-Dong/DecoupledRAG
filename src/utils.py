@@ -4,6 +4,9 @@ from typing import Dict, MutableMapping, Tuple, Union
 import yaml
 import torch.distributed as dist
 import torch
+import faiss
+import joblib
+
 
 def get_all_reduce_mean(tensor):
     torch.distributed.all_reduce(tensor, op=torch.distributed.ReduceOp.SUM)
@@ -111,3 +114,57 @@ def freeze_bottom_causal_layers(model: nn.Module, num_layers_unfrozen: int = 0):
         hidden_layers_to_freeze = []
     for layer in hidden_layers_to_freeze:
         layer.requires_grad_(False)
+
+class Searcher:
+
+    def __init__(self, index_type, dimension=4096, nprobe=1):
+        # self.searcher = faiss.index_factory(dimension, index_type, faiss.METRIC_INNER_PRODUCT)
+        # for KNN-LM
+        self.searcher = faiss.index_factory(dimension, index_type, faiss.METRIC_INNER_PRODUCT)
+        self.corpus = []
+        self.nprobe = nprobe
+        self.index_type = index_type
+
+    def _build(self, matrix, corpus, speedup=False):
+        '''dataset: a list of tuple (vector, utterance)'''
+        self.corpus = corpus 
+        if speedup:
+            self.move_to_gpu()
+        # self.searcher.train(matrix)
+        self.searcher.add(matrix)
+        # if speedup:
+            # self.move_to_cpu()
+        print_rank_0(f'[!] build collection with {self.searcher.ntotal} samples')
+    
+    def _search(self, vector, topk=20):
+        # self.searcher.nprobe = self.nprobe
+        D, I = self.searcher.search(vector, topk)
+        rest = [[self.corpus[i] for i in N] for N in I]
+        distance = [[i for i in N] for N in D]
+        return rest, distance
+
+    def save(self, path_faiss, path_corpus, path_source_corpus=None):
+        faiss.write_index(self.searcher, path_faiss)
+        with open(path_corpus, 'wb') as f:
+            joblib.dump(self.corpus, f)
+
+    def load(self, path_faiss, path_corpus, path_source_corpus=None):
+        self.searcher = faiss.read_index(path_faiss)
+        with open(path_corpus, 'rb') as f:
+            self.corpus = joblib.load(f)
+        print_rank_0(f'[!] load {len(self.corpus)} utterances from {path_faiss} and {path_corpus}')
+
+    def add(self, vectors, texts):
+        '''the whole source information are added in _build'''
+        self.searcher.add(vectors)
+        self.corpus.extend(texts)
+        print_rank_0(f'[!] add {len(texts)} dataset over')
+
+    def move_to_gpu(self, device=0):
+        res = faiss.StandardGpuResources()
+        self.searcher = faiss.index_cpu_to_gpu(res, device, self.searcher)
+        print_rank_0(f'[!] move index to GPU device: {device} over')
+    
+    def move_to_cpu(self):
+        self.searcher = faiss.index_gpu_to_cpu(self.searcher)
+        print_rank_0(f'[!] move index from GPU to CPU over')

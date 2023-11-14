@@ -1,3 +1,4 @@
+trainer: LanguageModelTrainer
 training:
   project_name: llama2-7b-sft
   model_name_or_path: meta-llama/Llama-2-7b-hf
@@ -15,12 +16,12 @@ training:
     kwargs:
       T_max: 1000
       eta_min: 0.0001
-  batch_size: 128
   num_epochs: 10
   log_with: tensorboard
   project_dir: output/
 
 dataset:
+  batch_size: 128
   train:
     data_name_or_path: Dahoas/rm-static
     max_seq_len: 128
@@ -37,3 +38,13 @@ generation_kwargs:
   top_k: 1
   top_p: 1.0
   num_return_sequences: 1
+
+ReGPT_kwargs:
+  faiss:
+    index_type: Flat
+    dimension: 4096
+    nprobe: 10000
+    phrases_path: ../phrases_WikiText-103/phrases_WikiText-103.npy
+    matrix_path: ../phrases_WikiText-103/phrases_embeddings_WikiText103_normalized.npy
+  negative_path: ../phrases_WikiText-103/phrases_embeddings_WikiText103_negatives.tsv
+  negative_depth: 101
