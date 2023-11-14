@@ -58,7 +58,7 @@ class ReGPTForCausalLM(nn.Module):
         
         inputs_embeds = self.matrix[input_ids.cpu()]
         inputs_embeds = torch.from_numpy(inputs_embeds).to(input_ids.device) # [batch_size, seq_len, hidden_size]
-        print_rank_0('inputs_embeds', inputs_embeds.dtype, inputs_embeds.shape, inputs_embeds)
+        print('inputs_embeds', inputs_embeds.dtype, inputs_embeds.shape, inputs_embeds)
         inputs_embeds = self.input_linear_proj(inputs_embeds) # [batch_size, seq_len, hidden_size]
         negative_embeds = self.matrix[negative_ids.cpu()]
         negative_embeds = torch.from_numpy(negative_embeds).to(input_ids.device) # [batch_size, seq_len-1, negative_depth, hidden_size]
