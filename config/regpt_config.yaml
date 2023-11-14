@@ -22,7 +22,7 @@ training:
   project_dir: output/
 
 dataset:
-  batch_size: 128
+  batch_size: 256
   corpus_name: WikiText-103
   dataset_name: ReGPTCorpusPretrainDataset
   train:
