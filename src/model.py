@@ -97,7 +97,7 @@ class LanguageModelTrainer:
         self.setup()
 
     def run(self):
-        self.test()
+        # self.test()
         for epoch in range(1, 1+self.train_config['num_epochs']):
             self.epoch = epoch
             self.train()
