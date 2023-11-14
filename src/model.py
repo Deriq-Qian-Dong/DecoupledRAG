@@ -188,7 +188,7 @@ class LanguageModelTrainer:
             if accelerator.is_main_process:
                 pbar.update(1)
                 step += 1
-                pbar.set_description(f"Epoch {epoch} | Step {step} | Loss: {loss.cpu().detach().numpy():.4f}")
+                pbar.set_description(f"Epoch {epoch} | Step {step} | Loss: {loss.cpu().detach().float().numpy():.4f}")
         pbar.close()
 
     def test(self):
@@ -201,7 +201,7 @@ class LanguageModelTrainer:
                 outputs = model(**batch)
                 loss = outputs.loss
                 loss = accelerator.gather_for_metrics(loss)
-                total_loss += loss.cpu().detach().numpy().mean()
+                total_loss += loss.cpu().detach().float().numpy().mean()
         total_loss /= len(test_dataloader)
         perplexity = np.exp(total_loss)
         accelerator.print(f"Epoch {epoch} | Perplexity: {perplexity:.4f} | Loss: {total_loss:.4f}")
