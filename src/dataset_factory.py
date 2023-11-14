@@ -69,7 +69,7 @@ class ReGPTDialogSFTDataset(DialogSFTDataset):
         # negative_ids中所有元素的第一个纬度上padding到同样的长度
         max_len = max([e.shape[0] for e in negative_ids])
         # 使用negs_of_eos填充
-        negative_ids = [np.concatenate([e, np.repeat(negs_of_eos[np.newaxis, :, :], repeats=max_len-e.shape[0], axis=0)], axis=0) for e in negative_ids]
+        negative_ids = [np.concatenate([e, np.tile(negs_of_eos, (max_len-e.shape[0], 1))], axis=0) for e in negative_ids] # (batch_size, max_len, negative_depth)
         negative_ids = np.stack(negative_ids, axis=0) # (batch_size, max_len, negative_depth)
         batch['negative_ids'] = torch.from_numpy(negative_ids).long()
         return batch
