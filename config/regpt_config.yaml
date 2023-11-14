@@ -23,14 +23,15 @@ training:
 
 dataset:
   batch_size: 256
-  corpus_name: WikiText-103
   dataset_name: ReGPTCorpusPretrainDataset
   train:
+    corpus_name: WikiText-103
     data_name_or_path: ../WikiText-103
     max_seq_len: 128
     train_or_test: train
     negative_depth: 1
   test:
+    corpus_name: WikiText-103
     data_name_or_path: ../WikiText-103
     max_seq_len: 128
     train_or_test: test
