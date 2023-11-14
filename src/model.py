@@ -84,7 +84,11 @@ class ReGPTForCausalLM(nn.Module):
         loss = self.cross_entropy(scores, target)
 
         return ReGPTOutput(loss=loss)
-
+    
+    def save_pretrained(self, directory):
+        self.model.save_pretrained(directory)
+        torch.save(self.input_linear_proj.state_dict(), os.path.join(directory, 'input_linear_proj.pt'))
+        torch.save(self.linear_proj.state_dict(), os.path.join(directory, 'linear_proj.pt'))
 
 
 class LanguageModelTrainer:
