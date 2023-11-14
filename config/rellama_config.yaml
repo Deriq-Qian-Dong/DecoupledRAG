@@ -23,6 +23,7 @@ training:
 
 dataset:
   batch_size: 128
+  corpus_name: WikiText-103
   train:
     data_name_or_path: Dahoas/rm-static
     max_seq_len: 128

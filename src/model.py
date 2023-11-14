@@ -20,6 +20,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModel
 
 optimizer_class = {"AdamW": FusedAdam, "Lamb": optim.Lamb, "DeepSpeedCPUAdam": DeepSpeedCPUAdam}
 scheduler_class = {"CosineAnnealingLR": CosineAnnealingLR, "LinearLR": LinearLR}
+dataset_class = {"DialogSFTDataset": DialogSFTDataset, "CorpusPretrainDataset": CorpusPretrainDataset, "ReGPTDialogSFTDataset": ReGPTDialogSFTDataset, "ReGPTCorpusPretrainDataset": ReGPTCorpusPretrainDataset}
 
 @dataclass
 class ReGPTOutput(ModelOutput):
@@ -119,9 +120,9 @@ class LanguageModelTrainer:
         self.model = model
 
     def setup_dataloader(self, dataset_config, tokenizer):
-        train_dataset = DialogSFTDataset(tokenizer, dataset_config['train'])
+        train_dataset = dataset_class[dataset_config['dataset_name']](tokenizer, dataset_config['train'])
         self.train_dataloader = DataLoader(train_dataset, batch_size=dataset_config['batch_size'], shuffle=False, collate_fn=train_dataset._collate_fn)
-        test_dataset = DialogSFTDataset(tokenizer, dataset_config['test'])
+        test_dataset = dataset_class[dataset_config['dataset_name']](tokenizer, dataset_config['test'])
         self.test_dataloader = DataLoader(test_dataset, batch_size=dataset_config['batch_size'], shuffle=False, collate_fn=test_dataset._collate_fn)
 
     def setup(self):
@@ -225,9 +226,3 @@ class ReGPTLanguageModelTrainer(LanguageModelTrainer):
 
     def setup_model(self, train_config):
         self.model = ReGPTForCausalLM(train_config)
-
-    def setup_dataloader(self, dataset_config, tokenizer):
-        train_dataset = ReGPTDialogSFTDataset(tokenizer, dataset_config['train'])
-        self.train_dataloader = DataLoader(train_dataset, batch_size=dataset_config['batch_size'], shuffle=False, collate_fn=train_dataset._collate_fn)
-        test_dataset = ReGPTDialogSFTDataset(tokenizer, dataset_config['test'])
-        self.test_dataloader = DataLoader(test_dataset, batch_size=dataset_config['batch_size'], shuffle=False, collate_fn=test_dataset._collate_fn)
