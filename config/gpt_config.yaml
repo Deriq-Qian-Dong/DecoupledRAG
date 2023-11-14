@@ -16,7 +16,7 @@ training:
     kwargs:
       T_max: 1000
       eta_min: 0.0001
-  num_epochs: 10
+  num_epochs: 10000
   log_with: tensorboard
   project_dir: output/
 

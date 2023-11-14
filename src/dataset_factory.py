@@ -45,6 +45,10 @@ class ReGPTDialogSFTDataset(DialogSFTDataset):
     def __init__(self, tokenizer, args):
         super().__init__(tokenizer, args)
         self.negatives = np.loadtxt(args['negative_path']).reshape((-1, args['negative_depth_in_pool'], 4))
+        self.negs_of_eos = self.negatives[self.tokenizer.eos_token_id] # (negative_depth_in_pool, 4)
+        # 取第FNTP_threshold个以后的负样本，过滤False Negative和True Positive
+        self.negs_of_eos = self.negs_of_eos[self.args['FNTP_threshold']:, :] # (negative_depth_in_pool-FNTP_threshold, 4)
+        self.negs_of_eos = self.negs_of_eos[:,1] # (negative_depth_in_pool-FNTP_threshold, )
 
     def __getitem__(self, idx):
         tokenized_text = super().__getitem__(idx)
@@ -55,11 +59,18 @@ class ReGPTDialogSFTDataset(DialogSFTDataset):
         negative_ids = negative_infos[:, :, 1] # (L-1, negative_depth_in_pool)
         # 从负样本中随机选取self.args['negative_depth']个
         negative_ids = negative_ids[:, np.random.choice(negative_ids.shape[1], self.args['negative_depth'], replace=False)].astype(int) # (L-1, negative_depth)
-        tokenized_text['negative_ids'] = torch.LongTensor(negative_ids)
+        tokenized_text['negative_ids'] = negative_ids
         return tokenized_text
     
     def _collate_fn(self, elems):
         batch = super()._collate_fn(elems)
-        batch['negative_ids'] = torch.stack([e['negative_ids'] for e in elems], dim=0)
+        negs_of_eos = self.negs_of_eos[np.random.choice(self.negs_of_eos.shape[0], self.args['negative_depth'], replace=False)] # (negative_depth, )
+        negative_ids = [e['negative_ids'] for e in elems] # (batch_size, L-1, negative_depth)
+        # negative_ids中所有元素的第一个纬度上padding到同样的长度
+        max_len = max([e.shape[0] for e in negative_ids])
+        # 使用negs_of_eos填充
+        negative_ids = [np.concatenate([e, np.repeat(negs_of_eos[np.newaxis, :, :], repeats=max_len-e.shape[0], axis=0)], axis=0) for e in negative_ids]
+        negative_ids = np.stack(negative_ids, axis=0) # (batch_size, max_len, negative_depth)
+        batch['negative_ids'] = torch.from_numpy(negative_ids).long()
         return batch
     
