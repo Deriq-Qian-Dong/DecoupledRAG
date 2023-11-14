@@ -22,7 +22,7 @@ training:
   project_dir: output/
 
 dataset:
-  batch_size: 512
+  batch_size: 256
   negative_depth: 10
   train:
     data_name_or_path: Dahoas/rm-static
@@ -51,4 +51,3 @@ ReGPT_kwargs:
   negative_path: ../phrases_WikiText-103/phrases_embeddings_WikiText103_negatives.tsv
   negative_depth_in_pool: 101
   FNTP_threshold: 10
-  

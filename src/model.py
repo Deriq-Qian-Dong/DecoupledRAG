@@ -27,6 +27,7 @@ class ReGPTOutput(ModelOutput):
 
 class ReGPTForCausalLM(nn.Module):
     def __init__(self, train_config):
+        super(ReGPTForCausalLM, self).__init__()
         model = AutoModel.from_pretrained(train_config['model_name_or_path'], use_cache=not train_config['gradient_checkpointing'])
         freeze_bottom_causal_layers(model.base_model, train_config['num_layers_unfrozen'])
         try:
