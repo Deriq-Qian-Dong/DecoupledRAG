@@ -44,7 +44,7 @@ class DialogSFTDataset(Dataset):
 class ReGPTDialogSFTDataset(DialogSFTDataset):
     def __init__(self, tokenizer, args):
         super().__init__(tokenizer, args)
-        self.negatives = np.loadtxt(args['negatives_path']).reshape((-1, args['negative_depth_in_pool'], 4))
+        self.negatives = np.loadtxt(args['negative_path']).reshape((-1, args['negative_depth_in_pool'], 4))
 
     def __getitem__(self, idx):
         tokenized_text = super().__getitem__(idx)
