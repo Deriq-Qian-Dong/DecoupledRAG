@@ -46,6 +46,7 @@ class ReGPTForCausalLM(nn.Module):
         matrix = np.load(open(train_config['faiss']['matrix_path'], 'rb'))
         self.searcher._build(matrix, phrases, speedup=False)
         self.matrix = matrix
+        self.input_linear_proj = nn.Linear(train_config['faiss']['dimension'], model.config.hidden_size)
         self.linear_proj = nn.Linear(model.config.hidden_size, train_config['faiss']['dimension'])
         self.cross_entropy = nn.CrossEntropyLoss(reduction='mean')
         
@@ -57,6 +58,7 @@ class ReGPTForCausalLM(nn.Module):
         
         inputs_embeds = self.matrix[input_ids.cpu()]
         inputs_embeds = torch.from_numpy(inputs_embeds).to(input_ids.device) # [batch_size, seq_len, hidden_size]
+        inputs_embeds = self.input_linear_proj(inputs_embeds) # [batch_size, seq_len, hidden_size]
         negative_embeds = self.matrix[negative_ids.cpu()]
         negative_embeds = torch.from_numpy(negative_embeds).to(input_ids.device) # [batch_size, seq_len-1, negative_depth, hidden_size]
         positive_embeds = self.matrix[labels.cpu()]
@@ -69,6 +71,8 @@ class ReGPTForCausalLM(nn.Module):
         last_hidden_state = outputs.last_hidden_state  # [batch_size, seq_len, hidden_size]
         last_hidden_state = last_hidden_state[:, :-1, :] # [batch_size, seq_len-1, hidden_size]
         q_reps = self.linear_proj(last_hidden_state).view(-1, embeds_for_contrastive_training.shape[-1]) # [batch_size*(seq_len-1), hidden_size]
+        # l2 norm
+        q_reps = q_reps / torch.norm(q_reps, dim=-1, keepdim=True)
         p_reps = embeds_for_contrastive_training.view(-1, embeds_for_contrastive_training.shape[-1]) # [batch_size*(seq_len-1)*(1+negative_depth), hidden_size]
         
         scores = torch.matmul(q_reps, p_reps.transpose(0, 1)) # [batch_size*(seq_len-1), batch_size*(seq_len-1)*(1+negative_depth)]
