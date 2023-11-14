@@ -22,7 +22,7 @@ training:
   project_dir: output/
 
 dataset:
-  batch_size: 16
+  batch_size: 32
   train:
     data_name_or_path: Dahoas/rm-static
     max_seq_len: 128
