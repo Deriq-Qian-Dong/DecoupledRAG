@@ -38,8 +38,8 @@ class DialogSFTDataset(Dataset):
 class CorpusPretrainDataset(Dataset):
     def __init__(self, tokenizer, args):
         self.split = args['train_or_test']
-        corpus_name = args['corpus_name']
-        self.datasets = load_dataset('text', data_files={'train': f'../../{corpus_name}/corpus.tsv', 'test':f'../../{corpus_name}/test.txt'})
+        data_name_or_path = args['data_name_or_path']
+        self.datasets = load_dataset('text', data_files={'train': f'{data_name_or_path}/corpus.tsv', 'test':f'{data_name_or_path}/test.txt'})
         self.datasets = self.datasets.filter(self.filter_empty)
         self.tokenizer = tokenizer
         self.num_samples = len(self.datasets[self.split])
