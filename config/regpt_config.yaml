@@ -23,15 +23,16 @@ training:
 
 dataset:
   batch_size: 256
-  negative_depth: 10
   train:
     data_name_or_path: Dahoas/rm-static
     max_seq_len: 128
     train_or_test: train
+    negative_depth: 10
   test:
     data_name_or_path: Dahoas/rm-static
     max_seq_len: 128
     train_or_test: test
+    negative_depth: 10
 
 generation_kwargs:
   min_length: 0
