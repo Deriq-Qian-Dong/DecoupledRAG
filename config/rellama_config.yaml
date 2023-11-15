@@ -23,14 +23,14 @@ training:
 
 dataset:
   batch_size: 128
-  corpus_name: WikiText-103
+  dataset_name: ReGPTCorpusPretrainDataset
   train:
-    data_name_or_path: Dahoas/rm-static
+    data_name_or_path: ../WikiText-103
     max_seq_len: 128
     train_or_test: train
     negative_depth: 1
   test:
-    data_name_or_path: Dahoas/rm-static
+    data_name_or_path: ../WikiText-103
     max_seq_len: 128
     train_or_test: test
     negative_depth: 1

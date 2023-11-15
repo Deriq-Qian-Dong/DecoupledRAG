@@ -34,10 +34,16 @@ class ReGPTForCausalLM(nn.Module):
         try:
             # llama2
             model.base_model.embed_tokens.weight.requires_grad = False
+            self.dtype = model.base_model.embed_tokens.weight.dtype
+            self.input_linear_proj = nn.Identity(train_config['faiss']['dimension'], model.config.hidden_size)
+            self.linear_proj = nn.Identity(model.config.hidden_size, train_config['faiss']['dimension'])
         except:
             # gpt2
             model.base_model.wte.weight.requires_grad = False
             model.base_model.wpe.weight.requires_grad = False
+            self.dtype = model.base_model.wte.weight.dtype
+            self.input_linear_proj = nn.Linear(train_config['faiss']['dimension'], model.config.hidden_size)
+            self.linear_proj = nn.Linear(model.config.hidden_size, train_config['faiss']['dimension'])
         print_trainable_params_stats(model)
         if train_config['gradient_checkpointing']:
             model.gradient_checkpointing_enable()
@@ -47,8 +53,7 @@ class ReGPTForCausalLM(nn.Module):
         matrix = np.load(open(train_config['faiss']['matrix_path'], 'rb'))
         self.searcher._build(matrix, phrases, speedup=False)
         self.matrix = matrix
-        self.input_linear_proj = nn.Linear(train_config['faiss']['dimension'], model.config.hidden_size)
-        self.linear_proj = nn.Linear(model.config.hidden_size, train_config['faiss']['dimension'])
+
         self.cross_entropy = nn.CrossEntropyLoss(reduction='mean')
         
     def forward(self, **kwargs):
@@ -59,13 +64,13 @@ class ReGPTForCausalLM(nn.Module):
         
         inputs_embeds = self.matrix[input_ids.cpu()]
         inputs_embeds = torch.from_numpy(inputs_embeds).to(input_ids.device) # [batch_size, seq_len, hidden_size]
-        inputs_embeds = inputs_embeds.to(self.input_linear_proj.weight.dtype)
+        inputs_embeds = inputs_embeds.to(self.dtype)
         inputs_embeds = self.input_linear_proj(inputs_embeds) # [batch_size, seq_len, hidden_size]
         negative_embeds = self.matrix[negative_ids.cpu()]
         negative_embeds = torch.from_numpy(negative_embeds).to(input_ids.device) # [batch_size, seq_len-1, negative_depth, hidden_size]
         positive_embeds = self.matrix[labels.cpu()]
         positive_embeds = torch.from_numpy(positive_embeds).to(input_ids.device) # [batch_size, seq_len-1, hidden_size]
-        embeds_for_contrastive_training = torch.cat([positive_embeds.unsqueeze(2), negative_embeds], dim=2).to(self.input_linear_proj.weight.dtype) # [batch_size, seq_len-1, 1+negative_depth, hidden_size]
+        embeds_for_contrastive_training = torch.cat([positive_embeds.unsqueeze(2), negative_embeds], dim=2).to(self.dtype) # [batch_size, seq_len-1, 1+negative_depth, hidden_size]
         kwargs['inputs_embeds'] = inputs_embeds
         kwargs['output_hidden_states'] = True
         outputs = self.model(**kwargs)
