@@ -9,6 +9,7 @@ from time import time
 from torch import Tensor, nn
 from dataset_factory import *
 import torch_optimizer as optim
+import torch.distributed as dist
 from dataclasses import dataclass
 from accelerate import Accelerator
 from transformers.file_utils import ModelOutput
@@ -52,6 +53,7 @@ class ReGPTForCausalLM(nn.Module):
         self.searcher._build(matrix, phrases, speedup=False)
         self.matrix = matrix
         self.cross_entropy = nn.CrossEntropyLoss(reduction='mean')
+        self.train_config = train_config
         
     def forward(self, **kwargs):
         self.dtype = self.model.parameters().__next__().dtype
@@ -78,20 +80,44 @@ class ReGPTForCausalLM(nn.Module):
         # l2 norm
         q_reps = q_reps / torch.norm(q_reps, dim=-1, keepdim=True)
         p_reps = embeds_for_contrastive_training.contiguous().view(-1, embeds_for_contrastive_training.shape[-1]) # [batch_size*(seq_len-1)*(1+negative_depth), hidden_size]
-        
-        scores = torch.matmul(q_reps, p_reps.transpose(0, 1)) # [batch_size*(seq_len-1), batch_size*(seq_len-1)*(1+negative_depth)]
-        scores = scores.view(q_reps.size(0), -1)
-
-        target = torch.arange(scores.size(0), device=scores.device, dtype=torch.long)
-        target = target * (p_reps.size(0) // q_reps.size(0))
+        if self.train_config['negatives_x_device']:
+            p_reps = self._dist_gather_tensor(p_reps)
+            q_reps = self._dist_gather_tensor(q_reps)
+        if self.train_config['negatives_in_device']:
+            scores = self.compute_similarity(q_reps, p_reps)
+            scores = scores.view(q_reps.size(0), -1)
+            target = torch.arange(scores.size(0), device=scores.device, dtype=torch.long)
+            target = target * (p_reps.size(0) // q_reps.size(0))
+        else:
+            p_reps = p_reps.view(-1, 1+self.train_config['negative_depth'], p_reps.size(-1))
+            scores = torch.matmul(q_reps.unsqueeze(1), p_reps.transpose(2,1))
+            scores = scores.squeeze(1)
+            target = torch.zeros(scores.size(0), dtype=torch.long, device=scores.device)
         loss = self.cross_entropy(scores, target)
-
         return ReGPTOutput(loss=loss)
     
     def save_pretrained(self, directory):
         self.model.save_pretrained(directory)
         torch.save(self.input_linear_proj.state_dict(), os.path.join(directory, 'input_linear_proj.pt'))
         torch.save(self.linear_proj.state_dict(), os.path.join(directory, 'linear_proj.pt'))
+
+    def _dist_gather_tensor(self, t: Optional[torch.Tensor]):
+        world_size = dist.get_world_size()
+        process_rank = dist.get_rank()
+        if t is None:
+            return None
+        t = t.contiguous()
+
+        all_tensors = [torch.empty_like(t) for _ in range(world_size)]
+        dist.all_gather(all_tensors, t)
+
+        all_tensors[process_rank] = t
+        all_tensors = torch.cat(all_tensors, dim=0)
+
+        return all_tensors
+
+    def compute_similarity(self, q_reps, p_reps):
+        return torch.matmul(q_reps, p_reps.transpose(0, 1))
 
 
 class LanguageModelTrainer:
@@ -131,6 +157,7 @@ class LanguageModelTrainer:
         config = self.config
         train_config = config['training']
         dataset_config = config['dataset']
+        train_config['negative_depth'] = dataset_config['train']['negative_depth']
         tokenizer = AutoTokenizer.from_pretrained(train_config['tokenizer_name_or_path'])
         tokenizer.pad_token = tokenizer.eos_token
         

@@ -41,7 +41,7 @@ def print_trainable_params_stats(model: nn.Module):
 
 
 # 加载 YAML 配置文件
-def get_config(path="scripts/config.yaml"):
+def get_config(path="config/rellama_config.yaml"):
     with open(path, "r") as yaml_file:
         config = yaml.safe_load(yaml_file)
     return config

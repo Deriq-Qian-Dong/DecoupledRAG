@@ -20,6 +20,8 @@ training:
   num_epochs: 1000
   log_with: tensorboard
   project_dir: output/
+  negatives_x_device: true
+  negatives_in_device: true
 
 dataset:
   dataset_name: ReGPTCorpusPretrainDataset
