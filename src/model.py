@@ -34,14 +34,12 @@ class ReGPTForCausalLM(nn.Module):
         try:
             # llama2
             model.base_model.embed_tokens.weight.requires_grad = False
-            self.dtype = model.base_model.embed_tokens.weight.dtype
             self.input_linear_proj = nn.Identity(train_config['faiss']['dimension'], model.config.hidden_size)
             self.linear_proj = nn.Identity(model.config.hidden_size, train_config['faiss']['dimension'])
         except:
             # gpt2
             model.base_model.wte.weight.requires_grad = False
             model.base_model.wpe.weight.requires_grad = False
-            self.dtype = model.base_model.wte.weight.dtype
             self.input_linear_proj = nn.Linear(train_config['faiss']['dimension'], model.config.hidden_size)
             self.linear_proj = nn.Linear(model.config.hidden_size, train_config['faiss']['dimension'])
         print_trainable_params_stats(model)
@@ -53,7 +51,7 @@ class ReGPTForCausalLM(nn.Module):
         matrix = np.load(open(train_config['faiss']['matrix_path'], 'rb'))
         self.searcher._build(matrix, phrases, speedup=False)
         self.matrix = matrix
-
+        self.model.dtype = self.model.parameters().__next__().dtype
         self.cross_entropy = nn.CrossEntropyLoss(reduction='mean')
         
     def forward(self, **kwargs):
@@ -159,6 +157,7 @@ class LanguageModelTrainer:
         accelerator.init_trackers(project_name=f'{train_config["project_name"]}_{timestamp}')
         (model, optimizer, self.train_dataloader, self.test_dataloader) = accelerator.prepare(model, optimizer, self.train_dataloader, self.test_dataloader)
         self.model = model
+        self.model.dtype = self.model.parameters().__next__().dtype
         self.tokenizer = tokenizer
         self.optimizer = optimizer
         self.scheduler = scheduler
