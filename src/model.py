@@ -132,7 +132,7 @@ class LanguageModelTrainer:
         print_args(config)
         train_config = config['training']
         dataset_config = config['dataset']
-        tokenizer = AutoTokenizer.from_pretrained(train_config['model_name_or_path'])
+        tokenizer = AutoTokenizer.from_pretrained(train_config['tokenizer_name_or_path'])
         tokenizer.pad_token = tokenizer.eos_token
         
         self.setup_model(train_config)
