@@ -25,12 +25,12 @@ dataset:
   batch_size: 16
   dataset_name: ReGPTCorpusPretrainDataset
   train:
-    data_name_or_path: ../WikiText-103
+    data_name_or_path: ../WikiText-103/sorted_datasets/
     max_seq_len: 128
     train_or_test: train
     negative_depth: 1
   test:
-    data_name_or_path: ../WikiText-103
+    data_name_or_path: ../WikiText-103/sorted_datasets/
     max_seq_len: 128
     train_or_test: test
     negative_depth: 1

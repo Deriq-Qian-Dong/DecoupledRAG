@@ -39,15 +39,17 @@ class CorpusPretrainDataset(Dataset):
     def __init__(self, tokenizer, args):
         self.split = args['train_or_test']
         data_name_or_path = args['data_name_or_path']
-        self.datasets = load_dataset('text', data_files={'train': f'{data_name_or_path}/corpus.tsv', 'test':f'{data_name_or_path}/test.txt'})
+        # self.datasets = load_dataset('text', data_files={'train': f'{data_name_or_path}/corpus.tsv', 'test':f'{data_name_or_path}/test.txt'})
+        self.datasets = load_from_disk(data_name_or_path)
         self.datasets = self.datasets.filter(self.filter_empty)
+        self.datasets = self.datasets.sort('text_length', reverse=True)
         self.tokenizer = tokenizer
         self.num_samples = len(self.datasets[self.split])
         self.args = args
         self.hf_collate_fn = DataCollatorWithPadding(self.tokenizer)
 
     def filter_empty(self, example):
-        return len(example['text']) > 0
+        return example['text_length'] >= 10
     
     def __getitem__(self, idx):
         sample = self.datasets[self.split][idx]
