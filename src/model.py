@@ -129,7 +129,6 @@ class LanguageModelTrainer:
 
     def setup(self):
         config = self.config
-        print_args(config)
         train_config = config['training']
         dataset_config = config['dataset']
         tokenizer = AutoTokenizer.from_pretrained(train_config['tokenizer_name_or_path'])
@@ -164,6 +163,7 @@ class LanguageModelTrainer:
         self.dataset_config = dataset_config
         self.epoch = 0
         self.iter_count = 0
+        print_args(config)
 
     def train(self):
         model, optimizer, train_dataloader, scheduler, accelerator, epoch = self.model, self.optimizer, self.train_dataloader, self.scheduler, self.accelerator, self.epoch
