@@ -42,7 +42,6 @@ class CorpusPretrainDataset(Dataset):
         # self.datasets = load_dataset('text', data_files={'train': f'{data_name_or_path}/corpus.tsv', 'test':f'{data_name_or_path}/test.txt'})
         self.datasets = load_from_disk(data_name_or_path)
         self.datasets = self.datasets.filter(self.filter_empty)
-        self.datasets = self.datasets.sort('text_length', reverse=True)
         self.tokenizer = tokenizer
         self.num_samples = len(self.datasets[self.split])
         self.args = args

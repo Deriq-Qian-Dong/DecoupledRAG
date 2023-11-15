@@ -22,7 +22,7 @@ training:
   project_dir: output/
 
 dataset:
-  batch_size: 16
+  batch_size: 32
   dataset_name: ReGPTCorpusPretrainDataset
   train:
     data_name_or_path: ../WikiText-103/sorted_datasets/
