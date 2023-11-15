@@ -51,15 +51,15 @@ class ReGPTForCausalLM(nn.Module):
         matrix = np.load(open(train_config['faiss']['matrix_path'], 'rb'))
         self.searcher._build(matrix, phrases, speedup=False)
         self.matrix = matrix
-        self.dtype = self.model.parameters().__next__().dtype
+        
         self.cross_entropy = nn.CrossEntropyLoss(reduction='mean')
         
     def forward(self, **kwargs):
+        self.dtype = self.model.parameters().__next__().dtype
         input_ids = kwargs.pop('input_ids')
         negative_ids = kwargs.pop('negative_ids')
         labels = kwargs.pop('labels')
         labels = labels[:, 1:]
-        
         inputs_embeds = self.matrix[input_ids.cpu()]
         inputs_embeds = torch.from_numpy(inputs_embeds).to(input_ids.device) # [batch_size, seq_len, hidden_size]
         inputs_embeds = inputs_embeds.to(self.dtype)
@@ -157,7 +157,6 @@ class LanguageModelTrainer:
         accelerator.init_trackers(project_name=f'{train_config["project_name"]}_{timestamp}')
         (model, optimizer, self.train_dataloader, self.test_dataloader) = accelerator.prepare(model, optimizer, self.train_dataloader, self.test_dataloader)
         self.model = model
-        self.model.dtype = self.model.parameters().__next__().dtype
         self.tokenizer = tokenizer
         self.optimizer = optimizer
         self.scheduler = scheduler
