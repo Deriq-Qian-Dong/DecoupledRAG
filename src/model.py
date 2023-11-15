@@ -51,7 +51,7 @@ class ReGPTForCausalLM(nn.Module):
         matrix = np.load(open(train_config['faiss']['matrix_path'], 'rb'))
         self.searcher._build(matrix, phrases, speedup=False)
         self.matrix = matrix
-        self.model.dtype = self.model.parameters().__next__().dtype
+        self.dtype = self.model.parameters().__next__().dtype
         self.cross_entropy = nn.CrossEntropyLoss(reduction='mean')
         
     def forward(self, **kwargs):
