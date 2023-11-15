@@ -75,10 +75,10 @@ class ReGPTForCausalLM(nn.Module):
         last_hidden_state = outputs.last_hidden_state  # [batch_size, seq_len, hidden_size]
         last_hidden_state = last_hidden_state[:, :-1, :] # [batch_size, seq_len-1, hidden_size]
         print(last_hidden_state.shape, embeds_for_contrastive_training.shape)
-        q_reps = self.linear_proj(last_hidden_state).view(-1, embeds_for_contrastive_training.shape[-1]) # [batch_size*(seq_len-1), hidden_size]
+        q_reps = self.linear_proj(last_hidden_state).reshape(-1, embeds_for_contrastive_training.shape[-1]) # [batch_size*(seq_len-1), hidden_size]
         # l2 norm
         q_reps = q_reps / torch.norm(q_reps, dim=-1, keepdim=True)
-        p_reps = embeds_for_contrastive_training.view(-1, embeds_for_contrastive_training.shape[-1]) # [batch_size*(seq_len-1)*(1+negative_depth), hidden_size]
+        p_reps = embeds_for_contrastive_training.reshape(-1, embeds_for_contrastive_training.shape[-1]) # [batch_size*(seq_len-1)*(1+negative_depth), hidden_size]
         
         scores = torch.matmul(q_reps, p_reps.transpose(0, 1)) # [batch_size*(seq_len-1), batch_size*(seq_len-1)*(1+negative_depth)]
         scores = scores.view(q_reps.size(0), -1)
