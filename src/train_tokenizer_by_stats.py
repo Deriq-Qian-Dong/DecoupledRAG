@@ -11,7 +11,7 @@ os.environ['https_proxy'] = 'http://172.19.57.45:3128'
 
 def main():
     tokenizer = AutoTokenizer.from_pretrained('meta-llama/Llama-2-7b-hf')
-    args = {"train_or_test": "train", "data_name_or_path": "../WikiText-103", "max_seq_len": 128, 'split': 'train'}
+    args = {"train_or_test": "train", "data_name_or_path": "../WikiText-103/sorted_datasets/", "max_seq_len": 128, 'split': 'train'}
     dataset = CorpusPretrainDataset(tokenizer, args)
     sorted_n_grams = []
     for n in range(2, 8):
