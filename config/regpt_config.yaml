@@ -1,14 +1,14 @@
 trainer: ReGPTLanguageModelTrainer
 training:
   project_name: ReGPT-sft
-  model_name_or_path: gpt2
+  model_name_or_path: output/SFT-120/
   tokenizer_name_or_path: ../llama2-7b-phrase-tokenizer-trained-on-WikiText103/
   num_layers_unfrozen: -1
   gradient_checkpointing: true
   optimizer: 
-    name: AdamW
+    name: Lamb
     kwargs:
-      lr: 2e-5
+      lr: 0.1
       weight_decay: 0.0
       betas: [0.9, 0.999]
       eps: 1e-08
@@ -21,12 +21,12 @@ training:
   log_with: tensorboard
   project_dir: output/
   negatives_in_device: false
-  predict_from_last: 10000
+  predict_from_last: 10
 
 dataset:
   dataset_name: ReGPTCorpusPretrainDataset
   train:
-    batch_size: 768
+    batch_size: 2048
     data_name_or_path: ../WikiText-103/sorted_datasets/
     max_seq_len: 128
     train_or_test: train
