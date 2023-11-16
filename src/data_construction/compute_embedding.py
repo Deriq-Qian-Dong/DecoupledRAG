@@ -48,6 +48,7 @@ for i in tqdm(range(0, len(phrases), batch_size)):
     phrase_embeddings.append(embeddings.cpu().detach().numpy())
     
 phrase_embeddings = np.concatenate(phrase_embeddings)
+phrase_embeddings[851] = 1
 np.save(open(f"../phrases_{corpus_name}_{model_name_or_path}/phrases_embeddings.npy",'wb'), phrase_embeddings)
 
 corpus = torch.from_numpy(phrase_embeddings)
