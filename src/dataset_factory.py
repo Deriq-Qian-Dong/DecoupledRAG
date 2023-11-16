@@ -79,3 +79,9 @@ class ReGPTCorpusPretrainDataset(ReGPTDialogSFTDataset):
         sample = self.datasets[idx]
         text = sample['text']
         return text
+
+    def setup_datasets(self):
+        data_name_or_path = self.args['data_name_or_path']
+        # self.datasets = load_dataset('text', data_files={'train': f'{data_name_or_path}/corpus.tsv', 'test':f'{data_name_or_path}/test.txt'})
+        self.datasets = load_from_disk(data_name_or_path)[self.split]
+        self.datasets = self.datasets.filter(self.filter_empty)

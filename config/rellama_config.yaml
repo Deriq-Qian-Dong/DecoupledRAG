@@ -20,7 +20,7 @@ training:
   num_epochs: 1000
   log_with: tensorboard
   project_dir: output/
-  negatives_in_device: false
+  negatives_in_device: true
   predict_from_last: 10
 
 dataset:
