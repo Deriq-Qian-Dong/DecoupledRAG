@@ -62,7 +62,7 @@ class ReGPTForCausalLM(nn.Module):
         labels = kwargs.pop('labels')
         predict_from_last = self.train_config['predict_from_last']
         predict_from_last = min(predict_from_last, input_ids.size(1)-1)
-        labels = labels[:, -predict_from_last:]  # [batch_size, predict_from_last]
+        labels = labels[:, -predict_from_last:].contiguous()  # [batch_size, predict_from_last]
         inputs_embeds = self.matrix[input_ids.cpu()]
         inputs_embeds = torch.from_numpy(inputs_embeds).to(input_ids.device) # [batch_size, seq_len, hidden_size]
         inputs_embeds = inputs_embeds.to(self.dtype)
