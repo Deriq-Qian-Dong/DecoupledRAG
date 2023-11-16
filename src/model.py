@@ -52,7 +52,7 @@ class ReGPTForCausalLM(nn.Module):
         matrix = np.load(open(train_config['faiss']['matrix_path'], 'rb'))
         self.searcher._build(matrix, phrases, speedup=False)
         self.matrix = matrix
-        self.cross_entropy = nn.CrossEntropyLoss(reduction='mean')
+        self.cross_entropy = nn.CrossEntropyLoss(reduction='mean', ignore_index=-1)
         self.train_config = train_config
         
     def forward(self, **kwargs):
@@ -61,39 +61,40 @@ class ReGPTForCausalLM(nn.Module):
         negative_ids = kwargs.pop('negative_ids')
         labels = kwargs.pop('labels')
         predict_from_last = self.train_config['predict_from_last']
-        labels = labels[:, -predict_from_last:]
+        predict_from_last = min(predict_from_last, input_ids.size(1)-1)
+        labels = labels[:, -predict_from_last:]  # [batch_size, predict_from_last]
         inputs_embeds = self.matrix[input_ids.cpu()]
         inputs_embeds = torch.from_numpy(inputs_embeds).to(input_ids.device) # [batch_size, seq_len, hidden_size]
         inputs_embeds = inputs_embeds.to(self.dtype)
         inputs_embeds = self.input_linear_proj(inputs_embeds) # [batch_size, seq_len, hidden_size]
         negative_embeds = self.matrix[negative_ids.cpu()]
         negative_embeds = torch.from_numpy(negative_embeds).to(input_ids.device) 
-        positive_embeds = self.matrix[labels.cpu()]
+        positive_embeds = self.matrix[labels.cpu()]  # [batch_size, predict_from_last, hidden_size]
         positive_embeds = torch.from_numpy(positive_embeds).to(input_ids.device) 
-        embeds_for_contrastive_training = torch.cat([positive_embeds.unsqueeze(2), negative_embeds], dim=2).to(self.dtype) 
+        embeds_for_contrastive_training = torch.cat([positive_embeds.unsqueeze(2), negative_embeds], dim=2).to(self.dtype).contiguous()  # [batch_size, predict_from_last, 1+negative_depth, hidden_size]
         kwargs['inputs_embeds'] = inputs_embeds
         kwargs['output_hidden_states'] = True
         outputs = self.model(**kwargs)
 
         last_hidden_state = outputs.last_hidden_state  # [batch_size, seq_len, hidden_size]
-        last_hidden_state = last_hidden_state[:, -predict_from_last-1:-1, :] 
-        q_reps = self.linear_proj(last_hidden_state).contiguous().view(-1, embeds_for_contrastive_training.shape[-1]) 
+        last_hidden_state = last_hidden_state[:, -predict_from_last-1:-1, :].contiguous()  # [batch_size, predict_from_last, hidden_size]
+        q_reps = self.linear_proj(last_hidden_state).view(-1, embeds_for_contrastive_training.shape[-1])  # [batch_size*predict_from_last, hidden_size]
         # l2 norm
         q_reps = q_reps / torch.norm(q_reps, dim=-1, keepdim=True)
-        p_reps = embeds_for_contrastive_training.contiguous().view(-1, embeds_for_contrastive_training.shape[-1])
-        if self.train_config['negatives_x_device']:
-            p_reps = self._dist_gather_tensor(p_reps)
-            q_reps = self._dist_gather_tensor(q_reps)
+        p_reps = embeds_for_contrastive_training.view(-1, embeds_for_contrastive_training.shape[-1])  # [batch_size*predict_from_last*(1+negative_depth), hidden_size]
         if self.train_config['negatives_in_device']:
-            scores = self.compute_similarity(q_reps, p_reps)
-            scores = scores.view(q_reps.size(0), -1)
-            target = torch.arange(scores.size(0), device=scores.device, dtype=torch.long)
-            target = target * (p_reps.size(0) // q_reps.size(0))
+            scores = self.compute_similarity(q_reps, p_reps)  # [batch_size*predict_from_last, batch_size*predict_from_last*(1+negative_depth)]
+            scores = scores.view(q_reps.size(0), -1)  # [batch_size*predict_from_last, batch_size*predict_from_last*(1+negative_depth)]
+            target = torch.arange(scores.size(0), device=scores.device, dtype=torch.long)  # [batch_size*predict_from_last]
+            target = target * (p_reps.size(0) // q_reps.size(0))  # [batch_size*predict_from_last]
         else:
-            p_reps = p_reps.view(-1, 1+self.train_config['negative_depth'], p_reps.size(-1))  
-            scores = torch.matmul(q_reps.unsqueeze(1), p_reps.transpose(2,1))
-            scores = scores.squeeze(1)
-            target = torch.zeros(scores.size(0), dtype=torch.long, device=scores.device)
+            p_reps = p_reps.view(-1, 1+self.train_config['negative_depth'], p_reps.size(-1))  # [batch_size*predict_from_last, 1+negative_depth, hidden_size]
+            scores = torch.matmul(q_reps.unsqueeze(1), p_reps.transpose(2,1))  # [batch_size*predict_from_last, 1, 1+negative_depth]
+            scores = scores.squeeze(1)  # [batch_size*predict_from_last, 1+negative_depth]
+            target = torch.zeros(scores.size(0), dtype=torch.long, device=scores.device)  # [batch_size*predict_from_last]
+        # ignore_index=-1 where label==self.train_config['eos_token_id']
+        labels = labels.view(-1)  # [batch_size*predict_from_last]
+        target[labels==self.train_config['eos_token_id']] = -1
         loss = self.cross_entropy(scores, target)
         return ReGPTOutput(loss=loss)
     
@@ -101,21 +102,6 @@ class ReGPTForCausalLM(nn.Module):
         self.model.save_pretrained(directory)
         torch.save(self.input_linear_proj.state_dict(), os.path.join(directory, 'input_linear_proj.pt'))
         torch.save(self.linear_proj.state_dict(), os.path.join(directory, 'linear_proj.pt'))
-
-    def _dist_gather_tensor(self, t: Optional[torch.Tensor]):
-        world_size = dist.get_world_size()
-        process_rank = dist.get_rank()
-        if t is None:
-            return None
-        t = t.contiguous()
-
-        all_tensors = [torch.empty_like(t) for _ in range(world_size)]
-        dist.all_gather(all_tensors, t)
-
-        all_tensors[process_rank] = t
-        all_tensors = torch.cat(all_tensors, dim=0)
-
-        return all_tensors
 
     def compute_similarity(self, q_reps, p_reps):
         return torch.matmul(q_reps, p_reps.transpose(0, 1))
@@ -163,6 +149,7 @@ class LanguageModelTrainer:
         dataset_config['test']['predict_from_last'] = train_config['predict_from_last']
         tokenizer = AutoTokenizer.from_pretrained(train_config['tokenizer_name_or_path'])
         tokenizer.pad_token = tokenizer.eos_token
+        train_config['eos_token_id'] = tokenizer.eos_token_id
         
         self.setup_model(train_config)
         model = self.model
