@@ -21,6 +21,7 @@ spm.SentencePieceTrainer.train(
     allow_whitespace_only_pieces=True,
     remove_extra_whitespaces=False,
     normalization_rule_name="nfkc",
+    num_threads=128,
 )
 
 end_time = time.time()
