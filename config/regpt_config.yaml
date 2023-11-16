@@ -6,9 +6,9 @@ training:
   num_layers_unfrozen: -1
   gradient_checkpointing: true
   optimizer: 
-    name: Lamb
+    name: AdamW
     kwargs:
-      lr: 1e-3
+      lr: 2e-5
       weight_decay: 0.0
       betas: [0.9, 0.999]
       eps: 1e-08
@@ -20,23 +20,23 @@ training:
   num_epochs: 1000
   log_with: tensorboard
   project_dir: output/
-  negatives_in_device: true
-  predict_from_last: 10
+  negatives_in_device: false
+  predict_from_last: 10000
 
 dataset:
   dataset_name: ReGPTCorpusPretrainDataset
   train:
-    batch_size: 256
+    batch_size: 768
     data_name_or_path: ../WikiText-103/sorted_datasets/
     max_seq_len: 128
     train_or_test: train
-    negative_depth: 1
+    negative_depth: 10
   test:
     batch_size: 128
     data_name_or_path: ../WikiText-103/sorted_datasets/
     max_seq_len: 128
     train_or_test: test
-    negative_depth: 1
+    negative_depth: 10
 
 generation_kwargs:
   min_length: 0
