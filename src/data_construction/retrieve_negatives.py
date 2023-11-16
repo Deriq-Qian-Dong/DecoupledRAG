@@ -31,7 +31,7 @@ def topk_query_passage(query_vector, passage_vector, k):
 
     return res_dist.cpu().numpy(), res_p_id.cpu().numpy()
 
-def read_embed(file_name, bs=10):
+def read_embed(file_name, bs=1000):
     if file_name.endswith('npy'):
         i = 0
         emb_np = np.load(file_name)
