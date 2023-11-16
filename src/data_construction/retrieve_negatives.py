@@ -1,10 +1,14 @@
 import torch
 import numpy as np
-corpus_name = "WikiText-103"
-phrase_embeddings = np.load(open(f"phrases_embeddings_{corpus_name}_normalized.npy",'rb'))
-corpus = torch.from_numpy(phrase_embeddings)
-corpus=corpus.cuda()
 from tqdm import tqdm
+
+corpus_name = "WikiText-103"
+model_name_or_path = "gpt2"
+
+phrase_embeddings = np.load(open(f"../phrases_{corpus_name}_{model_name_or_path}/phrases_embeddings_normalized.npy",'rb'))
+corpus = torch.from_numpy(phrase_embeddings).half()
+corpus=corpus.cuda()
+
 def topk_query_passage(query_vector, passage_vector, k):
     """
     对query vector和passage vector进行内积计算，并返回top k的索引
@@ -27,7 +31,7 @@ def topk_query_passage(query_vector, passage_vector, k):
 
     return res_dist.cpu().numpy(), res_p_id.cpu().numpy()
 
-def read_embed(file_name, dim=4096, bs=10):
+def read_embed(file_name, bs=10):
     if file_name.endswith('npy'):
         i = 0
         emb_np = np.load(file_name)
@@ -43,20 +47,20 @@ def read_embed(file_name, dim=4096, bs=10):
             for line in tqdm(inp):
                 data = line.strip()
                 vector = [float(item) for item in data.split(' ')]
-                assert len(vector) == dim
                 vec_list.append(vector)
                 if len(vec_list) == bs:
                     yield vec_list
                     vec_list = []
             if vec_list:
                 yield vec_list
+
 def search(index, emb_file, qid_list, outfile, top_k):
     q_idx = 0
     with open(outfile, 'w') as out:
         for batch_vec in read_embed(emb_file):
             q_emb_matrix = np.array(batch_vec)
             q_emb_matrix = torch.from_numpy(q_emb_matrix)
-            q_emb_matrix = q_emb_matrix.cuda()
+            q_emb_matrix = q_emb_matrix.cuda().half()
             res_dist, res_p_id = topk_query_passage(q_emb_matrix, index, top_k)
             for i in range(len(q_emb_matrix)):
                 qid = qid_list[q_idx]
@@ -66,4 +70,4 @@ def search(index, emb_file, qid_list, outfile, top_k):
                     out.write('%s\t%s\t%s\t%s\n' % (qid, pid, j+1, score))
                 q_idx += 1
 
-search(corpus, f'phrases_embeddings_{corpus_name}_normalized.npy', list(range(1000000)), f'phrases_embeddings_{corpus_name}_negatives.tsv', 101)
+search(corpus, f"../phrases_{corpus_name}_{model_name_or_path}/phrases_embeddings_normalized.npy", list(range(1000000)), f"../phrases_{corpus_name}_{model_name_or_path}/negatives.tsv", 101)
