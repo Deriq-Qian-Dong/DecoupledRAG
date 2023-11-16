@@ -6,7 +6,6 @@ deepspeed==0.12.3
 faiss-gpu==1.7.2
 gpustat==1.1.1
 huggingface-hub==0.17.3
-iniconfig==1.1.1
 ipykernel==6.26.0
 ipython==8.12.0
 ipython-genutils==0.2.0
@@ -27,14 +26,10 @@ nltk==3.8.1
 notebook==6.4.12
 notebook-shim==0.2.3
 numpy==1.24.4
-python-rapidjson==1.13
 pytorch-pretrained-bert==0.6.2
 pytorch-ranger==0.1.1
-PyYAML==5.4.1
 safetensors==0.4.0
 tensorboard==2.14.0
-tensorboard-data-server==0.7.2
-tinycss2==1.2.1
 tokenizers==0.14.1
 torch-optimizer==0.3.0
 torchtyping==0.1.4
