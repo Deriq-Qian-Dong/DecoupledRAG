@@ -14,7 +14,7 @@ model_name_or_path = "gpt2"
 os.makedirs(f"../phrases_{corpus_name}_{model_name_or_path}", exist_ok=True)
 
 phrase_embeddings = []
-batch_size = 8
+batch_size = 512
 
 phrases = np.load(open(f"../phrases_{corpus_name}/phrases_{corpus_name}.npy",'rb'))
 phrases = phrases.tolist()
