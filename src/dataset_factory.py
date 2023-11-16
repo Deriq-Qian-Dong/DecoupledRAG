@@ -71,17 +71,13 @@ class ReGPTDialogSFTDataset(DialogSFTDataset):
         batch['negative_ids'] = torch.from_numpy(negative_ids).long()
         return batch
     
-class ReGPTCorpusPretrainDataset(ReGPTDialogSFTDataset):
+class ReGPTCorpusPretrainDataset(ReGPTDialogSFTDataset, CorpusPretrainDataset):
     def __init__(self, tokenizer, args):
         super().__init__(tokenizer, args)
     
     def __getitem__(self, idx):
-        sample = self.datasets[idx]
-        text = sample['text']
-        return text
-
+        return CorpusPretrainDataset.__getitem__(self, idx)
+    
     def setup_datasets(self):
-        data_name_or_path = self.args['data_name_or_path']
-        # self.datasets = load_dataset('text', data_files={'train': f'{data_name_or_path}/corpus.tsv', 'test':f'{data_name_or_path}/test.txt'})
-        self.datasets = load_from_disk(data_name_or_path)[self.split]
-        self.datasets = self.datasets.filter(self.filter_empty)
+        CorpusPretrainDataset.setup_datasets(self)
+
