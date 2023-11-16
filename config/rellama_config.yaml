@@ -22,6 +22,7 @@ training:
   project_dir: output/
   negatives_x_device: false
   negatives_in_device: false
+  predict_from_last: 2
 
 dataset:
   dataset_name: ReGPTCorpusPretrainDataset

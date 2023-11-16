@@ -60,26 +60,27 @@ class ReGPTForCausalLM(nn.Module):
         input_ids = kwargs.pop('input_ids')
         negative_ids = kwargs.pop('negative_ids')
         labels = kwargs.pop('labels')
-        labels = labels[:, 1:]
+        predict_from_last = self.train_config['predict_from_last']
+        labels = labels[:, -predict_from_last:]
         inputs_embeds = self.matrix[input_ids.cpu()]
         inputs_embeds = torch.from_numpy(inputs_embeds).to(input_ids.device) # [batch_size, seq_len, hidden_size]
         inputs_embeds = inputs_embeds.to(self.dtype)
         inputs_embeds = self.input_linear_proj(inputs_embeds) # [batch_size, seq_len, hidden_size]
         negative_embeds = self.matrix[negative_ids.cpu()]
-        negative_embeds = torch.from_numpy(negative_embeds).to(input_ids.device) # [batch_size, seq_len-1, negative_depth, hidden_size]
+        negative_embeds = torch.from_numpy(negative_embeds).to(input_ids.device) 
         positive_embeds = self.matrix[labels.cpu()]
-        positive_embeds = torch.from_numpy(positive_embeds).to(input_ids.device) # [batch_size, seq_len-1, hidden_size]
-        embeds_for_contrastive_training = torch.cat([positive_embeds.unsqueeze(2), negative_embeds], dim=2).to(self.dtype) # [batch_size, seq_len-1, 1+negative_depth, hidden_size]
+        positive_embeds = torch.from_numpy(positive_embeds).to(input_ids.device) 
+        embeds_for_contrastive_training = torch.cat([positive_embeds.unsqueeze(2), negative_embeds], dim=2).to(self.dtype) 
         kwargs['inputs_embeds'] = inputs_embeds
         kwargs['output_hidden_states'] = True
         outputs = self.model(**kwargs)
 
         last_hidden_state = outputs.last_hidden_state  # [batch_size, seq_len, hidden_size]
-        last_hidden_state = last_hidden_state[:, :-1, :] # [batch_size, seq_len-1, hidden_size]
-        q_reps = self.linear_proj(last_hidden_state).contiguous().view(-1, embeds_for_contrastive_training.shape[-1]) # [batch_size*(seq_len-1), hidden_size]
+        last_hidden_state = last_hidden_state[:, -predict_from_last-1:-1, :] 
+        q_reps = self.linear_proj(last_hidden_state).contiguous().view(-1, embeds_for_contrastive_training.shape[-1]) 
         # l2 norm
         q_reps = q_reps / torch.norm(q_reps, dim=-1, keepdim=True)
-        p_reps = embeds_for_contrastive_training.contiguous().view(-1, embeds_for_contrastive_training.shape[-1]) # [batch_size*(seq_len-1)*(1+negative_depth), hidden_size]
+        p_reps = embeds_for_contrastive_training.contiguous().view(-1, embeds_for_contrastive_training.shape[-1])
         if self.train_config['negatives_x_device']:
             p_reps = self._dist_gather_tensor(p_reps)
             q_reps = self._dist_gather_tensor(q_reps)
@@ -89,7 +90,7 @@ class ReGPTForCausalLM(nn.Module):
             target = torch.arange(scores.size(0), device=scores.device, dtype=torch.long)
             target = target * (p_reps.size(0) // q_reps.size(0))
         else:
-            p_reps = p_reps.view(-1, 1+self.train_config['negative_depth'], p_reps.size(-1))
+            p_reps = p_reps.view(-1, 1+self.train_config['negative_depth'], p_reps.size(-1))  
             scores = torch.matmul(q_reps.unsqueeze(1), p_reps.transpose(2,1))
             scores = scores.squeeze(1)
             target = torch.zeros(scores.size(0), dtype=torch.long, device=scores.device)
@@ -158,6 +159,8 @@ class LanguageModelTrainer:
         train_config = config['training']
         dataset_config = config['dataset']
         train_config['negative_depth'] = dataset_config['train']['negative_depth']
+        dataset_config['train']['predict_from_last'] = train_config['predict_from_last']
+        dataset_config['test']['predict_from_last'] = train_config['predict_from_last']
         tokenizer = AutoTokenizer.from_pretrained(train_config['tokenizer_name_or_path'])
         tokenizer.pad_token = tokenizer.eos_token
         
