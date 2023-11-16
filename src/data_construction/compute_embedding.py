@@ -1,17 +1,28 @@
+import os
+
+os.environ['http_proxy'] = 'http://172.19.57.45:3128'
+os.environ['https_proxy'] = 'http://172.19.57.45:3128'
+
 import torch
-from tqdm import tqdm
 import numpy as np
-from transformers import AutoTokenizer, AutoModelForCausalLM,AutoConfig
+from tqdm import tqdm
+from transformers import AutoTokenizer, AutoModelForCausalLM
+
+corpus_name = "WikiText-103"
+model_name_or_path = "gpt2"
+
+os.makedirs(f"../phrases_{corpus_name}_{model_name_or_path}", exist_ok=True)
+
 phrase_embeddings = []
 batch_size = 8
-corpus_name = "WikiText-103"
-phrases = np.load(open(f"phrases_{corpus_name}.npy",'rb'))
+
+phrases = np.load(open(f"../phrases_{corpus_name}/phrases_{corpus_name}.npy",'rb'))
 phrases = phrases.tolist()
-model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-2-7b-hf")
+model = AutoModelForCausalLM.from_pretrained(model_name_or_path)
 model.cuda()
-tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf")
+tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
 tokenizer.pad_token = tokenizer.eos_token
-for i in tqdm(range(0,len(phrases), batch_size)):
+for i in tqdm(range(0, len(phrases), batch_size)):
     texts = phrases[i:i+batch_size]
     batch_tokens = tokenizer(texts, padding=True, truncation=True, return_tensors="pt")
     batch_tokens.to("cuda")
@@ -37,12 +48,10 @@ for i in tqdm(range(0,len(phrases), batch_size)):
     phrase_embeddings.append(embeddings.cpu().detach().numpy())
     
 phrase_embeddings = np.concatenate(phrase_embeddings)
-np.save(open(f"phrases_embeddings_{corpus_name}.npy",'wb'),phrase_embeddings)
+np.save(open(f"../phrases_{corpus_name}_{model_name_or_path}/phrases_embeddings.npy",'wb'), phrase_embeddings)
 
 corpus = torch.from_numpy(phrase_embeddings)
 norms = torch.norm(corpus, p=2, dim=1)
 normalized_vectors = corpus / norms.view(-1, 1)
 normalized_vectors = normalized_vectors.numpy()
-np.save(open(f"phrases_embeddings_{corpus_name}_normalized.npy",'wb'), normalized_vectors)
-
-
+np.save(open(f"../phrases_{corpus_name}_{model_name_or_path}/phrases_embeddings_normalized.npy",'wb'), normalized_vectors)
