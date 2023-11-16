@@ -41,8 +41,8 @@ class ReGPTForCausalLM(nn.Module):
             # gpt2
             model.base_model.wte.weight.requires_grad = False
             model.base_model.wpe.weight.requires_grad = False
-            self.input_linear_proj = nn.Linear(train_config['faiss']['dimension'], model.config.hidden_size)
-            self.linear_proj = nn.Linear(model.config.hidden_size, train_config['faiss']['dimension'])
+            self.input_linear_proj = nn.Identity(train_config['faiss']['dimension'], model.config.hidden_size)
+            self.linear_proj = nn.Identity(model.config.hidden_size, train_config['faiss']['dimension'])
         print_trainable_params_stats(model)
         if train_config['gradient_checkpointing']:
             model.gradient_checkpointing_enable()
