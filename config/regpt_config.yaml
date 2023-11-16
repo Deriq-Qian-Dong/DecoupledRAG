@@ -20,17 +20,20 @@ training:
   num_epochs: 1000
   log_with: tensorboard
   project_dir: output/
+  negatives_in_device: true
+  predict_from_last: 10
 
 dataset:
-  batch_size: 256
   dataset_name: ReGPTCorpusPretrainDataset
   train:
-    data_name_or_path: ../WikiText-103
+    batch_size: 256
+    data_name_or_path: ../WikiText-103/sorted_datasets/
     max_seq_len: 128
     train_or_test: train
     negative_depth: 1
   test:
-    data_name_or_path: ../WikiText-103
+    batch_size: 128
+    data_name_or_path: ../WikiText-103/sorted_datasets/
     max_seq_len: 128
     train_or_test: test
     negative_depth: 1
@@ -46,10 +49,10 @@ generation_kwargs:
 ReGPT_kwargs:
   faiss:
     index_type: Flat
-    dimension: 4096
+    dimension: 768
     nprobe: 10000
-    phrases_path: ../phrases_WikiText-103/phrases_WikiText-103.npy
-    matrix_path: ../phrases_WikiText-103/phrases_embeddings_WikiText103_normalized.npy
-  negative_path: ../phrases_WikiText-103/phrases_embeddings_WikiText103_negatives.tsv
+    phrases_path: ../phrases_WikiText-103_gpt2/phrases_WikiText-103.npy
+    matrix_path: ../phrases_WikiText-103_gpt2/phrases_embeddings_normalized.npy
+  negative_path: ../phrases_WikiText-103_gpt2/phrases_embeddings_negatives.tsv
   negative_depth_in_pool: 101
   FNTP_threshold: 10
