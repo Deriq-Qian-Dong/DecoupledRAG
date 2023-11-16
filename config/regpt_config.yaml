@@ -53,6 +53,6 @@ ReGPT_kwargs:
     nprobe: 10000
     phrases_path: ../phrases_WikiText-103_gpt2/phrases_WikiText-103.npy
     matrix_path: ../phrases_WikiText-103_gpt2/phrases_embeddings_normalized.npy
-  negative_path: ../phrases_WikiText-103_gpt2/phrases_embeddings_negatives.tsv
+  negative_path: ../phrases_WikiText-103_gpt2/negatives.tsv
   negative_depth_in_pool: 101
   FNTP_threshold: 10
