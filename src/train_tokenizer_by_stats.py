@@ -46,4 +46,9 @@ def load_n_grams():
     return n_grams
 
 if __name__ == "__main__":
-    main()
+    n_grams = load_n_grams()
+    print('loaded n_grams')
+    tokenizer = AutoTokenizer.from_pretrained('meta-llama/Llama-2-7b-hf')
+    tokenizer.add_tokens(n_grams)
+    tokenizer.save_pretrained('Llama2-phrase-tokenizer-WikiText-103')
+    print('saved tokenizer')
