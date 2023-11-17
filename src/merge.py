@@ -139,15 +139,12 @@ def load_expand_vocab(path: Path) -> "dict[str, int]":
             word, freq = line.strip().split("\t")
             word = unicodedata.normalize("NFC", word)
             parts = re.findall(PAT_STR, word)
-            if len(parts) > 1:
-                logger.warning(
-                    f"{word} would be pre-tokenized to {parts}, and thus cannot be added to vocabulary"
-                )
-                continue
-            try:
-                freq = int(freq)
-            except ValueError as _:
-                freq = 1
+            # if len(parts) > 1:
+            #     logger.warning(
+            #         f"{word} would be pre-tokenized to {parts}, and thus cannot be added to vocabulary"
+            #     )
+            #     continue
+            freq = int(freq)
             if word in freqs:
                 logger.warning(
                     f"{word} is repeated, the frequency is increased by this much"
