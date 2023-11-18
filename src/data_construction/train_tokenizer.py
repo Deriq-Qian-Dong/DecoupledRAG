@@ -18,7 +18,7 @@ def data_loader(dataset, batch_size=1000):
 
 training_corpus = data_loader(dataset)
 tokenizer = old_tokenizer.train_new_from_iterator(training_corpus, vocab_size, show_progress=True)
-tokenizer.save_pretrained(f"{model_name_or_path}-phrase-tokenizer-trained-on-{corpus_name}/")
+tokenizer.save_pretrained(f"../{model_name_or_path}-phrase-tokenizer-trained-on-{corpus_name}/")
 
 def get_phrase():
     phrase = []
