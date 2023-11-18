@@ -1,7 +1,8 @@
 from transformers import AutoTokenizer
 corpus_name = "WikiText-103"
-model_name_or_path = 'gpt2'
+model_name_or_path = 'meta-llama/Llama-2-7b-hf'
 vocab_size = 1000000
+print(corpus_name,model_name_or_path,vocab_size)
 old_tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
 from datasets import load_dataset
 dataset = load_dataset('csv', data_files={'train': f'../{corpus_name}/base_data_128.txt'}, delimiter='\t',column_names=['text', 'id'])
