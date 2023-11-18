@@ -6,49 +6,36 @@ os.environ['https_proxy'] = 'http://172.19.57.45:3128'
 import torch
 import numpy as np
 from tqdm import tqdm
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModel
 
 corpus_name = "WikiText-103"
-model_name_or_path = "gpt2"
+model_name_or_path = "facebook/contriever"
 
 os.makedirs(f"../phrases_{corpus_name}_{model_name_or_path}", exist_ok=True)
 
 phrase_embeddings = []
-batch_size = 512
+batch_size = 128
 
 phrases = np.load(open(f"phrases_{corpus_name}_{model_name_or_path}/phrases.npy",'rb'))
 phrases = phrases.tolist()
-model = AutoModelForCausalLM.from_pretrained(model_name_or_path)
+model = AutoModel.from_pretrained(model_name_or_path)
 model.cuda()
+model.eval()
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
-tokenizer.pad_token = tokenizer.eos_token
+def mean_pooling(token_embeddings, mask):
+    token_embeddings = token_embeddings.masked_fill(~mask[..., None].bool(), 0.)
+    sentence_embeddings = token_embeddings.sum(dim=1) / mask.sum(dim=1)[..., None]
+    return sentence_embeddings
 for i in tqdm(range(0, len(phrases), batch_size)):
     texts = phrases[i:i+batch_size]
-    batch_tokens = tokenizer(texts, padding=True, truncation=True, return_tensors="pt")
-    batch_tokens.to("cuda")
+    inputs = tokenizer(texts, padding=True, truncation=True, return_tensors='pt')
+    inputs.to("cuda")
     with torch.no_grad():
-        # Get hidden state of shape [bs, seq_len, hid_dim]
-        last_hidden_state = model(**batch_tokens, output_hidden_states=True, return_dict=True).hidden_states[-1]
-    weights = (
-        torch.arange(start=1, end=last_hidden_state.shape[1] + 1)
-        .unsqueeze(0)
-        .unsqueeze(-1)
-        .expand(last_hidden_state.size())
-        .float().to(last_hidden_state.device)
-    )
-    input_mask_expanded = (
-        batch_tokens["attention_mask"]
-        .unsqueeze(-1)
-        .expand(last_hidden_state.size())
-        .float()
-    )
-    sum_embeddings = torch.sum(last_hidden_state * input_mask_expanded * weights, dim=1)
-    sum_mask = torch.sum(input_mask_expanded * weights, dim=1)
-    embeddings = sum_embeddings / sum_mask
+        outputs = model(**inputs)
+    embeddings = mean_pooling(outputs[0], inputs['attention_mask'])
     phrase_embeddings.append(embeddings.cpu().detach().numpy())
     
 phrase_embeddings = np.concatenate(phrase_embeddings)
-phrase_embeddings[851] = 1
 np.save(open(f"../phrases_{corpus_name}_{model_name_or_path}/phrases_embeddings.npy",'wb'), phrase_embeddings)
 
 corpus = torch.from_numpy(phrase_embeddings)
