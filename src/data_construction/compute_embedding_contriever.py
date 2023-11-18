@@ -9,7 +9,8 @@ from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModel
 
 corpus_name = "WikiText-103"
-model_name_or_path = "facebook/contriever"
+model_name_or_path = "gpt2"
+encoder_model_name_or_path = "facebook/contriever"
 
 os.makedirs(f"../phrases_{corpus_name}_{model_name_or_path}", exist_ok=True)
 
@@ -18,10 +19,10 @@ batch_size = 128
 
 phrases = np.load(open(f"../phrases_{corpus_name}_{model_name_or_path}/phrases.npy",'rb'))
 phrases = phrases.tolist()
-model = AutoModel.from_pretrained(model_name_or_path)
+model = AutoModel.from_pretrained(encoder_model_name_or_path)
 model.cuda()
 model.eval()
-tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
+tokenizer = AutoTokenizer.from_pretrained(encoder_model_name_or_path)
 def mean_pooling(token_embeddings, mask):
     token_embeddings = token_embeddings.masked_fill(~mask[..., None].bool(), 0.)
     sentence_embeddings = token_embeddings.sum(dim=1) / mask.sum(dim=1)[..., None]
