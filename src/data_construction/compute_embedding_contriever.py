@@ -16,7 +16,7 @@ os.makedirs(f"../phrases_{corpus_name}_{model_name_or_path}", exist_ok=True)
 phrase_embeddings = []
 batch_size = 128
 
-phrases = np.load(open(f"phrases_{corpus_name}_{model_name_or_path}/phrases.npy",'rb'))
+phrases = np.load(open(f"../phrases_{corpus_name}_{model_name_or_path}/phrases.npy",'rb'))
 phrases = phrases.tolist()
 model = AutoModel.from_pretrained(model_name_or_path)
 model.cuda()
