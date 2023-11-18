@@ -10,10 +10,10 @@ class DialogSFTDataset(Dataset):
         self.split = args['train_or_test']
         self.tokenizer = tokenizer
         self.setup_datasets()
-        self.num_samples = len(self.datasets)
 
     def setup_datasets(self):
         self.datasets = load_dataset(self.args['data_name_or_path'], split=self.split)
+        self.num_samples = len(self.datasets)
         
     def __getitem__(self, idx):
         sample = self.datasets[idx]
@@ -41,6 +41,7 @@ class CorpusPretrainDataset(DialogSFTDataset):
         # self.datasets = load_dataset('text', data_files={'train': f'{data_name_or_path}/corpus.tsv', 'test':f'{data_name_or_path}/test.txt'})
         self.datasets = load_from_disk(data_name_or_path)[self.split]
         self.datasets = self.datasets.filter(self.filter_empty)
+        self.num_samples = len(self.datasets)
 
     def filter_empty(self, example):
         return example['text_length'] >= 10
@@ -49,6 +50,22 @@ class CorpusPretrainDataset(DialogSFTDataset):
         sample = self.datasets[idx]
         text = sample['text']
         return text
+
+class C4PretrainDataset(DialogSFTDataset):
+    def __init__(self, tokenizer, args):
+        super().__init__(tokenizer, args)
+        self.num_samples = 1000000
+
+    def setup_datasets(self):
+        self.datasets = load_dataset('c4', 'en', split=self.split, streaming=True)
+
+    def __iter__(self):
+        for sample in self.datasets:
+            text = sample['text']
+            yield text
+
+    def __getitem__(self, idx):
+        return self.__iter__().__next__()
 
 
 class ReGPTDialogSFTDataset(DialogSFTDataset):
