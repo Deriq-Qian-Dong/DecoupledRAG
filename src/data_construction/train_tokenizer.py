@@ -3,7 +3,7 @@ corpus_name = "WikiText-103"
 mode_name_or_path = 'gpt2'
 old_tokenizer = AutoTokenizer.from_pretrained(mode_name_or_path)
 from datasets import load_dataset
-dataset = load_dataset('csv', data_files={'train': f'{corpus_name}/base_data_128.txt'}, delimiter='\t',column_names=['text', 'id'])
+dataset = load_dataset('csv', data_files={'train': f'../{corpus_name}/base_data_128.txt'}, delimiter='\t',column_names=['text', 'id'])
 def data_loader(dataset, batch_size=1000):
     batch = []
     for example in dataset['train']:
