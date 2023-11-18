@@ -8,7 +8,7 @@ tensorboard.log
 *
 
 # 但不忽略 .c 和 .h 文件
-!*.yaml
-!*.sh
-!*.py
-!*.md
+!**.yaml
+!**.sh
+!**.py
+!**.md
