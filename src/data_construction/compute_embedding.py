@@ -16,7 +16,7 @@ os.makedirs(f"../phrases_{corpus_name}_{model_name_or_path}", exist_ok=True)
 phrase_embeddings = []
 batch_size = 512
 
-phrases = np.load(open(f"../phrases_{corpus_name}/phrases_{corpus_name}.npy",'rb'))
+phrases = np.load(open(f"phrases_{corpus_name}_{model_name_or_path}/phrases.npy",'rb'))
 phrases = phrases.tolist()
 model = AutoModelForCausalLM.from_pretrained(model_name_or_path)
 model.cuda()

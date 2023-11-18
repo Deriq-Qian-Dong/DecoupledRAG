@@ -5,6 +5,7 @@ from collections import Counter
 from nltk.util import ngrams
 from tqdm import tqdm
 import numpy as np
+from time import time
 
 os.environ['http_proxy'] = 'http://172.19.57.45:3128'
 os.environ['https_proxy'] = 'http://172.19.57.45:3128'
@@ -49,6 +50,8 @@ if __name__ == "__main__":
     n_grams = load_n_grams()
     print('loaded n_grams')
     tokenizer = AutoTokenizer.from_pretrained('meta-llama/Llama-2-7b-hf')
+    start = time()
     tokenizer.add_tokens(n_grams)
     tokenizer.save_pretrained('Llama2-phrase-tokenizer-WikiText-103')
+    print(time()-start)
     print('saved tokenizer')
