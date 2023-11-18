@@ -56,6 +56,9 @@ class ReGPTDialogSFTDataset(DialogSFTDataset):
     def __init__(self, tokenizer, args):
         super().__init__(tokenizer, args)
         self.negatives = np.loadtxt(args['negative_path']).reshape((-1, args['negative_depth_in_pool'], 4))
+        # 将最后一列大于FNTP_threshold的位置的第二列位置替换为0到self.negatives.shape[0]的随机数，防止假负例过多
+        mask = self.negatives[:, :, 3] > self.args['FNTP_threshold']
+        self.negatives[mask, 1] = np.random.randint(0, self.negatives.shape[0], size=mask.sum())
     
     def _collate_fn(self, elems):
         batch = super()._collate_fn(elems)
@@ -63,8 +66,6 @@ class ReGPTDialogSFTDataset(DialogSFTDataset):
         predict_from_last = self.args['predict_from_last']
         predict_from_last = min(predict_from_last, len(input_ids[0])-1)  # 防止predict_from_last大于句子长度
         negative_infos = self.negatives[input_ids[:,-predict_from_last:]] # (batch_size, predict_from_last, negative_depth_in_pool, 4)
-        # 取第FNTP_threshold个以后的负样本，过滤False Negative和True Positive
-        negative_infos = negative_infos[:, :, self.args['FNTP_threshold']:, :]
         negative_ids = negative_infos[:, :, :, 1] # (batch_size, predict_from_last, negative_depth_in_pool)
         # 从负样本中随机选取self.args['negative_depth']个
         negative_ids = negative_ids[:, :, np.random.choice(negative_ids.shape[2], self.args['negative_depth'], replace=False)].astype(int) # (batch_size, predict_from_last, negative_depth)

@@ -119,7 +119,6 @@ class Searcher:
 
     def __init__(self, index_type, dimension=4096, nprobe=1):
         # self.searcher = faiss.index_factory(dimension, index_type, faiss.METRIC_INNER_PRODUCT)
-        # for KNN-LM
         self.searcher = faiss.index_factory(dimension, index_type, faiss.METRIC_INNER_PRODUCT)
         self.corpus = []
         self.nprobe = nprobe
