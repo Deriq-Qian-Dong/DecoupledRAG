@@ -107,6 +107,7 @@ class ReGPTForCausalLM(nn.Module):
         return torch.matmul(q_reps, p_reps.transpose(0, 1))
     
     def generate(self, **kwargs):
+        self.dtype = self.model.parameters().__next__().dtype
         input_ids = kwargs.pop('input_ids')
         kwargs['output_hidden_states'] = True
         p_reps = self.matrix  # [phrases_size, hidden_size]
@@ -263,7 +264,9 @@ class ReGPTLanguageModelTrainer(LanguageModelTrainer):
     def __init__(self, config):
         self.config = config
         ReGPT_kwargs = config['ReGPT_kwargs']
+        generation_kwargs = config['generation_kwargs']
         self.config['training'].update(ReGPT_kwargs)
+        self.config['training'].update(generation_kwargs)
         self.config['dataset']['train'].update(ReGPT_kwargs)
         self.config['dataset']['test'].update(ReGPT_kwargs)
         self.setup()
