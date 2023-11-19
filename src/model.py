@@ -226,6 +226,8 @@ class LanguageModelTrainer:
         pbar = tqdm(total=len(train_dataloader))
         for batch in train_dataloader:
             self.iter_count += 1
+            if self.iter_count%self.train_config['eval_step']==0:
+                self.test()
             batch = accelerator.prepare(batch)
             forward_time = time()
             outputs = model(**batch)
@@ -250,11 +252,11 @@ class LanguageModelTrainer:
         pbar.close()
 
     def test(self):
-        model, tokenizer, optimizer, scheduler, test_dataloader, accelerator, epoch = self.model, self.tokenizer, self.optimizer, self.scheduler, self.test_dataloader, self.accelerator, self.epoch
+        model, tokenizer, optimizer, scheduler, test_dataloader, accelerator, iter_count = self.model, self.tokenizer, self.optimizer, self.scheduler, self.test_dataloader, self.accelerator, self.iter_count
         model.eval()
         total_loss = 0
         with torch.no_grad():
-            for batch in tqdm(test_dataloader, desc=f"Evaluation of epoch {epoch}"):
+            for batch in tqdm(test_dataloader, desc=f"Evaluation of step {iter_count}"):
                 batch = accelerator.prepare(batch)
                 outputs = model(**batch)
                 loss = outputs.loss
@@ -262,14 +264,15 @@ class LanguageModelTrainer:
                 total_loss += loss.cpu().detach().float().numpy().mean()
         total_loss /= len(test_dataloader)
         perplexity = np.exp(total_loss)
-        accelerator.print(f"Epoch {epoch} | Perplexity: {perplexity:.4f} | Loss: {total_loss:.4f}")
-        directory = f"output/SFT-{epoch}/"
+        accelerator.print(f"Step {iter_count} | Perplexity: {perplexity:.4f} | Loss: {total_loss:.4f}")
+        directory = f"output/SFT-step-{iter_count}/"
         accelerator.wait_for_everyone()
         stats = {"test/perplexity": perplexity, "test/loss": total_loss}
         accelerator.log(stats, step=self.iter_count)
         if accelerator.is_main_process:
             accelerator.unwrap_model(model).save_pretrained(directory)
             tokenizer.save_pretrained(directory)
+        model.train()
 
 class ReGPTLanguageModelTrainer(LanguageModelTrainer):
     def __init__(self, config):
