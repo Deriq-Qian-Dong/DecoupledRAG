@@ -35,14 +35,12 @@ class ReGPTForCausalLM(nn.Module):
         try:
             # llama2
             model.base_model.embed_tokens.weight.requires_grad = False
-            self.input_linear_proj = nn.Identity(train_config['faiss']['dimension'], model.config.hidden_size)
-            self.linear_proj = nn.Identity(model.config.hidden_size, train_config['faiss']['dimension'])
         except:
             # gpt2
             model.base_model.wte.weight.requires_grad = False
             model.base_model.wpe.weight.requires_grad = False
-            self.input_linear_proj = nn.Identity(train_config['faiss']['dimension'], model.config.hidden_size)
-            self.linear_proj = nn.Identity(model.config.hidden_size, train_config['faiss']['dimension'])
+        self.input_linear_proj = nn.Linear(train_config['faiss']['dimension'], model.config.hidden_size)
+        self.linear_proj = nn.Linear(model.config.hidden_size, train_config['faiss']['dimension'])
         print_trainable_params_stats(model)
         if train_config['gradient_checkpointing']:
             model.gradient_checkpointing_enable()
@@ -80,7 +78,7 @@ class ReGPTForCausalLM(nn.Module):
         last_hidden_state = last_hidden_state[:, -predict_from_last-1:-1, :].contiguous()  # [batch_size, predict_from_last, hidden_size]
         q_reps = self.linear_proj(last_hidden_state).view(-1, embeds_for_contrastive_training.shape[-1])  # [batch_size*predict_from_last, hidden_size]
         # l2 norm
-        q_reps = q_reps / torch.norm(q_reps, dim=-1, keepdim=True)
+        # q_reps = q_reps / torch.norm(q_reps, dim=-1, keepdim=True)
         p_reps = embeds_for_contrastive_training.view(-1, embeds_for_contrastive_training.shape[-1])  # [batch_size*predict_from_last*(1+negative_depth), hidden_size]
         if self.train_config['negatives_in_device']:
             scores = self.compute_similarity(q_reps, p_reps)  # [batch_size*predict_from_last, batch_size*predict_from_last*(1+negative_depth)]
