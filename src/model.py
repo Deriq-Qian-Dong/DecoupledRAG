@@ -224,6 +224,7 @@ class LanguageModelTrainer:
         pbar = tqdm(total=len(train_dataloader))
         for batch in train_dataloader:
             self.iter_count += 1
+            total_time = time()
             batch = accelerator.prepare(batch)
             forward_time = time()
             outputs = model(**batch)
@@ -235,9 +236,9 @@ class LanguageModelTrainer:
             backward_time = time() - backward_time
             stats["time/forward"] = forward_time
             stats["time/backward"] = backward_time
+            opt_time = time()
             for group_number, lr in enumerate(scheduler.get_last_lr()):
                 stats[f"learning_rate"] = lr
-            accelerator.log(stats, step=self.iter_count)
             optimizer.step()
             scheduler.step()
             optimizer.zero_grad()
@@ -247,6 +248,13 @@ class LanguageModelTrainer:
                 pbar.set_description(f"Epoch {epoch} | Step {step} | Loss: {loss.cpu().detach().float().numpy():.4f}")
             if self.iter_count%self.train_config['eval_step']==0:
                 self.test()
+            opt_time = time() - opt_time
+            stats["time/optimization"] = opt_time
+            total_time = time() - total_time
+            stats["time/total"] = total_time
+            data_loading_time = total_time - forward_time - backward_time - opt_time
+            stats["time/data_loading"] = data_loading_time
+            accelerator.log(stats, step=self.iter_count)
         pbar.close()
 
     def test(self):
