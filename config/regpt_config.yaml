@@ -41,6 +41,9 @@ dataset:
 generation_kwargs:
   min_length: 0
   max_length: 5
+  do_sample: true
+  top_k: 50
+  top_p: 0.95
 
 ReGPT_kwargs:
   faiss:

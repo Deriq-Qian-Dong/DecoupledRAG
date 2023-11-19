@@ -6,7 +6,8 @@ import torch.distributed as dist
 import torch
 import faiss
 import joblib
-
+import torch.nn.functional as F
+import numpy as np
 
 def get_all_reduce_mean(tensor):
     torch.distributed.all_reduce(tensor, op=torch.distributed.ReduceOp.SUM)
@@ -167,3 +168,24 @@ class Searcher:
     def move_to_cpu(self):
         self.searcher = faiss.index_gpu_to_cpu(self.searcher)
         print_rank_0(f'[!] move index from GPU to CPU over')
+
+
+def top_k_top_p_filtering(logits, top_k=0, top_p=0.0, threshold=-float('Inf'), filter_value=-np.inf):
+    assert logits.dim() == 1
+    top_k = min(top_k, logits.size(-1))
+    if top_k > 0:
+        indices_to_remove = logits < torch.topk(logits, top_k)[0][..., -1, None]
+        logits[indices_to_remove] = filter_value
+    if top_p > 0.0:
+        sorted_logits, sorted_indices = torch.sort(logits, descending=True)
+        cumulative_probs = torch.cumsum(F.softmax(sorted_logits, dim=-1), dim=-1)
+        sorted_indices_to_remove = cumulative_probs > top_p
+        sorted_indices_to_remove[..., 1:] = sorted_indices_to_remove[..., :-1].clone()
+        sorted_indices_to_remove[..., 0] = 0
+
+        indices_to_remove = sorted_indices[sorted_indices_to_remove]
+        logits[indices_to_remove] = filter_value
+        
+    indices_to_remove = logits < threshold
+    logits[indices_to_remove] = filter_value
+    return logits
