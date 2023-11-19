@@ -130,15 +130,15 @@ class ReGPTForCausalLM(nn.Module):
                 q_reps = q_reps.unsqueeze(1)  # [batch_size, 1, hidden_size]
                 scores = self.compute_similarity(q_reps, p_reps)  # [batch_size, phrases_size]
                 scores = scores.squeeze(1)  # [batch_size, phrases_size]
-                scores = scores.cpu().detach().numpy()
+                # scores = scores.cpu().detach().numpy()
                 if self.train_config['do_sample']:
                     # top-k or top-p sampling
                     filtered_logits = top_k_top_p_filtering(scores, top_k=self.train_config['top_k'], top_p=self.train_config['top_p'], filter_value=0)
                     next_input_ids = torch.multinomial(filtered_logits, num_samples=1).reshape(-1, 1) # [batch_size, 1]
                 else:
                     # greedy decoding
-                    next_input_ids = np.argmax(scores, axis=-1)  # [batch_size]
-                input_ids = torch.cat([input_ids, torch.from_numpy(next_input_ids).unsqueeze(1).to(input_ids.device)], dim=1)
+                    next_input_ids = torch.argmax(scores, dim=-1).reshape(-1, 1) # [batch_size, 1]
+                input_ids = torch.cat([input_ids, next_input_ids], dim=-1)
         return input_ids
 
 
