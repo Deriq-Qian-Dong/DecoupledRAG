@@ -126,13 +126,14 @@ class ReGPTForCausalLM(nn.Module):
                 last_hidden_state = last_hidden_state[:, -1:, :].contiguous()  # [batch_size, 1, hidden_size]
                 q_reps = self.linear_proj(last_hidden_state).view(-1, self.matrix.shape[-1])  # [batch_size, hidden_size]
                 # l2 norm
-                # q_reps = q_reps / torch.norm(q_reps, dim=-1, keepdim=True)
+                q_reps = q_reps / torch.norm(q_reps, dim=-1, keepdim=True)
                 q_reps = q_reps.unsqueeze(1)  # [batch_size, 1, hidden_size]
                 scores = self.compute_similarity(q_reps, p_reps)  # [batch_size, phrases_size]
                 scores = scores.squeeze(1)  # [batch_size, phrases_size]
                 # scores = scores.cpu().detach().numpy()
                 if self.train_config['do_sample']:
                     # top-k or top-p sampling
+                    scores = scores.squeeze(0)  # [phrases_size]
                     filtered_logits = top_k_top_p_filtering(scores, top_k=self.train_config['top_k'], top_p=self.train_config['top_p'], filter_value=0)
                     next_input_ids = torch.multinomial(filtered_logits, num_samples=1).reshape(-1, 1) # [batch_size, 1]
                 else:
