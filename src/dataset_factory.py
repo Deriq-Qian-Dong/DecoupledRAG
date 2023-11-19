@@ -39,7 +39,10 @@ class CorpusPretrainDataset(DialogSFTDataset):
     def setup_datasets(self):
         data_name_or_path = self.args['data_name_or_path']
         # self.datasets = load_dataset('text', data_files={'train': f'{data_name_or_path}/corpus.tsv', 'test':f'{data_name_or_path}/test.txt'})
-        self.datasets = load_from_disk(data_name_or_path)[self.split]
+        try:
+            self.datasets = load_from_disk(data_name_or_path)[self.split]
+        except:
+            self.datasets = load_from_disk(data_name_or_path)  # 为了兼容C4数据集
         # self.datasets = self.datasets.filter(self.filter_empty)
         self.num_samples = len(self.datasets)
 
