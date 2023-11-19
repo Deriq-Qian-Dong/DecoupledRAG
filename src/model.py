@@ -110,6 +110,7 @@ class ReGPTForCausalLM(nn.Module):
         self.model.eval()
         self.dtype = self.model.parameters().__next__().dtype
         input_ids = kwargs.pop('input_ids')
+        attention_mask = kwargs.pop('attention_mask')
         kwargs['output_hidden_states'] = True
         p_reps = self.matrix  # [phrases_size, hidden_size]
         p_reps = torch.from_numpy(p_reps).to(input_ids.device).to(self.dtype)  # [phrases_size, hidden_size]
