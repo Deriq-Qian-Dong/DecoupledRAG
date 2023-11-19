@@ -226,8 +226,6 @@ class LanguageModelTrainer:
         pbar = tqdm(total=len(train_dataloader))
         for batch in train_dataloader:
             self.iter_count += 1
-            if self.iter_count%self.train_config['eval_step']==0:
-                self.test()
             batch = accelerator.prepare(batch)
             forward_time = time()
             outputs = model(**batch)
@@ -249,6 +247,8 @@ class LanguageModelTrainer:
                 pbar.update(1)
                 step += 1
                 pbar.set_description(f"Epoch {epoch} | Step {step} | Loss: {loss.cpu().detach().float().numpy():.4f}")
+            if self.iter_count%self.train_config['eval_step']==0:
+                self.test()
         pbar.close()
 
     def test(self):
