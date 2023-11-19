@@ -107,29 +107,31 @@ class ReGPTForCausalLM(nn.Module):
         return torch.matmul(q_reps, p_reps.transpose(0, 1))
     
     def generate(self, **kwargs):
+        self.model.eval()
         self.dtype = self.model.parameters().__next__().dtype
         input_ids = kwargs.pop('input_ids')
         kwargs['output_hidden_states'] = True
         p_reps = self.matrix  # [phrases_size, hidden_size]
         p_reps = torch.from_numpy(p_reps).to(input_ids.device).to(self.dtype)  # [phrases_size, hidden_size]
-        for _ in range(self.train_config['max_length']):
-            inputs_embeds = self.matrix[input_ids.cpu()]
-            inputs_embeds = torch.from_numpy(inputs_embeds).to(input_ids.device) # [batch_size, cur_seq_len, hidden_size]
-            inputs_embeds = inputs_embeds.to(self.dtype)
-            inputs_embeds = self.input_linear_proj(inputs_embeds) # [batch_size, cur_seq_len, hidden_size]
-            kwargs['inputs_embeds'] = inputs_embeds
-            outputs = self.model(**kwargs)
-            last_hidden_state = outputs.last_hidden_state  # [batch_size, cur_seq_len, hidden_size]
-            last_hidden_state = last_hidden_state[:, -1:, :].contiguous()  # [batch_size, 1, hidden_size]
-            q_reps = self.linear_proj(last_hidden_state).view(-1, self.matrix.shape[-1])  # [batch_size, hidden_size]
-            # l2 norm
-            q_reps = q_reps / torch.norm(q_reps, dim=-1, keepdim=True)
-            q_reps = q_reps.unsqueeze(1)  # [batch_size, 1, hidden_size]
-            scores = self.compute_similarity(q_reps, p_reps)  # [batch_size, phrases_size]
-            scores = scores.squeeze(1)  # [batch_size, phrases_size]
-            scores = scores.cpu().detach().numpy()
-            next_input_ids = np.argmax(scores, axis=-1)  # [batch_size]
-            input_ids = torch.cat([input_ids, torch.from_numpy(next_input_ids).unsqueeze(1).to(input_ids.device)], dim=1)
+        with torch.no_grad():
+            for _ in range(self.train_config['max_length']):
+                inputs_embeds = self.matrix[input_ids.cpu()]
+                inputs_embeds = torch.from_numpy(inputs_embeds).to(input_ids.device) # [batch_size, cur_seq_len, hidden_size]
+                inputs_embeds = inputs_embeds.to(self.dtype)
+                inputs_embeds = self.input_linear_proj(inputs_embeds) # [batch_size, cur_seq_len, hidden_size]
+                kwargs['inputs_embeds'] = inputs_embeds
+                outputs = self.model(**kwargs)
+                last_hidden_state = outputs.last_hidden_state  # [batch_size, cur_seq_len, hidden_size]
+                last_hidden_state = last_hidden_state[:, -1:, :].contiguous()  # [batch_size, 1, hidden_size]
+                q_reps = self.linear_proj(last_hidden_state).view(-1, self.matrix.shape[-1])  # [batch_size, hidden_size]
+                # l2 norm
+                q_reps = q_reps / torch.norm(q_reps, dim=-1, keepdim=True)
+                q_reps = q_reps.unsqueeze(1)  # [batch_size, 1, hidden_size]
+                scores = self.compute_similarity(q_reps, p_reps)  # [batch_size, phrases_size]
+                scores = scores.squeeze(1)  # [batch_size, phrases_size]
+                scores = scores.cpu().detach().numpy()
+                next_input_ids = np.argmax(scores, axis=-1)  # [batch_size]
+                input_ids = torch.cat([input_ids, torch.from_numpy(next_input_ids).unsqueeze(1).to(input_ids.device)], dim=1)
         return input_ids
 
 
