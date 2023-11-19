@@ -256,7 +256,7 @@ class LanguageModelTrainer:
         model.eval()
         total_loss = 0
         with torch.no_grad():
-            for batch in tqdm(test_dataloader, desc=f"Evaluation of step {iter_count}"):
+            for batch in tqdm(test_dataloader, desc=f"Evaluation of step {iter_count}", disable=not accelerator.is_main_process):
                 batch = accelerator.prepare(batch)
                 outputs = model(**batch)
                 loss = outputs.loss
