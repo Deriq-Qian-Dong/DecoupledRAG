@@ -1,14 +1,14 @@
 trainer: ReGPTLanguageModelTrainer
 training:
   project_name: ReGPT-sft
-  model_name_or_path: output/SFT-3
+  model_name_or_path: gpt2
   tokenizer_name_or_path: ../llama2-7b-phrase-tokenizer-trained-on-WikiText103/
   num_layers_unfrozen: -1
   gradient_checkpointing: true
   optimizer: 
     name: Lamb
     kwargs:
-      lr: 0.1
+      lr: 1e-2
       weight_decay: 0.0
       betas: [0.9, 0.999]
       eps: 1e-08
@@ -20,24 +20,24 @@ training:
   num_epochs: 1000
   log_with: tensorboard
   project_dir: output/
-  negatives_in_device: false
+  negatives_in_device: true
   predict_from_last: 128
-  eval_step: 100
+  eval_step: 1000
 
 dataset:
   dataset_name: ReGPTCorpusPretrainDataset
   train:
-    batch_size: 1024
+    batch_size: 256
     data_name_or_path: ../En-Wiki/sorted_datasets/
     max_seq_len: 128
     train_or_test: train
-    negative_depth: 10
+    negative_depth: 1
   test:
     batch_size: 128
     data_name_or_path: ../WikiText-103/sorted_datasets/
     max_seq_len: 128
     train_or_test: test
-    negative_depth: 10
+    negative_depth: 1
 
 generation_kwargs:
   min_length: 0
@@ -52,7 +52,7 @@ ReGPT_kwargs:
     dimension: 768
     nprobe: 10000
     phrases_path: ../phrases_WikiText-103_gpt2/phrases.npy
-    matrix_path: ../phrases_WikiText-103_gpt2/phrases_embeddings_normalized.npy
+    matrix_path: ../phrases_WikiText-103_gpt2/phrases_embeddings.npy
   negative_path: ../phrases_WikiText-103_gpt2/negatives.tsv
   negative_depth_in_pool: 101
   FNTP_threshold: 0.9
