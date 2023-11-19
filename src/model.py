@@ -111,6 +111,7 @@ class ReGPTForCausalLM(nn.Module):
         input_ids = kwargs.pop('input_ids')
         kwargs['output_hidden_states'] = True
         p_reps = self.matrix  # [phrases_size, hidden_size]
+        p_reps = torch.from_numpy(p_reps).to(input_ids.device).to(self.dtype)  # [phrases_size, hidden_size]
         for _ in range(self.train_config['max_length']):
             inputs_embeds = self.matrix[input_ids.cpu()]
             inputs_embeds = torch.from_numpy(inputs_embeds).to(input_ids.device) # [batch_size, cur_seq_len, hidden_size]
