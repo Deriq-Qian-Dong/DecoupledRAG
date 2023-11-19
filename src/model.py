@@ -41,6 +41,10 @@ class ReGPTForCausalLM(nn.Module):
             model.base_model.wpe.weight.requires_grad = False
         self.input_linear_proj = nn.Linear(train_config['faiss']['dimension'], model.config.hidden_size)
         self.linear_proj = nn.Linear(model.config.hidden_size, train_config['faiss']['dimension'])
+        if os.path.exists(os.path.join(train_config['model_name_or_path'], 'input_linear_proj.pt')):
+            self.input_linear_proj.load_state_dict(torch.load(os.path.join(train_config['model_name_or_path'], 'input_linear_proj.pt')))
+        if os.path.exists(os.path.join(train_config['model_name_or_path'], 'linear_proj.pt')):
+            self.linear_proj.load_state_dict(torch.load(os.path.join(train_config['model_name_or_path'], 'linear_proj.pt')))
         print_trainable_params_stats(model)
         if train_config['gradient_checkpointing']:
             model.gradient_checkpointing_enable()
