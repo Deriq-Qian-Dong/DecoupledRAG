@@ -229,12 +229,14 @@ class LanguageModelTrainer:
         for batch in train_dataloader:
             self.iter_count += 1
             total_time = time()
+            seq_len = batch['input_ids'].size(1)
             batch = accelerator.prepare(batch)
             forward_time = time()
             outputs = model(**batch)
             forward_time = time() - forward_time
             loss = outputs.loss
             stats = {"loss": float(loss.cpu().detach().float().numpy())}
+            stats["seq_len"] = seq_len
             backward_time = time()
             accelerator.backward(loss)
             backward_time = time() - backward_time
