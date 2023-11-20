@@ -49,7 +49,7 @@ generation_kwargs:
 ReGPT_kwargs:
   faiss:
     index_type: Flat
-    dimension: 4096
+    dimension: 768
     nprobe: 10000
     phrases_path: ../phrases_WikiText-103/phrases.npy
     matrix_path: ../phrases_WikiText-103/phrases_embeddings.npy
