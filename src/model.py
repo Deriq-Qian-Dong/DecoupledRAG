@@ -49,10 +49,10 @@ class ReGPTForCausalLM(nn.Module):
         if train_config['gradient_checkpointing']:
             model.gradient_checkpointing_enable()
         self.model = model
-        self.searcher = Searcher(train_config['faiss']['index_type'], dimension=train_config['faiss']['dimension'], nprobe=train_config['faiss']['nprobe'])
-        phrases = np.load(open(train_config['faiss']['phrases_path'], 'rb'))
+        # self.searcher = Searcher(train_config['faiss']['index_type'], dimension=train_config['faiss']['dimension'], nprobe=train_config['faiss']['nprobe'])
+        # phrases = np.load(open(train_config['faiss']['phrases_path'], 'rb'))
         matrix = np.load(open(train_config['faiss']['matrix_path'], 'rb'))
-        self.searcher._build(matrix, phrases, speedup=False)
+        # self.searcher._build(matrix, phrases, speedup=False)
         self.matrix = matrix
         self.cross_entropy = nn.CrossEntropyLoss(reduction='mean', ignore_index=-1)
         self.train_config = train_config
@@ -201,6 +201,7 @@ class LanguageModelTrainer:
             [params],
             **train_config["optimizer"]["kwargs"],
         )
+        train_config["scheduler"]["kwargs"]['eta_min'] = float(train_config["scheduler"]["kwargs"]['eta_min'])
         scheduler = scheduler_class[train_config["scheduler"]["name"]](optimizer, **train_config["scheduler"]["kwargs"])
 
         self.setup_dataloader(dataset_config, tokenizer)
