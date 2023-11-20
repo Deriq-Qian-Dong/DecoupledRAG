@@ -1,27 +1,28 @@
 trainer: ReGPTLanguageModelTrainer
 training:
   project_name: llama2-7b-sft
-  model_name_or_path: ../llama2-7b
+  model_name_or_path: meta-llama/Llama-2-7b-hf
   tokenizer_name_or_path: ../llama2-7b-phrase-tokenizer-trained-on-WikiText103/
   num_layers_unfrozen: -1
   gradient_checkpointing: true
   optimizer: 
-    name: AdamW
+    name: Lamb
     kwargs:
-      lr: 2e-5
+      lr: 3e-4
       weight_decay: 0.0
       betas: [0.9, 0.999]
       eps: 1e-08
   scheduler:
-    name: LinearLR
+    name: CosineAnnealingLR
     kwargs:
-      start_factor: 0.9
-      total_iters: 50
+      T_max: 1000
+      eta_min: 3e-5
   num_epochs: 1000
   log_with: tensorboard
   project_dir: output/
-  negatives_in_device: false
+  negatives_in_device: true
   predict_from_last: 10000
+  eval_step: 1000
 
 dataset:
   dataset_name: ReGPTCorpusPretrainDataset
@@ -44,15 +45,14 @@ generation_kwargs:
   do_sample: false
   top_k: 1
   top_p: 1.0
-  num_return_sequences: 1
 
 ReGPT_kwargs:
   faiss:
     index_type: Flat
     dimension: 4096
     nprobe: 10000
-    phrases_path: ../phrases_WikiText-103/phrases_WikiText-103.npy
-    matrix_path: ../phrases_WikiText-103/phrases_embeddings_WikiText103_normalized.npy
-  negative_path: ../phrases_WikiText-103/phrases_embeddings_WikiText103_negatives.tsv
+    phrases_path: ../phrases_WikiText-103/phrases.npy
+    matrix_path: ../phrases_WikiText-103/phrases_embeddings.npy
+  negative_path: ../phrases_WikiText-103/negatives.tsv
   negative_depth_in_pool: 101
-  FNTP_threshold: 10
+  FNTP_threshold: 0.9
