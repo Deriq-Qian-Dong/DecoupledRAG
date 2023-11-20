@@ -43,7 +43,7 @@ generation_kwargs:
   min_length: 0
   max_length: 5
   do_sample: true
-  top_k: 50
+  top_k: 5
   top_p: 0.95
 
 ReGPT_kwargs:
@@ -51,8 +51,8 @@ ReGPT_kwargs:
     index_type: Flat
     dimension: 768
     nprobe: 10000
-    phrases_path: ../phrases_WikiText-103_gpt2/phrases.npy
-    matrix_path: ../phrases_WikiText-103_gpt2/phrases_embeddings.npy
-  negative_path: ../phrases_WikiText-103_gpt2/negatives.tsv
+    phrases_path: ../phrases_WikiText-103/phrases.npy
+    matrix_path: ../phrases_WikiText-103/phrases_embeddings.npy
+  negative_path: ../phrases_WikiText-103/negatives.tsv
   negative_depth_in_pool: 101
   FNTP_threshold: 0.9
