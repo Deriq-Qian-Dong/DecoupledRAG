@@ -51,7 +51,7 @@ class CorpusPretrainDataset(DialogSFTDataset):
     
     def __getitem__(self, idx):
         sample = self.datasets[idx]
-        text = sample['text']
+        text = sample['text'].replace("<|endoftext|>", "")
         return text
 
 
