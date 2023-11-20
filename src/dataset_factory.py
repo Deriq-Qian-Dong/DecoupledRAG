@@ -50,7 +50,7 @@ class CorpusPretrainDataset(DialogSFTDataset):
         sample = self.datasets[idx]
         text = sample['text'].replace("<|endoftext|>", "")
         # filtering the non-English characters except the punctuation and digits
-        text = re.sub(r"[^a-zA-Z0-9,.?!]", " ", text)
+        text = re.sub(r"[^a-zA-Z0-9',.?!]", " ", text)
         text = re.sub(r"\s+", " ", text)  # remove extra spaces
         text = text.strip()  # remove leading and trailing spaces
         return text
