@@ -8,11 +8,11 @@ from datasets import load_dataset, load_from_disk
 class DialogSFTDataset(Dataset):
     def __init__(self, tokenizer, args):
         self.args = args
-        self.split = args['train_or_test']
         self.tokenizer = tokenizer
         self.setup_datasets()
 
     def setup_datasets(self):
+        self.split = self.args['train_or_test']
         self.datasets = load_dataset(self.args['data_name_or_path'], split=self.split)
         self.num_samples = len(self.datasets)
         
