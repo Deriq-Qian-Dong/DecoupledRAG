@@ -201,7 +201,8 @@ class LanguageModelTrainer:
             [params],
             **train_config["optimizer"]["kwargs"],
         )
-        train_config["scheduler"]["kwargs"]['eta_min'] = float(train_config["scheduler"]["kwargs"]['eta_min'])
+        if train_config["scheduler"]["name"] == "CosineAnnealingLR":
+            train_config["scheduler"]["kwargs"]['eta_min'] = train_config['optimizer']['kwargs']['lr'] * 0.1
         scheduler = scheduler_class[train_config["scheduler"]["name"]](optimizer, **train_config["scheduler"]["kwargs"])
 
         self.setup_dataloader(dataset_config, tokenizer)

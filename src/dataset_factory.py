@@ -1,3 +1,4 @@
+import re
 import torch
 import numpy as np
 from torch.utils.data import DataLoader, Dataset
@@ -38,11 +39,7 @@ class CorpusPretrainDataset(DialogSFTDataset):
         
     def setup_datasets(self):
         data_name_or_path = self.args['data_name_or_path']
-        # self.datasets = load_dataset('text', data_files={'train': f'{data_name_or_path}/corpus.tsv', 'test':f'{data_name_or_path}/test.txt'})
-        try:
-            self.datasets = load_from_disk(data_name_or_path)[self.split]
-        except:
-            self.datasets = load_from_disk(data_name_or_path)  # 为了兼容C4数据集
+        self.datasets = load_from_disk(data_name_or_path)
         # self.datasets = self.datasets.filter(self.filter_empty)
         self.num_samples = len(self.datasets)
 
@@ -52,6 +49,10 @@ class CorpusPretrainDataset(DialogSFTDataset):
     def __getitem__(self, idx):
         sample = self.datasets[idx]
         text = sample['text'].replace("<|endoftext|>", "")
+        # filtering the non-English characters except the punctuation and digits
+        text = re.sub(r"[^a-zA-Z0-9,.?!]", " ", text)
+        text = re.sub(r"\s+", " ", text)  # remove extra spaces
+        text = text.strip()  # remove leading and trailing spaces
         return text
 
 
