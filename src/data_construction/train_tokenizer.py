@@ -1,11 +1,15 @@
+import sys
 from transformers import AutoTokenizer
-corpus_name = "WikiText-103"
-model_name_or_path = 'meta-llama/Llama-2-7b-hf'
-vocab_size = 1000000
+# corpus_name = "WikiText-103"
+corpus_name = sys.argv[1]
+# model_name_or_path = 'meta-llama/Llama-2-7b-hf'
+model_name_or_path = sys.argv[2]
+# vocab_size = 1000000
+vocab_size = int(sys.argv[3])
 print(corpus_name,model_name_or_path,vocab_size)
 old_tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
 from datasets import load_dataset
-dataset = load_dataset('csv', data_files={'train': f'../{corpus_name}/base_data_128.txt'}, delimiter='\t',column_names=['text', 'id'])
+dataset = load_dataset('csv', data_files={'train': f'../data_of_ReGPT/{corpus_name}/base_data_128.txt'}, delimiter='\t',column_names=['text', 'id'])
 def data_loader(dataset, batch_size=1000):
     batch = []
     for example in dataset['train']:
@@ -19,7 +23,8 @@ def data_loader(dataset, batch_size=1000):
 
 training_corpus = data_loader(dataset)
 tokenizer = old_tokenizer.train_new_from_iterator(training_corpus, vocab_size, show_progress=True)
-tokenizer.save_pretrained(f"../{model_name_or_path}-phrase-tokenizer-trained-on-{corpus_name}/")
+model_name_or_path = 'llama2-7b'
+tokenizer.save_pretrained(f"../data_of_ReGPT/{model_name_or_path}-phrase-tokenizer-trained-on-{corpus_name}/")
 
 def get_phrase():
     phrase = []
@@ -30,6 +35,6 @@ def get_phrase():
 phrases = get_phrase()
 import numpy as np
 import os
-os.makedirs(f"../phrases_{corpus_name}_{model_name_or_path}", exist_ok=True)
-np.save(open(f"../phrases_{corpus_name}_{model_name_or_path}/phrases.npy",'wb'), phrases)
+os.makedirs(f"../data_of_ReGPT/phrases_{corpus_name}", exist_ok=True)
+np.save(open(f"../data_of_ReGPT/phrases_{corpus_name}/phrases.npy",'wb'), phrases)
 

@@ -1,13 +1,15 @@
+import sys
 import torch
 import numpy as np
 from tqdm import tqdm
 
-corpus_name = "WikiText-103"
-model_name_or_path = "gpt2"
+corpus_name = sys.argv[1]
+vocab_size = int(sys.argv[2])
+negative_depth = int(sys.argv[3])
 
-phrase_embeddings = np.load(open(f"../phrases_{corpus_name}_{model_name_or_path}/phrases_embeddings_normalized.npy",'rb'))
+phrase_embeddings = np.load(open(f"../data_of_ReGPT/phrases_{corpus_name}/phrases_embeddings_normalized.npy",'rb'))
 corpus = torch.from_numpy(phrase_embeddings).half()
-corpus=corpus.cuda()
+corpus = corpus.cuda()
 
 def topk_query_passage(query_vector, passage_vector, k):
     """
@@ -70,4 +72,4 @@ def search(index, emb_file, qid_list, outfile, top_k):
                     out.write('%s\t%s\t%s\t%s\n' % (qid, pid, j+1, score))
                 q_idx += 1
 
-search(corpus, f"../phrases_{corpus_name}_{model_name_or_path}/phrases_embeddings_normalized.npy", list(range(1000000)), f"../phrases_{corpus_name}_{model_name_or_path}/negatives.tsv", 101)
+search(corpus, f"../data_of_ReGPT/phrases_{corpus_name}/phrases_embeddings_normalized.npy", list(range(vocab_size)), f"../phrases_{corpus_name}/negatives.tsv", negative_depth)
