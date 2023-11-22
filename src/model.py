@@ -1,6 +1,7 @@
 import os
 import sys
 import torch
+import random
 import datetime
 import numpy as np
 from utils import *
@@ -18,6 +19,9 @@ from typing import List, Optional, Tuple, Union, Dict
 from deepspeed.ops.adam import DeepSpeedCPUAdam, FusedAdam
 from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModel
+
+
+torch.manual_seed(random.randint(0, 1000000))
 
 optimizer_class = {"AdamW": FusedAdam, "Lamb": optim.Lamb, "DeepSpeedCPUAdam": DeepSpeedCPUAdam}
 scheduler_class = {"CosineAnnealingLR": CosineAnnealingLR, "LinearLR": LinearLR}
@@ -175,7 +179,7 @@ class LanguageModelTrainer:
 
     def setup_dataloader(self, dataset_config, tokenizer):
         train_dataset = dataset_class[dataset_config['dataset_name']](tokenizer, dataset_config['train'])
-        self.train_dataloader = DataLoader(train_dataset, batch_size=dataset_config['train']['batch_size'], shuffle=False, collate_fn=train_dataset._collate_fn)
+        self.train_dataloader = DataLoader(train_dataset, batch_size=dataset_config['train']['batch_size'], shuffle=True, collate_fn=train_dataset._collate_fn)
         test_dataset = dataset_class[dataset_config['dataset_name']](tokenizer, dataset_config['test'])
         self.test_dataloader = DataLoader(test_dataset, batch_size=dataset_config['test']['batch_size'], shuffle=False, collate_fn=test_dataset._collate_fn)
 
