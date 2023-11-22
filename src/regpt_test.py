@@ -22,6 +22,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModel
 os.environ['http_proxy'] = 'http://172.19.57.45:3128'
 os.environ['https_proxy'] = 'http://172.19.57.45:3128'
 sys.path.append('/root/paddlejob/workspace/env_run/ReGPT')
+# %cd /root/paddlejob/workspace/env_run/ReGPT
 
 config = get_config('config/regpt_config.yaml')
 ReGPT_kwargs = config['ReGPT_kwargs']
@@ -53,10 +54,15 @@ def move_to_cuda(kwargs):
         kwargs[key] = kwargs[key].cuda()
 model.train_config['do_sample'] = True
 def generate(text='Tsinghua University is a '):
+    text+=' '
     kwargs = tokenizer([text],return_tensors='pt')
     move_to_cuda(kwargs)
     output_ids = model.generate(**kwargs)
-    return tokenizer.convert_tokens_to_string(tokenizer.convert_ids_to_tokens(output_ids.cpu().numpy().squeeze())),output_ids
+    print(tokenizer.convert_tokens_to_string(tokenizer.convert_ids_to_tokens(output_ids.cpu().numpy().squeeze())))
+    print(tokenizer.convert_ids_to_tokens(output_ids.cpu().numpy().squeeze()))
 
+model.train_config['do_sample'] = True
+model.train_config['top_k'] = 5
+model.train_config['top_p'] = 1000
 model.train_config['max_length'] = 100
-print(generate('Beijing is located in '))
+generate('Beijing is located in ')
