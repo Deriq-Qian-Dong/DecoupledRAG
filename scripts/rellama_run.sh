@@ -4,6 +4,7 @@ then
     echo "Use default config file: config/rellama_config.yaml"
     config_file=config/rellama_config.yaml
 fi
+echo "The config file is ${config_file}"
 output_dir=output
 log_dir=${output_dir}/log
 mkdir -p ${output_dir}
