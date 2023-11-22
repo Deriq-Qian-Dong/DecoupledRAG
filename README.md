@@ -66,14 +66,14 @@ sh scripts/rellama_run.sh config/rellama_config_stage1.yaml
 ```
 
 <!-- add picture of loss -->
-<img src="pics/stage1.png" width="500" height="300" alt="stage1"/>
+<img src="./pics/stage1.png" width="500" height="300" alt="stage1"/>
 
 In the second stage, we train the ReGPT model with hard negatives. 
 ```shell
 sh scripts/rellama_run.sh config/rellama_config_stage2.yaml
 ```
 <!-- add picture of loss -->
-<img src="pics/stage2.png" width="500" height="300" alt="stage2"/>
+<img src="./pics/stage2.png" width="500" height="300" alt="stage2"/>
 
 
 ### Evaluation
