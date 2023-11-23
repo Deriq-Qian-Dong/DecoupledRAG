@@ -20,22 +20,22 @@ training:
   num_epochs: 1000
   log_with: tensorboard
   project_dir: output/
-  negatives_in_device: false
+  negatives_in_device: true
   predict_from_last: 10000
   eval_step: 250
 
 dataset:
   dataset_name: ReGPTCorpusPretrainDataset
   train:
-    batch_size: 512
+    batch_size: 256
     data_name_or_path: ../data_of_ReGPT/En-Wiki/sorted_datasets_train/
     max_seq_len: 128
-    negative_depth: 10
+    negative_depth: 3
   test:
     batch_size: 64
     data_name_or_path: ../data_of_ReGPT/WikiText-103/sorted_datasets_test/
     max_seq_len: 128
-    negative_depth: 10
+    negative_depth: 3
 
 generation_kwargs:
   min_length: 0
