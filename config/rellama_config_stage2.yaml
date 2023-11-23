@@ -8,7 +8,7 @@ training:
   optimizer: 
     name: Lamb
     kwargs:
-      lr: 5e-3
+      lr: 1e-4
       weight_decay: 0.0
       betas: [0.9, 0.999]
       eps: 1e-08
@@ -22,12 +22,12 @@ training:
   project_dir: output/
   negatives_in_device: true
   predict_from_last: 10000
-  eval_step: 250
+  eval_step: 500
 
 dataset:
   dataset_name: ReGPTCorpusPretrainDataset
   train:
-    batch_size: 256
+    batch_size: 128
     data_name_or_path: ../data_of_ReGPT/En-Wiki/sorted_datasets_train/
     max_seq_len: 128
     negative_depth: 3
