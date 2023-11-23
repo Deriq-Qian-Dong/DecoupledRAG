@@ -22,9 +22,8 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModel
 os.environ['http_proxy'] = 'http://172.19.57.45:3128'
 os.environ['https_proxy'] = 'http://172.19.57.45:3128'
 sys.path.append('/root/paddlejob/workspace/env_run/ReGPT')
-# %cd /root/paddlejob/workspace/env_run/ReGPT
-
-config = get_config('config/regpt_config.yaml')
+%cd /root/paddlejob/workspace/env_run/ReGPT
+config = get_config('config/rellama_config.yaml')
 ReGPT_kwargs = config['ReGPT_kwargs']
 config['training'].update(ReGPT_kwargs)
 config['dataset']['train'].update(ReGPT_kwargs)
@@ -43,26 +42,68 @@ train_config['eos_token_id'] = tokenizer.eos_token_id
 
 dataset_class = {"DialogSFTDataset": DialogSFTDataset, "CorpusPretrainDataset": CorpusPretrainDataset, "ReGPTDialogSFTDataset": ReGPTDialogSFTDataset, "ReGPTCorpusPretrainDataset": ReGPTCorpusPretrainDataset}
 
-config['training']['model_name_or_path'] = 'output/SFT-3'
+config['training']['model_name_or_path'] = 'output/SFT-step-4000'
 print_args(config)
 model = ReGPTForCausalLM(train_config)
 model.cuda()
 model = model.half()
 
-def move_to_cuda(kwargs):
+
+def move_to_cuda(kwargs, device='cuda:0'):
     for key in kwargs:
-        kwargs[key] = kwargs[key].cuda()
-model.train_config['do_sample'] = True
+        kwargs[key] = kwargs[key].to(device)
 def generate(text='Tsinghua University is a '):
     text+=' '
     kwargs = tokenizer([text],return_tensors='pt')
     move_to_cuda(kwargs)
     output_ids = model.generate(**kwargs)
-    print(tokenizer.convert_tokens_to_string(tokenizer.convert_ids_to_tokens(output_ids.cpu().numpy().squeeze())))
-    print(tokenizer.convert_ids_to_tokens(output_ids.cpu().numpy().squeeze()))
+#     print(tokenizer.convert_ids_to_tokens(output_ids.cpu().numpy().squeeze()))
+    return tokenizer.convert_tokens_to_string(tokenizer.convert_ids_to_tokens(output_ids.cpu().numpy().squeeze()))
 
+from time import time
+start = time()
 model.train_config['do_sample'] = True
 model.train_config['top_k'] = 5
-model.train_config['top_p'] = 1000
+model.train_config['top_p'] = 0.8
 model.train_config['max_length'] = 100
-generate('Beijing is located in ')
+print(generate('Beethoven'))
+print(time()-start)
+
+llama = AutoModelForCausalLM.from_pretrained("../llama2-7b/")
+llama_tokenizer = AutoTokenizer.from_pretrained("../llama2-7b/")
+llama=llama.to("cuda:1").half()
+
+def generate_llama(text, model, tokenizer, max_length):
+    start = time()
+    model.eval()
+    text+=' '
+    dtype = model.parameters().__next__().dtype
+    kwargs = tokenizer([text],return_tensors='pt')
+    move_to_cuda(kwargs, 'cuda:1')
+    input_ids = kwargs.pop('input_ids')
+    attention_mask = kwargs.pop('attention_mask')
+    kwargs['output_hidden_states'] = True
+    with torch.no_grad():
+        for step in range(max_length):
+            # 使用模型生成下一个标记
+            output = model.generate(input_ids, max_new_tokens=1, top_k=50, top_p=0.95)
+
+            # 获取生成的标记
+            next_token_id = output[:1, -1:]
+
+            # 将生成的标记添加到输入中，用于下一步的生成
+            input_ids = torch.cat([input_ids, next_token_id], dim=-1)
+
+            # 解码生成的文本
+            generated_text = tokenizer.decode(input_ids[0])
+        print(step)
+#             print(f"Step {step + 1}: {generated_text}")
+#     print('用时：',time()-start)
+    return tokenizer.convert_tokens_to_string(tokenizer.convert_ids_to_tokens(input_ids.cpu().numpy().squeeze()))
+
+start = time()
+generated_text = generate_llama("Western", llama, llama_tokenizer, 100)
+print(generated_text)
+print('单词个数:', len(generated_text.split()))
+print('用时：',time()-start)
+
