@@ -1,14 +1,14 @@
 trainer: ReGPTLanguageModelTrainer
 training:
   project_name: llama2-7b-sft
-  model_name_or_path: ../SFT-step-7000/
+  model_name_or_path: output/SFT-step-2000/
   tokenizer_name_or_path: ../data_of_ReGPT/llama2-7b-phrase-tokenizer-trained-on-WikiText103/
   num_layers_unfrozen: -1
   gradient_checkpointing: true
   optimizer: 
     name: Lamb
     kwargs:
-      lr: 1e-4
+      lr: 1e-3
       weight_decay: 0.0
       betas: [0.9, 0.999]
       eps: 1e-08
@@ -22,20 +22,20 @@ training:
   project_dir: output/
   negatives_in_device: true
   predict_from_last: 10000
-  eval_step: 500
+  eval_step: 250
 
 dataset:
   dataset_name: ReGPTCorpusPretrainDataset
   train:
-    batch_size: 128
-    data_name_or_path: ../data_of_ReGPT/En-Wiki/sorted_datasets_train/
+    batch_size: 325
+    data_name_or_path: ../data_of_ReGPT/c4_en/
     max_seq_len: 128
-    negative_depth: 3
+    negative_depth: 1
   test:
     batch_size: 64
     data_name_or_path: ../data_of_ReGPT/WikiText-103/sorted_datasets_test/
     max_seq_len: 128
-    negative_depth: 3
+    negative_depth: 1
 
 generation_kwargs:
   min_length: 0
