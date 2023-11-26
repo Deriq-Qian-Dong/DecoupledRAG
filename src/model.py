@@ -189,7 +189,9 @@ class LanguageModelTrainer:
         dataset_config = config['dataset']
         train_config['negative_depth'] = dataset_config['train']['negative_depth']
         dataset_config['train']['predict_from_last'] = train_config['predict_from_last']
+        dataset_config['train']['train_or_test'] = 'train'
         dataset_config['test']['predict_from_last'] = train_config['predict_from_last']
+        dataset_config['test']['train_or_test'] = 'test'
         tokenizer = AutoTokenizer.from_pretrained(train_config['tokenizer_name_or_path'])
         tokenizer.pad_token = tokenizer.eos_token
         train_config['eos_token_id'] = tokenizer.eos_token_id

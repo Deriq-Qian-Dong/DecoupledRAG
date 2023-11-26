@@ -55,6 +55,15 @@ class CorpusPretrainDataset(DialogSFTDataset):
         text = text.strip()  # remove leading and trailing spaces
         return text
 
+class LongDocumentSummarizationSFTDataset(DialogSFTDataset):
+    def __init__(self, tokenizer, args):
+        super().__init__(tokenizer, args)        
+    
+    def __getitem__(self, idx):
+        sample = self.datasets[idx]
+        text = "Please write an abstract for this article:\n"+sample['article']+"\nAbstract:\n"+sample['abstract']
+        return text
+
 
 class ReGPTDialogSFTDataset(DialogSFTDataset):
     def __init__(self, tokenizer, args):
@@ -87,3 +96,9 @@ class ReGPTCorpusPretrainDataset(ReGPTDialogSFTDataset, CorpusPretrainDataset):
     def setup_datasets(self):
         CorpusPretrainDataset.setup_datasets(self)
 
+class ReGPTLongDocumentSummarizationSFTDataset(ReGPTDialogSFTDataset, LongDocumentSummarizationSFTDataset):
+    def __init__(self, tokenizer, args):
+        super().__init__(tokenizer, args)
+    
+    def __getitem__(self, idx):
+        return LongDocumentSummarizationSFTDataset.__getitem__(self, idx)
