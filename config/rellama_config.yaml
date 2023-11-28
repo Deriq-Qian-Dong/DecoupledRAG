@@ -25,7 +25,7 @@ training:
   eval_step: 1000
 
 dataset:
-  dataset_name: ReGPTLongDocumentSummarizationSFTDataset
+  dataset_name: ReGPTDocumentSummarizationSFTDataset
   train:
     batch_size: 4
     data_name_or_path: ccdv/arxiv-summarization

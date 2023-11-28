@@ -63,7 +63,20 @@ class LongDocumentSummarizationSFTDataset(DialogSFTDataset):
         sample = self.datasets[idx]
         text = "Please write an abstract for this article:\n"+sample['article']+"\nAbstract:\n"+sample['abstract']
         return text
-
+    
+class DocumentSummarizationSFTDataset(DialogSFTDataset):
+    def __init__(self, tokenizer, args):
+        super().__init__(tokenizer, args)        
+    
+    def __getitem__(self, idx):
+        sample = self.datasets[idx]
+        text = "Please write an abstract for this article:\n"+sample['article']+"\nAbstract:\n"+sample['highlights']
+        return text
+    
+    def setup_datasets(self):
+        self.split = self.args['train_or_test']
+        self.datasets = load_dataset(self.args['data_name_or_path'], '3.0.0',  split=self.split)
+        self.num_samples = len(self.datasets)
 
 class ReGPTDialogSFTDataset(DialogSFTDataset):
     def __init__(self, tokenizer, args):
@@ -102,3 +115,13 @@ class ReGPTLongDocumentSummarizationSFTDataset(ReGPTDialogSFTDataset, LongDocume
     
     def __getitem__(self, idx):
         return LongDocumentSummarizationSFTDataset.__getitem__(self, idx)
+    
+class ReGPTDocumentSummarizationSFTDataset(ReGPTDialogSFTDataset, DocumentSummarizationSFTDataset):
+    def __init__(self, tokenizer, args):
+        super().__init__(tokenizer, args)
+    
+    def __getitem__(self, idx):
+        return DocumentSummarizationSFTDataset.__getitem__(self, idx)
+    
+    def setup_datasets(self):
+        DocumentSummarizationSFTDataset.setup_datasets(self)
