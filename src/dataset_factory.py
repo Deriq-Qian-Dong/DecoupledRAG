@@ -61,7 +61,7 @@ class LongDocumentSummarizationSFTDataset(DialogSFTDataset):
     
     def __getitem__(self, idx):
         sample = self.datasets[idx]
-        text = "Please write an abstract for this article:\n"+sample['article']+"\nAbstract:\n"+sample['highlights']
+        text = "Please write an abstract for this article:\n"+sample['article']+"\nAbstract:\n"+sample['abstract']
         return text
 
 
