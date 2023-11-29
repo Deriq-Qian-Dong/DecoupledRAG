@@ -158,13 +158,11 @@ class LanguageModelTrainer:
 
     def run(self):
         # self.test()
-        self.epoch = 0
-        self.set_epoch_to_dataset()
-        for epoch in range(1, 1+self.train_config['num_epochs']):
+        for epoch in range(self.train_config['num_epochs']):
             self.epoch = epoch
+            self.set_epoch_to_dataset()
             self.train()
             self.test()
-            self.set_epoch_to_dataset()
         
     def set_epoch_to_dataset(self):
         self.train_dataset.set_epoch(self.epoch)
