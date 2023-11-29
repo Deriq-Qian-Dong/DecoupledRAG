@@ -156,7 +156,7 @@ class LanguageModelTrainer:
         self.setup()
 
     def run(self):
-        # self.test()
+        self.test()
         for epoch in range(1, 1+self.train_config['num_epochs']):
             self.epoch = epoch
             self.train()
@@ -178,9 +178,9 @@ class LanguageModelTrainer:
         self.model = model
 
     def setup_dataloader(self, dataset_config, tokenizer):
-        train_dataset = dataset_class[dataset_config['dataset_name']](tokenizer, dataset_config['train'])
+        train_dataset = dataset_class[dataset_config['train']['dataset_name']](tokenizer, dataset_config['train'])
         self.train_dataloader = DataLoader(train_dataset, batch_size=dataset_config['train']['batch_size'], shuffle=True, collate_fn=train_dataset._collate_fn)
-        test_dataset = dataset_class[dataset_config['dataset_name']](tokenizer, dataset_config['test'])
+        test_dataset = dataset_class[dataset_config['test']['dataset_name']](tokenizer, dataset_config['test'])
         self.test_dataloader = DataLoader(test_dataset, batch_size=dataset_config['test']['batch_size'], shuffle=False, collate_fn=test_dataset._collate_fn)
 
     def setup(self):

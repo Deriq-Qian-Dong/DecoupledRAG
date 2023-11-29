@@ -1,7 +1,7 @@
 trainer: ReGPTLanguageModelTrainer
 training:
-  project_name: llama2-7b-doc_sum-sft
-  model_name_or_path: ../SFT-step-6345/
+  project_name: llama2-7b-sft
+  model_name_or_path: ../SFT-step-11220/
   tokenizer_name_or_path: ../data_of_ReGPT/llama2-7b-phrase-tokenizer-trained-on-WikiText103/
   num_layers_unfrozen: -1
   gradient_checkpointing: true
@@ -25,16 +25,17 @@ training:
   eval_step: 1000
 
 dataset:
-  dataset_name: ReGPTDocumentSummarizationSFTDataset
   train:
-    batch_size: 16
-    data_name_or_path: ccdv/cnn_dailymail
-    max_seq_len: 1024
+    dataset_name: ReGPTCorpusPretrainDataset
+    batch_size: 32
+    data_name_or_path: ../data_of_ReGPT/En-Wiki/sorted_datasets_train/
+    max_seq_len: 128
     negative_depth: 1
   test:
-    batch_size: 16
-    data_name_or_path: ccdv/cnn_dailymail
-    max_seq_len: 1024
+    dataset_name: ReGPTCorpusPretrainDataset
+    batch_size: 32
+    data_name_or_path: ../data_of_ReGPT/En-Wiki/sorted_datasets_test/
+    max_seq_len: 128
     negative_depth: 1
 
 generation_kwargs:
