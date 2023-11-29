@@ -292,7 +292,7 @@ class LanguageModelTrainer:
         total_loss /= len(test_dataloader)
         perplexity = np.exp(total_loss)
         accelerator.print(f"Step {iter_count} | Perplexity: {perplexity:.4f} | Loss: {total_loss:.4f}")
-        directory = f"output/SFT-step-best/"
+        directory = f"output/SFT-best/"
         accelerator.wait_for_everyone()
         stats = {"test/perplexity": perplexity, "test/loss": total_loss}
         accelerator.log(stats, step=self.iter_count)
