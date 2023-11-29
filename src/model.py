@@ -158,7 +158,7 @@ class LanguageModelTrainer:
 
     def run(self):
         # self.test()
-        for epoch in range(self.train_config['num_epochs']):
+        for epoch in range(1, 1+self.train_config['num_epochs']):
             self.epoch = epoch
             self.set_epoch_to_dataset()
             self.train()
@@ -292,7 +292,7 @@ class LanguageModelTrainer:
         total_loss /= len(test_dataloader)
         perplexity = np.exp(total_loss)
         accelerator.print(f"Step {iter_count} | Perplexity: {perplexity:.4f} | Loss: {total_loss:.4f}")
-        directory = f"output/SFT-step-{iter_count}/"
+        directory = f"output/SFT-step-best/"
         accelerator.wait_for_everyone()
         stats = {"test/perplexity": perplexity, "test/loss": total_loss}
         accelerator.log(stats, step=self.iter_count)
