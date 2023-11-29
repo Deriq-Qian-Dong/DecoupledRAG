@@ -64,6 +64,7 @@ class CorpusPretrainDataset(DialogSFTDataset):
 class CorpusPretrainFromAfsDataset(CorpusPretrainDataset):
     def __init__(self, tokenizer, args):
         super().__init__(tokenizer, args)        
+        self.epoch = 0
         
     def setup_datasets(self):
         data_name_or_path = self.args['data_name_or_path']
