@@ -162,7 +162,12 @@ class LanguageModelTrainer:
             self.epoch = epoch
             self.train()
             self.test()
-    
+            self.set_epoch_to_dataset()
+        
+    def set_epoch_to_dataset(self):
+        self.train_dataset.set_epoch(self.epoch)
+        print_rank_0(f'[!] set epoch to {self.train_dataset[0]}')
+
     def setup_model(self, train_config):
         model = AutoModelForCausalLM.from_pretrained(train_config['model_name_or_path'], use_cache=not train_config['gradient_checkpointing'])
         freeze_bottom_causal_layers(model.base_model, train_config['num_layers_unfrozen'])
@@ -179,10 +184,10 @@ class LanguageModelTrainer:
         self.model = model
 
     def setup_dataloader(self, dataset_config, tokenizer):
-        train_dataset = dataset_class[dataset_config['train']['dataset_name']](tokenizer, dataset_config['train'])
-        self.train_dataloader = DataLoader(train_dataset, batch_size=dataset_config['train']['batch_size'], shuffle=True, collate_fn=train_dataset._collate_fn)
-        test_dataset = dataset_class[dataset_config['test']['dataset_name']](tokenizer, dataset_config['test'])
-        self.test_dataloader = DataLoader(test_dataset, batch_size=dataset_config['test']['batch_size'], shuffle=False, collate_fn=test_dataset._collate_fn)
+        self.train_dataset = dataset_class[dataset_config['train']['dataset_name']](tokenizer, dataset_config['train'])
+        self.train_dataloader = DataLoader(self.train_dataset, batch_size=dataset_config['train']['batch_size'], shuffle=True, collate_fn=self.train_dataset._collate_fn)
+        self.test_dataset = dataset_class[dataset_config['test']['dataset_name']](tokenizer, dataset_config['test'])
+        self.test_dataloader = DataLoader(self.test_dataset, batch_size=dataset_config['test']['batch_size'], shuffle=False, collate_fn=self.test_dataset._collate_fn)
 
     def setup(self):
         config = self.config

@@ -1,6 +1,7 @@
 import re
 import torch
 import numpy as np
+from utils import print_rank_0
 from torch.utils.data import DataLoader, Dataset
 from transformers import DataCollatorWithPadding
 from datasets import load_dataset, load_from_disk
@@ -10,12 +11,17 @@ class DialogSFTDataset(Dataset):
         self.args = args
         self.tokenizer = tokenizer
         self.setup_datasets()
+        self.epoch = 0
 
     def setup_datasets(self):
         self.split = self.args['train_or_test']
         self.datasets = load_dataset(self.args['data_name_or_path'], split=self.split)
         self.num_samples = len(self.datasets)
-        
+    
+    def set_epoch(self, epoch):
+        self.epoch = epoch
+        print_rank_0(f'[!] set epoch to {epoch}')
+
     def __getitem__(self, idx):
         sample = self.datasets[idx]
         text = sample['prompt'] + sample['chosen']
@@ -54,6 +60,22 @@ class CorpusPretrainDataset(DialogSFTDataset):
         text = re.sub(r"\s+", " ", text)  # remove extra spaces
         text = text.strip()  # remove leading and trailing spaces
         return text
+
+class CorpusPretrainFromAfsDataset(CorpusPretrainDataset):
+    def __init__(self, tokenizer, args):
+        super().__init__(tokenizer, args)        
+        
+    def setup_datasets(self):
+        data_name_or_path = self.args['data_name_or_path']
+        data_name_or_path = data_name_or_path.format(self.epoch)
+        print_rank_0(f'[!] load dataset from {data_name_or_path}')
+        self.datasets = load_dataset('arrow', data_files=data_name_or_path, split='train')
+        # self.datasets = self.datasets.filter(self.filter_empty)
+        self.num_samples = len(self.datasets)
+    
+    def set_epoch(self, epoch):
+        super().set_epoch(epoch)
+        self.setup_datasets()
 
 class LongDocumentSummarizationSFTDataset(DialogSFTDataset):
     def __init__(self, tokenizer, args):
@@ -108,6 +130,16 @@ class ReGPTCorpusPretrainDataset(ReGPTDialogSFTDataset, CorpusPretrainDataset):
     
     def setup_datasets(self):
         CorpusPretrainDataset.setup_datasets(self)
+
+class ReGPTCorpusPretrainFromAfsDataset(ReGPTDialogSFTDataset, CorpusPretrainFromAfsDataset):
+    def __init__(self, tokenizer, args):
+        super().__init__(tokenizer, args)
+    
+    def __getitem__(self, idx):
+        return CorpusPretrainFromAfsDataset.__getitem__(self, idx)
+    
+    def setup_datasets(self):
+        CorpusPretrainFromAfsDataset.setup_datasets(self)
 
 class ReGPTLongDocumentSummarizationSFTDataset(ReGPTDialogSFTDataset, LongDocumentSummarizationSFTDataset):
     def __init__(self, tokenizer, args):
