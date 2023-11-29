@@ -22,7 +22,7 @@ training:
   project_dir: output/
   negatives_in_device: true
   predict_from_last: 10000
-  eval_step: 1000
+  eval_step: 3000
 
 dataset:
   train:
