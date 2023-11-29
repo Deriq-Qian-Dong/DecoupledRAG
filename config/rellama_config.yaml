@@ -1,7 +1,7 @@
 trainer: ReGPTLanguageModelTrainer
 training:
   project_name: llama2-7b-sft
-  model_name_or_path: ../SFT-step-13000/
+  model_name_or_path: ../SFT-step-19000/
   tokenizer_name_or_path: ../data_of_ReGPT/llama2-7b-phrase-tokenizer-trained-on-WikiText103/
   num_layers_unfrozen: -1
   gradient_checkpointing: true
@@ -22,7 +22,7 @@ training:
   project_dir: output/
   negatives_in_device: true
   predict_from_last: 10000
-  eval_step: 3000
+  eval_step: 1000
 
 dataset:
   train:
@@ -34,7 +34,7 @@ dataset:
   test:
     dataset_name: ReGPTCorpusPretrainDataset
     batch_size: 8
-    data_name_or_path: ../data_of_ReGPT/En-Wiki/sorted_datasets_test/
+    data_name_or_path: ../data_of_ReGPT/c4_en_test/
     max_seq_len: 512
     negative_depth: 1
 
