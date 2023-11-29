@@ -10,8 +10,8 @@ class DialogSFTDataset(Dataset):
     def __init__(self, tokenizer, args):
         self.args = args
         self.tokenizer = tokenizer
-        self.setup_datasets()
         self.epoch = 0
+        self.setup_datasets()
 
     def setup_datasets(self):
         self.split = self.args['train_or_test']
@@ -64,7 +64,6 @@ class CorpusPretrainDataset(DialogSFTDataset):
 class CorpusPretrainFromAfsDataset(CorpusPretrainDataset):
     def __init__(self, tokenizer, args):
         super().__init__(tokenizer, args)        
-        self.epoch = 0
         
     def setup_datasets(self):
         data_name_or_path = self.args['data_name_or_path']
