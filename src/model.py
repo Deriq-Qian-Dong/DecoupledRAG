@@ -296,8 +296,12 @@ class LanguageModelTrainer:
         accelerator.wait_for_everyone()
         stats = {"test/perplexity": perplexity, "test/loss": total_loss}
         accelerator.log(stats, step=self.iter_count)
-        if accelerator.is_main_process and perplexity<self.best_perplexity:
-            self.best_perplexity = perplexity
+        if accelerator.is_main_process:
+            if perplexity<self.best_perplexity:
+                self.best_perplexity = perplexity
+                accelerator.unwrap_model(model).save_pretrained(directory)
+                tokenizer.save_pretrained(directory)
+            directory = f"output/SFT-new/"
             accelerator.unwrap_model(model).save_pretrained(directory)
             tokenizer.save_pretrained(directory)
         model.train()

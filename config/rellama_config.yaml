@@ -34,7 +34,7 @@ dataset:
   test:
     dataset_name: ReGPTCorpusPretrainDataset
     batch_size: 8
-    data_name_or_path: ../data_of_ReGPT/c4_en_test/
+    data_name_or_path: ../data_of_ReGPT/En-Wiki/sorted_datasets_test/
     max_seq_len: 512
     negative_depth: 1
 
