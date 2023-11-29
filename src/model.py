@@ -157,7 +157,7 @@ class LanguageModelTrainer:
         self.best_perplexity = 1e10
 
     def run(self):
-        self.test()
+        # self.test()
         self.epoch = 0
         self.set_epoch_to_dataset()
         for epoch in range(1, 1+self.train_config['num_epochs']):
@@ -313,6 +313,7 @@ class ReGPTLanguageModelTrainer(LanguageModelTrainer):
         self.config['dataset']['train'].update(ReGPT_kwargs)
         self.config['dataset']['test'].update(ReGPT_kwargs)
         self.setup()
+        self.best_perplexity = 1e10
 
     def setup_model(self, train_config):
         self.model = ReGPTForCausalLM(train_config)
