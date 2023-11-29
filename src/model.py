@@ -158,6 +158,8 @@ class LanguageModelTrainer:
 
     def run(self):
         self.test()
+        self.epoch = 0
+        self.set_epoch_to_dataset()
         for epoch in range(1, 1+self.train_config['num_epochs']):
             self.epoch = epoch
             self.train()
@@ -166,7 +168,7 @@ class LanguageModelTrainer:
         
     def set_epoch_to_dataset(self):
         self.train_dataset.set_epoch(self.epoch)
-        print_rank_0(f'[!] set epoch to {self.train_dataset[0]}')
+        print_rank_0(f'[!] the first element {self.train_dataset[0]}')
 
     def setup_model(self, train_config):
         model = AutoModelForCausalLM.from_pretrained(train_config['model_name_or_path'], use_cache=not train_config['gradient_checkpointing'])
