@@ -26,9 +26,9 @@ training:
 
 dataset:
   train:
-    dataset_name: ReGPTCorpusPretrainDataset
+    dataset_name: ReGPTCorpusPretrainFromAfsDataset
     batch_size: 8
-    data_name_or_path: ../data_of_ReGPT/c4_en/
+    data_name_or_path: ../data_of_ReGPT/c4_en/data-{:05d}-of-01658.arrow
     max_seq_len: 512
     negative_depth: 1
   test:
