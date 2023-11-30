@@ -1,3 +1,4 @@
+import os
 import re
 import torch
 import numpy as np
@@ -97,7 +98,10 @@ class DocumentSummarizationSFTDataset(DialogSFTDataset):
     
     def setup_datasets(self):
         self.split = self.args['train_or_test']
-        self.datasets = load_dataset(self.args['data_name_or_path'], '3.0.0',  split=self.split)
+        if os.path.exists(self.args['data_name_or_path']):
+            self.datasets = load_from_disk(self.args['data_name_or_path'])[self.split]
+        else:
+            self.datasets = load_dataset(self.args['data_name_or_path'], '3.0.0',  split=self.split)
         self.num_samples = len(self.datasets)
 
 class ReGPTDialogSFTDataset(DialogSFTDataset):

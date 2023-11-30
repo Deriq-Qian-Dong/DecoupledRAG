@@ -32,9 +32,9 @@ dataset:
     max_seq_len: 512
     negative_depth: 1
   test:
-    dataset_name: ReGPTCorpusPretrainDataset
+    dataset_name: ReGPTDocumentSummarizationSFTDataset
     batch_size: 8
-    data_name_or_path: ../data_of_ReGPT/En-Wiki/sorted_datasets_test/
+    data_name_or_path: ../data_of_ReGPT/cnn_daily/
     max_seq_len: 512
     negative_depth: 1
 
