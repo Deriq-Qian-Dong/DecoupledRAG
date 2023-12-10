@@ -23,6 +23,7 @@ training:
   negatives_in_device: true
   predict_from_last: 10000
   eval_step: 1000
+  start_from: 128
 
 dataset:
   train:

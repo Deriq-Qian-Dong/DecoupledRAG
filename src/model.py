@@ -158,7 +158,7 @@ class LanguageModelTrainer:
 
     def run(self):
         self.test()
-        for epoch in range(self.train_config['num_epochs']):
+        for epoch in range(self.train_config['start_from'], self.train_config['num_epochs']):
             self.epoch = epoch
             self.set_epoch_to_dataset()
             self.train()
