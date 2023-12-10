@@ -4,8 +4,8 @@ from utils import *
 from model import LanguageModelTrainer, ReGPTLanguageModelTrainer
 
 
-os.environ['http_proxy'] = 'http://172.19.57.45:3128'
-os.environ['https_proxy'] = 'http://172.19.57.45:3128'
+os.environ['http_proxy'] = 'http://gzbh-aip-paddlecloud140.gzbh:8128'
+os.environ['https_proxy'] = 'http://gzbh-aip-paddlecloud140.gzbh:8128'
 
 TrainerClass = {'LanguageModelTrainer': LanguageModelTrainer, 'ReGPTLanguageModelTrainer': ReGPTLanguageModelTrainer}
 
