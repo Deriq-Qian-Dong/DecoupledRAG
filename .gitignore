@@ -3,6 +3,7 @@ output/*
 *.ipynb
 **/__pycache__/
 tensorboard.log
+src/*.ipynb
 
 # 忽略所有文件
 *
