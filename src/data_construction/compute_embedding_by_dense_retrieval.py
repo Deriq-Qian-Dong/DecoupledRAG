@@ -9,7 +9,7 @@ from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModel
 
 corpus_name = sys.argv[1]
-encoder_model_name_or_path = "../data/contriever-msmarco/"
+encoder_model_name_or_path = "../data/contriever/"
 # encoder_model_name_or_path = sys.argv[2]
 
 base_dir = f'../data_of_ReGPT/phrases_{corpus_name}_50k'
