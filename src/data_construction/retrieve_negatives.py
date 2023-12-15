@@ -73,4 +73,4 @@ def search(index, emb_file, qid_list, outfile, top_k):
                     out.write('%s\t%s\t%s\t%s\n' % (qid, pid, j+1, score))
                 q_idx += 1
 
-search(corpus, f"{base_dir}/phrases_embeddings_normalized.npy", list(range(vocab_size)), f"../phrases_{corpus_name}/negatives.tsv", negative_depth)
+search(corpus, f"{base_dir}/phrases_embeddings_normalized.npy", list(range(vocab_size)), f"{base_dir}/negatives.tsv", negative_depth)
