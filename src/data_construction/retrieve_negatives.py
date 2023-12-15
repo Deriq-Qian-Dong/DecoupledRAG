@@ -8,7 +8,7 @@ vocab_size = 513955
 negative_depth = 101
 
 base_dir = f'../data_of_ReGPT/phrases_{corpus_name}_50k'
-embedding_path = f"{base_dir}/phrases_embeddings.npy"
+embedding_path = f"{base_dir}/phrases_embeddings_normalized.npy"
 print('load phrase embeddings from', embedding_path)
 phrase_embeddings = np.load(open(embedding_path,'rb'))
 corpus = torch.from_numpy(phrase_embeddings).half()
@@ -75,4 +75,4 @@ def search(index, emb_file, qid_list, outfile, top_k):
                     out.write('%s\t%s\t%s\t%s\n' % (qid, pid, j+1, score))
                 q_idx += 1
 
-search(corpus, embedding_path, list(range(vocab_size)), f"{base_dir}/negatives_wo_norm.tsv", negative_depth)
+search(corpus, embedding_path, list(range(vocab_size)), f"{base_dir}/negatives.tsv", negative_depth)
