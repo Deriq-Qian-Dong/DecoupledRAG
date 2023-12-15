@@ -3,11 +3,12 @@ import torch
 import numpy as np
 from tqdm import tqdm
 
-corpus_name = sys.argv[1]
-vocab_size = int(sys.argv[2])
-negative_depth = int(sys.argv[3])
+corpus_name = 'WikiText-103'
+vocab_size = 513955
+negative_depth = 101
 
-phrase_embeddings = np.load(open(f"../data_of_ReGPT/phrases_{corpus_name}/phrases_embeddings_normalized.npy",'rb'))
+base_dir = f'../data_of_ReGPT/phrases_{corpus_name}_50k'
+phrase_embeddings = np.load(open(f"{base_dir}/phrases_embeddings.npy",'rb'))
 corpus = torch.from_numpy(phrase_embeddings).half()
 corpus = corpus.cuda()
 
@@ -72,4 +73,4 @@ def search(index, emb_file, qid_list, outfile, top_k):
                     out.write('%s\t%s\t%s\t%s\n' % (qid, pid, j+1, score))
                 q_idx += 1
 
-search(corpus, f"../data_of_ReGPT/phrases_{corpus_name}/phrases_embeddings_normalized.npy", list(range(vocab_size)), f"../phrases_{corpus_name}/negatives.tsv", negative_depth)
+search(corpus, f"{base_dir}/phrases_embeddings_normalized.npy", list(range(vocab_size)), f"../phrases_{corpus_name}/negatives.tsv", negative_depth)
