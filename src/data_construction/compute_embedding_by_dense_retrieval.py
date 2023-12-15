@@ -12,7 +12,7 @@ corpus_name = sys.argv[1]
 encoder_model_name_or_path = "../data/contriever"
 # encoder_model_name_or_path = sys.argv[2]
 
-base_dir = f'../data_of_ReGPT/phrases_{corpus_name}'
+base_dir = f'../data_of_ReGPT/phrases_{corpus_name}_50k'
 os.makedirs(base_dir, exist_ok=True)
 
 phrase_embeddings = []
