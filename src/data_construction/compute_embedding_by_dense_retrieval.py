@@ -22,7 +22,6 @@ phrases = np.load(open(f"{base_dir}/phrases.npy",'rb'))
 phrases = phrases.tolist()
 phrases = [p.replace("▁", " ") for p in phrases]
 print('load model from', encoder_model_name_or_path)
-print(encoder_model_name_or_path)
 model = AutoModel.from_pretrained(encoder_model_name_or_path)
 model.cuda()
 model.eval()
