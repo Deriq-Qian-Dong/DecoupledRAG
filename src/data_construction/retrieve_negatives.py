@@ -9,6 +9,7 @@ negative_depth = 101
 
 base_dir = f'../data_of_ReGPT/phrases_{corpus_name}_50k'
 embedding_path = f"{base_dir}/phrases_embeddings.npy"
+print('load phrase embeddings from', embedding_path)
 phrase_embeddings = np.load(open(embedding_path,'rb'))
 corpus = torch.from_numpy(phrase_embeddings).half()
 corpus = corpus.cuda()
