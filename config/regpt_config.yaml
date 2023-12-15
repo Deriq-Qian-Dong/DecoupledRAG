@@ -2,7 +2,7 @@ trainer: ReGPTLanguageModelTrainer
 training:
   project_name: ReGPT-sft
   model_name_or_path: output/SFT-new/
-  tokenizer_name_or_path: ../data_of_ReGPT/llama2-7b-phrase-tokenizer-trained-on-WikiText103/
+  tokenizer_name_or_path: ../data_of_ReGPT/llama2-7b-phrase-tokenizer-trained-on-WikiText103-50k/
   num_layers_unfrozen: -1
   gradient_checkpointing: true
   optimizer: 
@@ -23,7 +23,7 @@ training:
   negatives_in_device: true
   predict_from_last: 10000
   eval_step: 1000
-  start_from: 54
+  start_from: 769
 
 dataset:
   train:
@@ -51,8 +51,8 @@ ReGPT_kwargs:
     index_type: Flat
     dimension: 768
     nprobe: 10000
-    phrases_path: ../data_of_ReGPT/phrases_WikiText-103/phrases.npy
-    matrix_path: ../data_of_ReGPT/phrases_WikiText-103/phrases_embeddings.npy
-  negative_path: ../data_of_ReGPT/phrases_WikiText-103/negatives.tsv
+    phrases_path: ../data_of_ReGPT/phrases_WikiText-103_50k/phrases.npy
+    matrix_path: ../data_of_ReGPT/phrases_WikiText-103_50k/phrases_embeddings.npy
+  negative_path: ../data_of_ReGPT/phrases_WikiText-103_50k/negatives.tsv
   negative_depth_in_pool: 101
   FNTP_threshold: 0.9
