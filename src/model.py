@@ -136,7 +136,7 @@ class ReGPTForCausalLM(nn.Module):
                 q_reps = q_reps.unsqueeze(1)  # [batch_size, 1, hidden_size]
                 scores = self.compute_similarity(q_reps, p_reps)  # [batch_size, phrases_size]
                 scores = scores.squeeze(1)  # [batch_size, phrases_size]
-                scores = torch.softmax(scores, dim=-1)  # [batch_size, phrases_size]
+                # scores = torch.softmax(scores, dim=-1)  # [batch_size, phrases_size]
                 if self.train_config['do_sample']:
                     # top-k or top-p sampling
                     scores = scores.squeeze(0)  # [phrases_size]
