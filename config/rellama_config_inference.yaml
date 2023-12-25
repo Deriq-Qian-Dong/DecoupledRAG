@@ -52,7 +52,7 @@ ReGPT_kwargs:
     dimension: 768
     nprobe: 10000
     phrases_path: ../data_of_ReGPT/phrases_WikiText-103/phrases.npy
-    matrix_path: ../data_of_ReGPT/phrases_WikiText-103/phrases_embeddings_normalized.npy
+    matrix_path: ../data_of_ReGPT/phrases_WikiText-103/phrases_embeddings.npy
   negative_path: ../data_of_ReGPT/phrases_WikiText-103/negatives.tsv
   negative_depth_in_pool: 101
   FNTP_threshold: 0.9
