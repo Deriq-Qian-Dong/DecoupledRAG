@@ -8,7 +8,7 @@ training:
   optimizer: 
     name: Lamb
     kwargs:
-      lr: 1e-3
+      lr: 1e-4
       weight_decay: 0.0
       betas: [0.9, 0.999]
       eps: 1e-08
@@ -28,13 +28,13 @@ training:
 dataset:
   train:
     dataset_name: ReGPTCorpusPretrainFromAfsDataset
-    batch_size: 8
+    batch_size: 32
     data_name_or_path: ../data_of_ReGPT/c4_en/data-{:05d}-of-01658.arrow
     max_seq_len: 512
     negative_depth: 1
   test:
     dataset_name: ReGPTDocumentSummarizationSFTDataset
-    batch_size: 8
+    batch_size: 32
     data_name_or_path: ../data_of_ReGPT/cnn_daily/
     max_seq_len: 512
     negative_depth: 1
