@@ -1,7 +1,7 @@
 trainer: ReGPTLanguageModelTrainer
 training:
   project_name: llama2-7b-sft
-  model_name_or_path: ./SFT-new/
+  model_name_or_path: ../epoch-329/SFT-new/
   tokenizer_name_or_path: ../data_of_ReGPT/llama2-7b-phrase-tokenizer-trained-on-WikiText103/
   num_layers_unfrozen: -1
   gradient_checkpointing: true
@@ -23,7 +23,7 @@ training:
   negatives_in_device: true
   predict_from_last: 10000
   eval_step: 1000
-  start_from: 187
+  start_from: 330
 
 dataset:
   train:
