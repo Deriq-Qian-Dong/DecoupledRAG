@@ -51,8 +51,8 @@ ReGPT_kwargs:
     index_type: Flat
     dimension: 768
     nprobe: 10000
-    phrases_path: ../data_of_ReGPT/phrases_WikiText-103_50k/phrases.npy
-    matrix_path: ../data_of_ReGPT/phrases_WikiText-103_50k/phrases_embeddings.npy
-  negative_path: ../data_of_ReGPT/phrases_WikiText-103_50k/negatives.tsv
+    phrases_path: ../data_of_ReGPT/phrases_WikiText-103_50k_contriever_marco/phrases.npy
+    matrix_path: ../data_of_ReGPT/phrases_WikiText-103_50k_contriever_marco/phrases_embeddings.npy
+  negative_path: ../data_of_ReGPT/phrases_WikiText-103_50k_contriever_marco/negatives.tsv
   negative_depth_in_pool: 101
   FNTP_threshold: 0.9
