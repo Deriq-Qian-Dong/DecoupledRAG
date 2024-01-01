@@ -8,7 +8,7 @@ training:
   optimizer: 
     name: Lamb
     kwargs:
-      lr: 1e-4
+      lr: 1e-3
       weight_decay: 0.0
       betas: [0.9, 0.999]
       eps: 1e-08
@@ -16,7 +16,7 @@ training:
     name: CosineAnnealingLR
     kwargs:
       T_max: 1000
-      eta_min: 3e-5
+      eta_min: 1e-3
   num_epochs: 2000
   log_with: tensorboard
   project_dir: output/
