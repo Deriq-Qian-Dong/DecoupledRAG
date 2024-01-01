@@ -1,14 +1,14 @@
 trainer: ReGPTLanguageModelTrainer
 training:
   project_name: ReGPT-sft
-  model_name_or_path: ./SFT-best/
+  model_name_or_path: gpt2-xl
   tokenizer_name_or_path: ../data_of_ReGPT/llama2-7b-phrase-tokenizer-trained-on-WikiText103-50k/
   num_layers_unfrozen: -1
   gradient_checkpointing: true
   optimizer: 
     name: Lamb
     kwargs:
-      lr: 1e-5
+      lr: 1e-3
       weight_decay: 0.0
       betas: [0.9, 0.999]
       eps: 1e-08
@@ -23,18 +23,18 @@ training:
   negatives_in_device: true
   predict_from_last: 10000
   eval_step: 1000
-  start_from: 1231
+  start_from: 0
 
 dataset:
   train:
     dataset_name: ReGPTCorpusPretrainFromAfsDataset
-    batch_size: 80
+    batch_size: 8
     data_name_or_path: ../data_of_ReGPT/c4_en/data-{:05d}-of-01658.arrow
     max_seq_len: 512
     negative_depth: 1
   test:
     dataset_name: ReGPTDocumentSummarizationSFTDataset
-    batch_size: 80
+    batch_size: 8
     data_name_or_path: ../data_of_ReGPT/cnn_daily/
     max_seq_len: 512
     negative_depth: 1
