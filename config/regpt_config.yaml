@@ -28,13 +28,13 @@ training:
 dataset:
   train:
     dataset_name: ReGPTCorpusPretrainFromAfsDataset
-    batch_size: 128
+    batch_size: 96
     data_name_or_path: ../data/data_of_ReGPT/c4_en/data-{:05d}-of-01658.arrow
     max_seq_len: 512
     negative_depth: 1
   test:
     dataset_name: ReGPTDocumentSummarizationSFTDataset
-    batch_size: 128
+    batch_size: 96
     data_name_or_path: ../data_of_ReGPT/cnn_daily/
     max_seq_len: 512
     negative_depth: 1
