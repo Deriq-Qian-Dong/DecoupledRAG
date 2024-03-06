@@ -3,6 +3,7 @@ training:
   project_name: llama2-7b-sft
   # model_name_or_path: ../epoch-329/SFT-new/
   model_name_or_path: ../LLAMA-2-7B
+  lora_model_name_or_path: ../regpt-lora-epoch-0/
   # tokenizer_name_or_path: ../data_of_ReGPT/llama2-7b-phrase-tokenizer-trained-on-WikiText103/
   tokenizer_name_or_path: ../LLAMA-2-7B
   num_layers_unfrozen: -1
@@ -31,7 +32,7 @@ dataset:
   train:
     dataset_name: ReGPTCorpusPretrainFromAfsDataset
     batch_size: 8
-    data_name_or_path: ../data_of_ReGPT/En-Wiki/sorted_datasets_test/data-{:05d}-of-00001.arrow
+    data_name_or_path: ../data_of_ReGPT/En-Wiki/sorted_datasets_test/data-{:05d}-of-00030.arrow
     max_seq_len: 512
     negative_depth: 1
   test:

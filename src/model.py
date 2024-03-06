@@ -19,6 +19,7 @@ from typing import List, Optional, Tuple, Union, Dict
 from deepspeed.ops.adam import DeepSpeedCPUAdam, FusedAdam
 from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModel
+from peft import LoraConfig, get_peft_model, PeftModel, TaskType
 
 
 torch.manual_seed(random.randint(0, 1000000))
@@ -35,28 +36,15 @@ class ReGPTForCausalLM(nn.Module):
     def __init__(self, train_config):
         super(ReGPTForCausalLM, self).__init__()
         model = AutoModel.from_pretrained(train_config['model_name_or_path'], use_cache=not train_config['gradient_checkpointing'])
-        freeze_bottom_causal_layers(model.base_model, train_config['num_layers_unfrozen'])
-        try:
-            # llama2
-            model.base_model.embed_tokens.weight.requires_grad = False
-        except:
-            # gpt2
-            model.base_model.wte.weight.requires_grad = False
-            model.base_model.wpe.weight.requires_grad = False
-        self.input_linear_proj = nn.Linear(train_config['faiss']['dimension'], model.config.hidden_size)
-        self.linear_proj = nn.Linear(model.config.hidden_size, train_config['faiss']['dimension'])
-        if os.path.exists(os.path.join(train_config['model_name_or_path'], 'input_linear_proj.pt')):
-            self.input_linear_proj.load_state_dict(torch.load(os.path.join(train_config['model_name_or_path'], 'input_linear_proj.pt'), map_location='cpu'))
-        if os.path.exists(os.path.join(train_config['model_name_or_path'], 'linear_proj.pt')):
-            self.linear_proj.load_state_dict(torch.load(os.path.join(train_config['model_name_or_path'], 'linear_proj.pt'), map_location='cpu'))
-        print_trainable_params_stats(model)
+        # freeze_bottom_causal_layers(model.base_model, train_config['num_layers_unfrozen'])
         if train_config['gradient_checkpointing']:
             model.gradient_checkpointing_enable()
-        self.model = model
-        # self.searcher = Searcher(train_config['faiss']['index_type'], dimension=train_config['faiss']['dimension'], nprobe=train_config['faiss']['nprobe'])
-        # phrases = np.load(open(train_config['faiss']['phrases_path'], 'rb'))
+        lora_config = LoraConfig.from_pretrained(train_config['lora_model_name_or_path'])
+        hf_model = PeftModel.from_pretrained(model, train_config['lora_model_name_or_path'], config=lora_config, is_trainable=True)
+        # hf_model = hf_model.merge_and_unload()
+        print_trainable_params_stats(hf_model)
+        self.model = hf_model
         matrix = np.load(open(train_config['faiss']['matrix_path'], 'rb'))
-        # self.searcher._build(matrix, phrases, speedup=False)
         self.matrix = matrix
         self.cross_entropy = nn.CrossEntropyLoss(reduction='mean', ignore_index=-1)
         self.train_config = train_config
@@ -72,7 +60,6 @@ class ReGPTForCausalLM(nn.Module):
         inputs_embeds = self.matrix[input_ids.cpu()]
         inputs_embeds = torch.from_numpy(inputs_embeds).to(input_ids.device) # [batch_size, seq_len, hidden_size]
         inputs_embeds = inputs_embeds.to(self.dtype)
-        inputs_embeds = self.input_linear_proj(inputs_embeds) # [batch_size, seq_len, hidden_size]
         negative_embeds = self.matrix[negative_ids.cpu()]
         negative_embeds = torch.from_numpy(negative_embeds).to(input_ids.device) 
         positive_embeds = self.matrix[labels.cpu()]  # [batch_size, predict_from_last, hidden_size]
@@ -84,7 +71,7 @@ class ReGPTForCausalLM(nn.Module):
 
         last_hidden_state = outputs.last_hidden_state  # [batch_size, seq_len, hidden_size]
         last_hidden_state = last_hidden_state[:, -predict_from_last-1:-1, :].contiguous()  # [batch_size, predict_from_last, hidden_size]
-        q_reps = self.linear_proj(last_hidden_state).view(-1, embeds_for_contrastive_training.shape[-1])  # [batch_size*predict_from_last, hidden_size]
+        q_reps = last_hidden_state.view(-1, embeds_for_contrastive_training.shape[-1])  # [batch_size*predict_from_last, hidden_size]
         # l2 norm
         # q_reps = q_reps / torch.norm(q_reps, dim=-1, keepdim=True)
         p_reps = embeds_for_contrastive_training.view(-1, embeds_for_contrastive_training.shape[-1])  # [batch_size*predict_from_last*(1+negative_depth), hidden_size]
@@ -106,8 +93,6 @@ class ReGPTForCausalLM(nn.Module):
     
     def save_pretrained(self, directory):
         self.model.save_pretrained(directory)
-        torch.save(self.input_linear_proj.state_dict(), os.path.join(directory, 'input_linear_proj.pt'))
-        torch.save(self.linear_proj.state_dict(), os.path.join(directory, 'linear_proj.pt'))
 
     def compute_similarity(self, q_reps, p_reps):
         return torch.matmul(q_reps, p_reps.transpose(0, 1))
@@ -125,12 +110,11 @@ class ReGPTForCausalLM(nn.Module):
                 inputs_embeds = self.matrix[input_ids.cpu()]
                 inputs_embeds = torch.from_numpy(inputs_embeds).to(input_ids.device) # [batch_size, cur_seq_len, hidden_size]
                 inputs_embeds = inputs_embeds.to(self.dtype)
-                inputs_embeds = self.input_linear_proj(inputs_embeds) # [batch_size, cur_seq_len, hidden_size]
                 kwargs['inputs_embeds'] = inputs_embeds
                 outputs = self.model(**kwargs)
                 last_hidden_state = outputs.last_hidden_state  # [batch_size, cur_seq_len, hidden_size]
                 last_hidden_state = last_hidden_state[:, -1:, :].contiguous()  # [batch_size, 1, hidden_size]
-                q_reps = self.linear_proj(last_hidden_state).view(-1, self.matrix.shape[-1])  # [batch_size, hidden_size]
+                q_reps = last_hidden_state.view(-1, self.matrix.shape[-1])  # [batch_size, hidden_size]
                 # l2 norm
                 # q_reps = q_reps / torch.norm(q_reps, dim=-1, keepdim=True)
                 q_reps = q_reps.unsqueeze(1)  # [batch_size, 1, hidden_size]
