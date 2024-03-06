@@ -67,6 +67,7 @@ class ReGPTForCausalLM(nn.Module):
         embeds_for_contrastive_training = torch.cat([positive_embeds.unsqueeze(2), negative_embeds], dim=2).to(self.dtype).contiguous()  # [batch_size, predict_from_last, 1+negative_depth, hidden_size]
         kwargs['inputs_embeds'] = inputs_embeds
         kwargs['output_hidden_states'] = True
+        print(kwargs.keys())
         outputs = self.model(**kwargs)
 
         last_hidden_state = outputs.last_hidden_state  # [batch_size, seq_len, hidden_size]
