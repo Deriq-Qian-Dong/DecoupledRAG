@@ -38,13 +38,20 @@ class ReGPTForCausalLM(nn.Module):
         model = AutoModel.from_pretrained(train_config['model_name_or_path'], use_cache=not train_config['gradient_checkpointing'])            
         # freeze_bottom_causal_layers(model.base_model, train_config['num_layers_unfrozen'])
         if train_config['gradient_checkpointing']:
-            model.enable_input_require_grads()
+            # model.enable_input_require_grads()
             model.gradient_checkpointing_enable()
+        if hasattr(model, "enable_input_require_grads"):
+            model.enable_input_require_grads()
+        else:
+            def make_inputs_require_grad(module, input, output):
+                output.requires_grad_(True)
+
+            model.get_input_embeddings().register_forward_hook(make_inputs_require_grad)
         lora_config = LoraConfig.from_pretrained(train_config['lora_model_name_or_path'])
-        hf_model = PeftModel.from_pretrained(model, train_config['lora_model_name_or_path'], config=lora_config, is_trainable=True)
-        # hf_model = hf_model.merge_and_unload()
-        print_trainable_params_stats(hf_model)
-        self.model = hf_model
+        model = PeftModel.from_pretrained(model, train_config['lora_model_name_or_path'], config=lora_config, is_trainable=True)
+        # model = model.merge_and_unload()
+        model.print_trainable_parameters()
+        self.model = model
         matrix = np.load(open(train_config['faiss']['matrix_path'], 'rb'))
         self.matrix = matrix
         self.cross_entropy = nn.CrossEntropyLoss(reduction='mean', ignore_index=-1)
