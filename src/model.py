@@ -42,7 +42,9 @@ class ReGPTForCausalLM(nn.Module):
             model.gradient_checkpointing_enable()
             model.enable_input_require_grads()
         lora_config = LoraConfig.from_pretrained(train_config['lora_model_name_or_path'])
+        torch.cuda.is_available = lambda : False
         model = PeftModel.from_pretrained(model, train_config['lora_model_name_or_path'], config=lora_config, is_trainable=True)
+        torch.cuda.is_available = lambda : True
         # model = model.merge_and_unload()
         model.print_trainable_parameters()
         self.model = model
