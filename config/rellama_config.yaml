@@ -32,7 +32,7 @@ dataset:
   train:
     dataset_name: ReGPTCorpusPretrainFromAfsDataset
     batch_size: 8
-    data_name_or_path: ../data_of_ReGPT/En-Wiki/sorted_datasets_test/data-{:05d}-of-00030.arrow
+    data_name_or_path: ../data_of_ReGPT/En-Wiki/sorted_datasets_train/data-{:05d}-of-00030.arrow
     max_seq_len: 512
     negative_depth: 1
   test:
