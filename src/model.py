@@ -40,13 +40,7 @@ class ReGPTForCausalLM(nn.Module):
         if train_config['gradient_checkpointing']:
             # model.enable_input_require_grads()
             model.gradient_checkpointing_enable()
-        if hasattr(model, "enable_input_require_grads"):
             model.enable_input_require_grads()
-        else:
-            def make_inputs_require_grad(module, input, output):
-                output.requires_grad_(True)
-
-            model.get_input_embeddings().register_forward_hook(make_inputs_require_grad)
         lora_config = LoraConfig.from_pretrained(train_config['lora_model_name_or_path'])
         model = PeftModel.from_pretrained(model, train_config['lora_model_name_or_path'], config=lora_config, is_trainable=True)
         # model = model.merge_and_unload()
@@ -75,6 +69,9 @@ class ReGPTForCausalLM(nn.Module):
         embeds_for_contrastive_training = torch.cat([positive_embeds.unsqueeze(2), negative_embeds], dim=2).to(self.dtype).contiguous()  # [batch_size, predict_from_last, 1+negative_depth, hidden_size]
         kwargs['inputs_embeds'] = inputs_embeds
         kwargs['output_hidden_states'] = True
+        # set requires_grad to True
+        kwargs['inputs_embeds'].requires_grad = True
+        print(kwargs)
         outputs = self.model(**kwargs)
 
         last_hidden_state = outputs.last_hidden_state  # [batch_size, seq_len, hidden_size]
