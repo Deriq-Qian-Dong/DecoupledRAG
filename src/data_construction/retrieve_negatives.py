@@ -3,11 +3,11 @@ import torch
 import numpy as np
 from tqdm import tqdm
 
-corpus_name = 'WikiText-103'
-vocab_size = 513955
+corpus_name = 'original'
+vocab_size = 32000
 negative_depth = 101
 
-base_dir = f'../data_of_ReGPT/phrases_{corpus_name}_50k'
+base_dir = f'../data_of_ReGPT/phrases_{corpus_name}_repllama'
 embedding_path = f"{base_dir}/phrases_embeddings_normalized.npy"
 print('load phrase embeddings from', embedding_path)
 phrase_embeddings = np.load(open(embedding_path,'rb'))
