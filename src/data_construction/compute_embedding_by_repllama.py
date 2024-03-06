@@ -29,6 +29,9 @@ def get_model(peft_model_name, base_model_name_or_path):
 model =get_model('../repllama', '../LLAMA-2-7B')
 model.cuda()
 tokenizer = AutoTokenizer.from_pretrained('../LLAMA-2-7B')
+tokenizer.pad_token_id = tokenizer.unk_token_id
+tokenizer.pad_token = tokenizer.unk_token
+tokenizer.padding_side = "right"
 for i in tqdm(range(0, len(phrases), batch_size)):
     texts = phrases[i:i+batch_size]
     texts = [f'passage: {text}</s>' for text in texts]
