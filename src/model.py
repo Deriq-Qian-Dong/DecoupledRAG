@@ -71,7 +71,6 @@ class ReGPTForCausalLM(nn.Module):
         kwargs['output_hidden_states'] = True
         # set requires_grad to True
         kwargs['inputs_embeds'].requires_grad = True
-        print(kwargs)
         outputs = self.model(**kwargs)
 
         last_hidden_state = outputs.last_hidden_state  # [batch_size, seq_len, hidden_size]
