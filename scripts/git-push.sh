@@ -7,4 +7,5 @@ fi
 message="$message at $time"
 git add .
 git commit -m "$message"
-git push
+git push origin master
+git push quancheng master
