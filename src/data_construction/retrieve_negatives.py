@@ -65,7 +65,7 @@ def search(index, emb_file, qid_list, outfile, top_k):
         for batch_vec in read_embed(emb_file):
             q_emb_matrix = np.array(batch_vec)
             q_emb_matrix = torch.from_numpy(q_emb_matrix)
-            q_emb_matrix = q_emb_matrix.cuda().half()
+            # q_emb_matrix = q_emb_matrix.cuda().half()
             res_dist, res_p_id = topk_query_passage(q_emb_matrix, index, top_k)
             for i in range(len(q_emb_matrix)):
                 qid = qid_list[q_idx]
