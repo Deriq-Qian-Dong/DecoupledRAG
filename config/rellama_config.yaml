@@ -3,7 +3,7 @@ training:
   project_name: llama2-7b-sft
   # model_name_or_path: ../epoch-329/SFT-new/
   model_name_or_path: ../LLAMA-2-7B
-  lora_model_name_or_path: ./SFT-new/
+  lora_model_name_or_path: ./output/SFT-new/
   # tokenizer_name_or_path: ../data_of_ReGPT/llama2-7b-phrase-tokenizer-trained-on-WikiText103/
   tokenizer_name_or_path: ../LLAMA-2-7B
   num_layers_unfrozen: -1
@@ -27,7 +27,7 @@ training:
   negatives_in_device: true
   predict_from_last: 10000
   eval_step: 1000
-  start_from: 2
+  start_from: 4
 
 dataset:
   train:
