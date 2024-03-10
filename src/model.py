@@ -36,15 +36,18 @@ class ReGPTForCausalLM(nn.Module):
     def __init__(self, train_config):
         super(ReGPTForCausalLM, self).__init__()
         model = AutoModel.from_pretrained(train_config['model_name_or_path'], use_cache=not train_config['gradient_checkpointing'])            
-        # freeze_bottom_causal_layers(model.base_model, train_config['num_layers_unfrozen'])
+        freeze_bottom_causal_layers(model.base_model, train_config['num_layers_unfrozen'])
         if train_config['gradient_checkpointing']:
             # model.enable_input_require_grads()
             model.gradient_checkpointing_enable()
             model.enable_input_require_grads()
-        lora_config = LoraConfig.from_pretrained(train_config['lora_model_name_or_path'])
-        torch.cuda.is_available = lambda : False
-        model = PeftModel.from_pretrained(model, train_config['lora_model_name_or_path'], config=lora_config, is_trainable=True)
-        torch.cuda.is_available = lambda : True
+        if 'lora_model_name_or_path' in train_config:    
+            lora_config = LoraConfig.from_pretrained(train_config['lora_model_name_or_path'])
+            torch.cuda.is_available = lambda : False
+            model = PeftModel.from_pretrained(model, train_config['lora_model_name_or_path'], config=lora_config, is_trainable=True)
+            torch.cuda.is_available = lambda : True
+        else:
+            model.base_model.get_input_embeddings().weight.requires_grad = False
         # model = model.merge_and_unload()
         model.print_trainable_parameters()
         self.model = model
