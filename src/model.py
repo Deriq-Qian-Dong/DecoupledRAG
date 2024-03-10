@@ -46,10 +46,11 @@ class ReGPTForCausalLM(nn.Module):
             torch.cuda.is_available = lambda : False
             model = PeftModel.from_pretrained(model, train_config['lora_model_name_or_path'], config=lora_config, is_trainable=True)
             torch.cuda.is_available = lambda : True
+            model.print_trainable_parameters()
         else:
             model.base_model.get_input_embeddings().weight.requires_grad = False
+            print_trainable_params_stats(model)
         # model = model.merge_and_unload()
-        model.print_trainable_parameters()
         self.model = model
         matrix = np.load(open(train_config['faiss']['matrix_path'], 'rb'))
         self.matrix = matrix
