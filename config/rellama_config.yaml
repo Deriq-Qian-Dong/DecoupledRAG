@@ -2,7 +2,7 @@ trainer: ReGPTLanguageModelTrainer
 training:
   project_name: llama2-7b-sft
   # model_name_or_path: ../epoch-329/SFT-new/
-  model_name_or_path: ../ReLLAMA/lora/
+  model_name_or_path: ../ReLLAMA/sft/
   # lora_model_name_or_path: ./output/SFT-new/
   # tokenizer_name_or_path: ../data_of_ReGPT/llama2-7b-phrase-tokenizer-trained-on-WikiText103/
   tokenizer_name_or_path: ../LLAMA-2-7B
@@ -11,7 +11,7 @@ training:
   optimizer: 
     name: Lamb
     kwargs:
-      lr: 1e-5
+      lr: 1e-4
       weight_decay: 0.0
       betas: [0.9, 0.999]
       eps: 1e-08
