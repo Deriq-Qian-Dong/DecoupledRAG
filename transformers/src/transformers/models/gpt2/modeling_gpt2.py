@@ -597,7 +597,8 @@ class GPT2Block(nn.Module):
 
         if config.add_cross_attention:
             self.crossattention = attention_class(config=config, is_cross_attention=True, layer_idx=layer_idx)
-            self.ln_cross_attn = nn.LayerNorm(hidden_size, eps=config.layer_norm_epsilon)
+            self.ln_crossattention = nn.LayerNorm(hidden_size, eps=config.layer_norm_epsilon)
+            self.gate_crossattention = nn.Parameter(torch.zeros(1))
 
         self.mlp = GPT2MLP(inner_dim, config)
 
@@ -634,8 +635,8 @@ class GPT2Block(nn.Module):
                     f"If `encoder_hidden_states` are passed, {self} has to be instantiated with "
                     "cross-attention layers by setting `config.add_cross_attention=True`"
                 )
-            residual = hidden_states
-            hidden_states = self.ln_cross_attn(hidden_states)
+            residual = hidden_states  # output of self-attention
+            hidden_states = self.ln_crossattention(hidden_states)
             cross_attn_outputs = self.crossattention(
                 hidden_states,
                 attention_mask=attention_mask,
@@ -645,8 +646,9 @@ class GPT2Block(nn.Module):
                 output_attentions=output_attentions,
             )
             attn_output = cross_attn_outputs[0]
-            # residual connection
-            hidden_states = residual + attn_output
+            # residual connection and gating
+            gating_score = self.gate_crossattention.sigmoid()
+            hidden_states = gating_score*residual + (1-gating_score)*attn_output
             outputs = outputs + cross_attn_outputs[2:]  # add cross attentions if we output attention weights
 
         residual = hidden_states
