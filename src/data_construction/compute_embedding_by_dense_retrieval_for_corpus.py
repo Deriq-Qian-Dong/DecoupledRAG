@@ -30,7 +30,7 @@ tokenizer = AutoTokenizer.from_pretrained(encoder_model_name_or_path)
 
 for i in tqdm(range(0, len(phrases), batch_size)):
     texts = phrases[i:i+batch_size]
-    inputs = tokenizer(texts, padding=True, truncation=True, return_tensors='pt')
+    inputs = tokenizer(texts, padding=True, truncation=True, return_tensors='pt', max_length=128)
     inputs.to("cuda")
     with torch.no_grad():
         outputs = model(**inputs)
