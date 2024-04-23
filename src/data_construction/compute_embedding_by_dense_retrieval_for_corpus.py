@@ -15,7 +15,7 @@ base_dir = f'../data_of_ReGPT/marco'
 os.makedirs(base_dir, exist_ok=True)
 
 phrase_embeddings = []
-batch_size = 128
+batch_size = 2048
 
 phrases = []
 with open("../data_of_ReGPT/marco/collection.tsv") as f:
