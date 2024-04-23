@@ -8,7 +8,6 @@ import numpy as np
 from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModel
 
-corpus_name = sys.argv[1]
 encoder_model_name_or_path = "../data/RetroMAE_MSMARCO_distill/"
 # encoder_model_name_or_path = sys.argv[2]
 
