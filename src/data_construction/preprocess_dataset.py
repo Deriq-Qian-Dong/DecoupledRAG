@@ -4,7 +4,7 @@ from datasets import load_dataset
 corpus_name = sys.argv[1]
 
 def filter_empty(example):
-    return len(example['text']) > 0
+    return type('1')==type(example['text']) and len(example['text']) > 0
 
 def add_text_length(example):
     example["text_length"] = len(example["text"].split())
