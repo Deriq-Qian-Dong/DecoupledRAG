@@ -4,7 +4,7 @@ from datasets import load_dataset
 corpus_name = sys.argv[1]
 
 def filter_empty(example):
-    return type('1')==type(example['text']) and len(example['text']) > 0
+    return len(example['text']) > 0
 
 def add_text_length(example):
     example["text_length"] = len(example["text"].split())
@@ -14,7 +14,7 @@ def filter_short_and_long_text(example):
     return example['text_length'] >= 64 and example['text_length'] <= 128
 
 def preprocess_dataset(corpus_name, data_path, split='train'):
-    dataset = load_dataset('csv', data_files={split: data_path}, delimiter='\t',column_names=['text', 'id'])
+    dataset = load_dataset('csv', data_files={split: data_path}, delimiter='\t',column_names=['pid', 'text'])
 
     dataset = dataset.filter(filter_empty)
 
