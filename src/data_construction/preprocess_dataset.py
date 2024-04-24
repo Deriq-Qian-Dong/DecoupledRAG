@@ -10,12 +10,17 @@ def add_text_length(example):
     example["text_length"] = len(example["text"].split())
     return example
 
+def filter_short_and_long_text(example):
+    return example['text_length'] >= 64 and example['text_length'] <= 128
+
 def preprocess_dataset(corpus_name, data_path, split='train'):
     dataset = load_dataset('csv', data_files={split: data_path}, delimiter='\t',column_names=['text', 'id'])
 
     dataset = dataset.filter(filter_empty)
 
     dataset = dataset.map(add_text_length)
+
+    dataset = dataset.filter(filter_short_and_long_text)
 
     dataset = dataset.sort("text_length", reverse=True)
 

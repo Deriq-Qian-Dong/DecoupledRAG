@@ -62,6 +62,29 @@ class CorpusPretrainDataset(DialogSFTDataset):
         text = text.strip()  # remove leading and trailing spaces
         return text
 
+class CorpusPretrainMarcoDataset(DialogSFTDataset):
+    def __init__(self, tokenizer, args):
+        super().__init__(tokenizer, args)        
+        
+    def setup_datasets(self):
+        data_name_or_path = self.args['data_name_or_path']
+        self.datasets = load_dataset('csv', delimiter='\t', column_names=['pid', 'text'], data_files={'train':data_name_or_path})['train']
+        # self.datasets = self.datasets.filter(self.filter_empty)
+        self.num_samples = len(self.datasets)
+
+    def filter_empty(self, example):
+        return example['text_length'] >= 10
+    
+    def __getitem__(self, idx):
+        sample = self.datasets[idx]
+        text = sample['text'].replace("<|endoftext|>", "")
+        # filtering the non-English characters except the punctuation and digits
+        # text = re.sub(r"[^a-zA-Z0-9',.?!]", " ", text)
+        # text = re.sub(r"\s+", " ", text)  # remove extra spaces
+        text = text.strip()  # remove leading and trailing spaces
+        return text
+
+
 class CorpusPretrainFromAfsDataset(CorpusPretrainDataset):
     def __init__(self, tokenizer, args):
         super().__init__(tokenizer, args)        
