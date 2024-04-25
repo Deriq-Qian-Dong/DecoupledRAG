@@ -55,6 +55,7 @@ else:
         "GPT2Model",
         "GPT2PreTrainedModel",
         "load_tf_weights_in_gpt2",
+        "GPT2LMandRetrievalHeadsModel",
     ]
 
 try:
