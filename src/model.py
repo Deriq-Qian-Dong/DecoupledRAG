@@ -191,7 +191,7 @@ class LanguageModelTrainer:
         
     def set_epoch_to_dataset(self):
         self.train_dataset.set_epoch(self.epoch)
-        self.train_dataloader = DataLoader(self.train_dataset, batch_size=self.dataset_config['train']['batch_size'], shuffle=True, collate_fn=self.train_dataset._collate_fn)
+        self.train_dataloader = DataLoader(self.train_dataset, batch_size=self.dataset_config['train']['batch_size'], shuffle=False, collate_fn=self.train_dataset._collate_fn)
         self.train_dataloader = self.accelerator.prepare_data_loader(self.train_dataloader)
 
     def setup_model(self, train_config):
@@ -212,7 +212,7 @@ class LanguageModelTrainer:
     def setup_dataloader(self, dataset_config, tokenizer):
         self.train_dataset = dataset_class[dataset_config['train']['dataset_name']](tokenizer, dataset_config['train'])
         self.test_dataset = dataset_class[dataset_config['test']['dataset_name']](tokenizer, dataset_config['test'])
-        self.train_dataloader = DataLoader(self.train_dataset, batch_size=dataset_config['train']['batch_size'], shuffle=True, collate_fn=self.train_dataset._collate_fn)
+        self.train_dataloader = DataLoader(self.train_dataset, batch_size=dataset_config['train']['batch_size'], shuffle=False, collate_fn=self.train_dataset._collate_fn)
         self.test_dataloader = DataLoader(self.test_dataset, batch_size=dataset_config['test']['batch_size'], shuffle=False, collate_fn=self.test_dataset._collate_fn)
     
     def setup_config(self, train_config, dataset_config):
@@ -280,6 +280,7 @@ class LanguageModelTrainer:
             forward_time = time() - forward_time
             loss, stats = self.compute_loss(outputs)
             stats["seq_len"] = seq_len
+            stats['retrieval_position'] = model.base_model.config.retrieval_position
             backward_time = time()
             accelerator.backward(loss)
             backward_time = time() - backward_time
