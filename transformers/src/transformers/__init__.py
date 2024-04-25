@@ -2343,6 +2343,7 @@ else:
             "GPT2Model",
             "GPT2PreTrainedModel",
             "load_tf_weights_in_gpt2",
+            "GPT2LMandRetrievalHeadsModel",
         ]
     )
     _import_structure["models.gpt_bigcode"].extend(
