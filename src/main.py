@@ -1,13 +1,13 @@
 import os
 import sys
 from utils import *
-from model import LanguageModelTrainer, ReGPTLanguageModelTrainer
+from model import LanguageModelTrainer, ReGPTLanguageModelTrainer, RAGLanguageModelTrainer
 
 
 os.environ['http_proxy'] = 'http://gzbh-aip-paddlecloud140.gzbh:8128'
 os.environ['https_proxy'] = 'http://gzbh-aip-paddlecloud140.gzbh:8128'
 
-TrainerClass = {'LanguageModelTrainer': LanguageModelTrainer, 'ReGPTLanguageModelTrainer': ReGPTLanguageModelTrainer}
+TrainerClass = {'LanguageModelTrainer': LanguageModelTrainer, 'ReGPTLanguageModelTrainer': ReGPTLanguageModelTrainer, "RAGLanguageModelTrainer":RAGLanguageModelTrainer}
 
 if __name__ == "__main__":
     config_path = sys.argv[1]
