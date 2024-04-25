@@ -166,7 +166,7 @@ class RAGForGPT2CausalLM(nn.Module):
         retrieval_position = kwargs.pop('retrieval_position')
         retrieval_position = int(retrieval_position)
         self.model.base_model.config.retrieval_position = retrieval_position
-        kwargs['encoder_hidden_states'] = neighbor_embeddings
+        kwargs['encoder_hidden_states'] = neighbor_embeddings.to(self.dtype)
         outputs = self.model(**kwargs)
         return outputs
     
