@@ -116,6 +116,15 @@ def freeze_bottom_causal_layers(model: nn.Module, num_layers_unfrozen: int = 0):
     for layer in hidden_layers_to_freeze:
         layer.requires_grad_(False)
 
+def freeze_non_crossattention_parameters(model: nn.Module):
+    """Freezes non cross-attention parameters of the specified model."""
+    hidden_layers = hf_get_decoder_blocks(model)
+    hidden_layers_to_processing = list(hidden_layers)
+    for layer in hidden_layers_to_processing:
+        for para_name, para in layer.named_parameters():
+            if "crossattention" not in para_name:
+                para.requires_grad_(False)
+
 class Searcher:
 
     def __init__(self, index_type, dimension=4096, nprobe=1):
