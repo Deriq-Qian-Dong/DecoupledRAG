@@ -216,7 +216,7 @@ class LanguageModelTrainer:
         self.test_dataloader = DataLoader(self.test_dataset, batch_size=dataset_config['test']['batch_size'], shuffle=False, collate_fn=self.test_dataset._collate_fn)
     
     def setup_config(self, train_config, dataset_config):
-        pass
+        return train_config, dataset_config
 
     def setup(self):
         config = self.config
