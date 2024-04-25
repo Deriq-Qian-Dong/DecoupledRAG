@@ -1,7 +1,16 @@
 import os
 import sys
+import numpy as np
 from datasets import load_dataset
 corpus_name = sys.argv[1]
+
+def add_neighbors(example):
+    pid = example['pid']
+    matrix = np.load('../../data_of_ReGPT/marco/neighbors.P2P.DPR34-1.top50.npy')
+    embs = np.load('../../data_of_ReGPT/marco/phrases_embeddings.npy')
+    example['neighbors'] = matrix[pid][::10]
+    example['neighbor_embeddings'] = embs[example['neighbors']]
+    return example
 
 def filter_empty(example):
     return len(example['text']) > 0

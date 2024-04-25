@@ -226,8 +226,8 @@ class GPT2Attention(nn.Module):
             causal_mask_for_cross_attn = torch.ones(
                 (1, 1, query_length, key_length), dtype=attn_weights.dtype, device=attn_weights.device
             )
-            # mask the attention weights before the "self.config.retrieve_position" of the query
-            causal_mask_for_cross_attn[:, :, :self.config.retrieve_position, :] = 0
+            # mask the attention weights before the "self.config.retrieval_position" of the query
+            causal_mask_for_cross_attn[:, :, :self.config.retrieval_position, :] = 0
             mask_value = torch.finfo(attn_weights.dtype).min
             mask_value = torch.full([], mask_value, dtype=attn_weights.dtype, device=attn_weights.device)
             attn_weights = torch.where(causal_mask_for_cross_attn, attn_weights.to(attn_weights.dtype), mask_value)
@@ -1787,7 +1787,7 @@ class GPT2LMandRetrievalHeadsModel(GPT2PreTrainedModel):
 
         # The shape of hidden_states is (batch_size, sequence_length, hidden_size)
         lm_logits = self.lm_head(hidden_states)
-        q_reps = self.retrieval_head(hidden_states[:, self.config.retrieve_position-1, :])
+        q_reps = self.retrieval_head(hidden_states[:, self.config.retrieval_position-1, :])
         # The shape of q_reps is (batch_size, faiss_dimension)
         # The shape of encoder_hidden_states is (batch_size, num_of_psg_samples, faiss_dimension), the first one is positive sample
 

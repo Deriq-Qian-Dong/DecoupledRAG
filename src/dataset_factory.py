@@ -7,6 +7,42 @@ from torch.utils.data import DataLoader, Dataset
 from transformers import DataCollatorWithPadding
 from datasets import load_dataset, load_from_disk
 
+class RAGPretrainDataset(Dataset):
+    def __init__(self, tokenizer, args):
+        self.args = args
+        self.tokenizer = tokenizer
+        self.epoch = 0
+        self.setup_datasets()
+
+    def setup_datasets(self):
+        self.datasets = load_from_disk(self.args['data_name_or_path'])
+        self.num_samples = len(self.datasets)
+    
+    def set_epoch(self, epoch):
+        self.epoch = epoch
+        print_rank_0(f'[!] set epoch to {epoch}')
+
+    def __getitem__(self, idx):
+        sample = self.datasets[idx]
+        text = sample['text']
+        neighbor_embeddings = sample['neighbor_embeddings']
+        return text, neighbor_embeddings
+
+    def __len__(self):
+        return self.num_samples
+
+    def _collate_fn(self, elems):
+        texts, neighbor_embeddings = zip(*elems)
+        batch = self.tokenizer(texts,
+                                max_length=self.args['max_seq_len'],
+                                padding=True,
+                                truncation=True,
+                                return_tensors="pt")
+        batch["labels"] = batch['input_ids']
+        batch['neighbor_embeddings'] = torch.tensor(neighbor_embeddings)
+        batch['retrieval_position'] = batch['input_ids'].size(1) // 2
+        return batch
+
 class DialogSFTDataset(Dataset):
     def __init__(self, tokenizer, args):
         self.args = args

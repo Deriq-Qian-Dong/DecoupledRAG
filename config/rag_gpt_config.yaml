@@ -1,0 +1,49 @@
+trainer: RAGLanguageModelTrainer
+training:
+  project_name: RAG_GPT2-sft
+  model_name_or_path: ../data/gpt2/
+  tokenizer_name_or_path: ../data/gpt2/
+  num_layers_unfrozen: -1
+  gradient_checkpointing: true
+  optimizer: 
+    name: Lamb
+    kwargs:
+      lr: 1e-3
+      weight_decay: 0.0
+      betas: [0.9, 0.999]
+      eps: 1e-08
+  scheduler:
+    name: CosineAnnealingLR
+    kwargs:
+      T_max: 1000
+      eta_min: 1e-3
+  num_epochs: 2000
+  log_with: tensorboard
+  project_dir: output/
+  negatives_in_device: true
+  predict_from_last: 10000
+  eval_step: 1000
+  start_from: 0
+
+dataset:
+  train:
+    dataset_name: RAGPretrainDataset
+    batch_size: 96
+    data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train/
+    max_seq_len: 256
+  test:
+    dataset_name: RAGPretrainDataset
+    batch_size: 96
+    data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_test/
+    max_seq_len: 256
+
+generation_kwargs:
+  min_length: 0
+  max_length: 512
+  do_sample: true
+  top_k: 5
+  top_p: 0.95
+
+RAG_kwargs:
+  faiss:
+    dimension: 768
