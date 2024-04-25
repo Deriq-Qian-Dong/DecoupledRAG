@@ -123,7 +123,8 @@ def freeze_non_crossattention_parameters(model: nn.Module):
     for layer in hidden_layers_to_processing:
         for para_name, para in layer.named_parameters():
             if "crossattention" not in para_name:
-                para.requires_grad_(False)
+                if 'head' not in para_name:
+                    para.requires_grad_(False)
 
 class Searcher:
 
