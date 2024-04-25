@@ -8,7 +8,7 @@ training:
   optimizer: 
     name: Lamb
     kwargs:
-      lr: 1e-3
+      lr: 1e-4
       weight_decay: 0.0
       betas: [0.9, 0.999]
       eps: 1e-08
@@ -28,12 +28,12 @@ training:
 dataset:
   train:
     dataset_name: RAGPretrainDataset
-    batch_size: 256
+    batch_size: 64
     data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train/
     max_seq_len: 256
   test:
     dataset_name: RAGPretrainDataset
-    batch_size: 256
+    batch_size: 64
     data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_test/
     max_seq_len: 256
 
