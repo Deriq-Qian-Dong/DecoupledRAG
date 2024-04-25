@@ -224,7 +224,7 @@ class GPT2Attention(nn.Module):
             # The shape of mask matrix is (1, 1, q_seq_len, k_seq_len)
             query_length, key_length = query.size(-2), key.size(-2)
             causal_mask_for_cross_attn = torch.ones(
-                (1, 1, query_length, key_length), dtype=attn_weights.dtype, device=attn_weights.device
+                (1, 1, query_length, key_length), dtype=torch.bool, device=attn_weights.device
             )
             # mask the attention weights before the "self.config.retrieval_position" of the query
             causal_mask_for_cross_attn[:, :, :self.config.retrieval_position, :] = 0
