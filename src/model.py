@@ -280,7 +280,7 @@ class LanguageModelTrainer:
             forward_time = time() - forward_time
             loss, stats = self.compute_loss(outputs)
             stats["seq_len"] = seq_len
-            stats['retrieval_position'] = accelerator.unwrap_model(model).base_model.config.retrieval_position
+            stats['retrieval_position'] = accelerator.unwrap_model(model).model.base_model.config.retrieval_position
             backward_time = time()
             accelerator.backward(loss)
             backward_time = time() - backward_time
