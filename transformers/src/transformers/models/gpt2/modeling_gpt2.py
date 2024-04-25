@@ -1745,7 +1745,6 @@ class GPT2LMandRetrievalHeadsModel(GPT2PreTrainedModel):
         return model_inputs
 
     @add_start_docstrings_to_model_forward(GPT2_INPUTS_DOCSTRING)
-    @replace_return_docstrings(output_type=GPT2LMandRetrievalHeadsModelOutput, config_class=_CONFIG_FOR_DOC)
     def forward(
         self,
         input_ids: Optional[torch.LongTensor] = None,
