@@ -35,4 +35,5 @@ torch-optimizer==0.3.0
 torchtyping==0.1.4
 tqdm==4.66.1
 transformers==4.34.1
-
+peft==0.10.0
+scipy==1.10.1

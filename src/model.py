@@ -214,16 +214,15 @@ class LanguageModelTrainer:
         self.test_dataset = dataset_class[dataset_config['test']['dataset_name']](tokenizer, dataset_config['test'])
         self.train_dataloader = DataLoader(self.train_dataset, batch_size=dataset_config['train']['batch_size'], shuffle=True, collate_fn=self.train_dataset._collate_fn)
         self.test_dataloader = DataLoader(self.test_dataset, batch_size=dataset_config['test']['batch_size'], shuffle=False, collate_fn=self.test_dataset._collate_fn)
+    
+    def setup_config(self, train_config, dataset_config):
+        pass
 
     def setup(self):
         config = self.config
         train_config = config['training']
         dataset_config = config['dataset']
-        train_config['negative_depth'] = dataset_config['train']['negative_depth']
-        dataset_config['train']['predict_from_last'] = train_config['predict_from_last']
-        dataset_config['train']['train_or_test'] = 'train'
-        dataset_config['test']['predict_from_last'] = train_config['predict_from_last']
-        dataset_config['test']['train_or_test'] = 'test'
+        train_config, dataset_config = self.setup_config(train_config, dataset_config)
         tokenizer = AutoTokenizer.from_pretrained(train_config['tokenizer_name_or_path'])
         tokenizer.pad_token = tokenizer.eos_token
         train_config['eos_token_id'] = tokenizer.eos_token_id
@@ -349,6 +348,14 @@ class ReGPTLanguageModelTrainer(LanguageModelTrainer):
 
     def setup_model(self, train_config):
         self.model = ReGPTForCausalLM(train_config)
+
+    def setup_config(self, train_config, dataset_config):
+        train_config['negative_depth'] = dataset_config['train']['negative_depth']
+        dataset_config['train']['predict_from_last'] = train_config['predict_from_last']
+        dataset_config['train']['train_or_test'] = 'train'
+        dataset_config['test']['predict_from_last'] = train_config['predict_from_last']
+        dataset_config['test']['train_or_test'] = 'test'
+        return train_config, dataset_config
 
 class RAGLanguageModelTrainer(LanguageModelTrainer):
     def __init__(self, config):
