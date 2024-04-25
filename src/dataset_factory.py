@@ -40,7 +40,7 @@ class RAGPretrainDataset(Dataset):
                                 return_tensors="pt")
         batch["labels"] = batch['input_ids']
         batch['neighbor_embeddings'] = torch.tensor(neighbor_embeddings)
-        batch['retrieval_position'] = batch['input_ids'].size(1) // 2
+        batch['retrieval_position'] = torch.tensor(batch['input_ids'].size(1) // 2)
         return batch
 
 class DialogSFTDataset(Dataset):
