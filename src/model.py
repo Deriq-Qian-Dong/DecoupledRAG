@@ -149,12 +149,12 @@ class RAGForGPT2CausalLM(nn.Module):
         config.add_cross_attention = True
         config.faiss_dimension = train_config['faiss']['dimension']
         model = GPT2LMandRetrievalHeadsModel.from_pretrained(train_config['model_name_or_path'], config=config)          
-        # freeze_non_crossattention_parameters(model.base_model)
+        freeze_non_crossattention_parameters(model.base_model)
         if train_config['gradient_checkpointing']:
             model.gradient_checkpointing_enable()
             model.enable_input_require_grads()
-        # model.base_model.wpe.weight.requires_grad = False
-        # model.base_model.get_input_embeddings().weight.requires_grad = False
+        model.base_model.wpe.weight.requires_grad = False
+        model.base_model.get_input_embeddings().weight.requires_grad = False
         print_trainable_params_stats(model)
         self.model = model
         self.cross_entropy = nn.CrossEntropyLoss(reduction='mean', ignore_index=-1)
