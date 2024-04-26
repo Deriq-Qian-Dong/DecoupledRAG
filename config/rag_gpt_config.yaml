@@ -23,6 +23,7 @@ training:
   predict_from_last: 10000
   eval_step: 1000
   start_from: 0
+  cross_attention_activation_function: tanh
 
 dataset:
   train:
