@@ -22,9 +22,9 @@ class RAGPretrainDataset(Dataset):
 
     def setup_datasets(self):
         self.datasets = load_from_disk(self.args['data_name_or_path'])
-        self.datasets = self.datasets.map(self.add_input_ids)
-        self.datasets = self.datasets.flatten_indices()
-        self.datasets = self.datasets.sort('input_ids_length', reverse=True)
+        # self.datasets = self.datasets.map(self.add_input_ids)
+        # self.datasets = self.datasets.flatten_indices()
+        # self.datasets = self.datasets.sort('input_ids_length', reverse=True)
         self.num_samples = len(self.datasets)
     
     def set_epoch(self, epoch):
