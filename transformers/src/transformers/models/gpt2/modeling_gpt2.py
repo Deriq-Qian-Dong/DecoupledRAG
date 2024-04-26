@@ -140,7 +140,6 @@ class GPT2Attention(nn.Module):
         super().__init__()
         self.config = config
         max_positions = config.max_position_embeddings
-        faiss_dimension = config.faiss_dimension
         self.register_buffer(
             "bias",
             torch.tril(torch.ones((max_positions, max_positions), dtype=torch.bool)).view(
@@ -169,6 +168,7 @@ class GPT2Attention(nn.Module):
         self.reorder_and_upcast_attn = config.reorder_and_upcast_attn
 
         if self.is_cross_attention:
+            faiss_dimension = config.faiss_dimension
             self.c_attn = Conv1D(2 * self.embed_dim, faiss_dimension)
             self.q_attn = Conv1D(self.embed_dim, self.embed_dim)
         else:
