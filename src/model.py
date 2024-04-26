@@ -149,6 +149,7 @@ class RAGForGPT2CausalLM(nn.Module):
         config.add_cross_attention = True
         config.faiss_dimension = train_config['faiss']['dimension']
         config.cross_attention_activation_function = train_config['cross_attention_activation_function']
+        config.add_cross_attention_layer_number = train_config['add_cross_attention_layer_number']
         model = GPT2LMandRetrievalHeadsModel.from_pretrained(train_config['model_name_or_path'], config=config)          
         freeze_non_crossattention_parameters(model.base_model)
         if train_config['gradient_checkpointing']:
