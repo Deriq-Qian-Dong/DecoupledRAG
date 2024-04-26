@@ -19,6 +19,7 @@ training:
       eta_min: 0.0001
   num_epochs: 10000
   start_from: 0
+  eval_step: 1000
   log_with: tensorboard
   project_dir: output/
 
