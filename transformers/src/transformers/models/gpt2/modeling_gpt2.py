@@ -615,6 +615,7 @@ class GPT2Block(nn.Module):
         self.attn = attention_class(config=config, layer_idx=layer_idx)
         self.ln_2 = nn.LayerNorm(hidden_size, eps=config.layer_norm_epsilon)
         self.layer_idx = layer_idx
+        self.config = config
 
         if config.add_cross_attention and layer_idx>=(config.n_layer - config.add_cross_attention_layer_number):
             self.crossattention = attention_class(config=config, is_cross_attention=True, layer_idx=layer_idx)
