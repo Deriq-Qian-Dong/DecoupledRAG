@@ -649,7 +649,7 @@ class GPT2Block(nn.Module):
         # residual connection
         hidden_states = attn_output + residual
 
-        if encoder_hidden_states is not None:
+        if encoder_hidden_states is not None and self.layer_idx >= (self.config.n_layer - self.config.add_cross_attention_layer_number):
             # add one self-attention block for cross-attention
             if not hasattr(self, "crossattention"):
                 raise ValueError(
