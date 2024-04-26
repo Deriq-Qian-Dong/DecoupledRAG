@@ -1,7 +1,7 @@
 trainer: LanguageModelTrainer
 training:
   project_name: gpt2-sft
-  model_name_or_path: gpt2
+  model_name_or_path: ../data/gpt2
   num_layers_unfrozen: -1
   gradient_checkpointing: true
   optimizer: 
@@ -23,12 +23,14 @@ training:
 dataset:
   batch_size: 512
   train:
-    data_name_or_path: Dahoas/rm-static
-    max_seq_len: 128
+    dataset_name: CorpusPretrainDataset
+    data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train_gpt2/
+    max_seq_len: 256
     train_or_test: train
   test:
-    data_name_or_path: Dahoas/rm-static
-    max_seq_len: 128
+    dataset_name: CorpusPretrainDataset
+    data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train_gpt2/
+    max_seq_len: 256
     train_or_test: test
 
 generation_kwargs:
