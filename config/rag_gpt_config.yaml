@@ -1,8 +1,8 @@
 trainer: RAGLanguageModelTrainer
 training:
   project_name: RAG_GPT2-sft
-  model_name_or_path: ../data/gpt2/
-  tokenizer_name_or_path: ../data/gpt2/
+  model_name_or_path: ../data/rag_gpt2/SFT-best/
+  tokenizer_name_or_path: ../data/rag_gpt2/SFT-best/
   num_layers_unfrozen: -1
   gradient_checkpointing: true
   optimizer: 
