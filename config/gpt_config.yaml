@@ -22,17 +22,18 @@ training:
   project_dir: output/
 
 dataset:
-  batch_size: 512
   train:
     dataset_name: CorpusPretrainDataset
     data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train_gpt2/
     max_seq_len: 256
     train_or_test: train
+    batch_size: 512
   test:
     dataset_name: CorpusPretrainDataset
     data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train_gpt2/
     max_seq_len: 256
     train_or_test: test
+    batch_size: 512
 
 generation_kwargs:
   min_length: 0
