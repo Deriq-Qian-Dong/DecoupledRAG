@@ -265,6 +265,9 @@ class LanguageModelTrainer:
         loss = outputs.loss
         stats = {"loss": float(loss.cpu().detach().float().numpy())}
         return loss, stats
+    
+    def task_specific_stats(self, stats, model):
+        return stats
 
     def train(self):
         model, optimizer, train_dataloader, scheduler, accelerator, epoch = self.model, self.optimizer, self.train_dataloader, self.scheduler, self.accelerator, self.epoch
@@ -281,7 +284,7 @@ class LanguageModelTrainer:
             forward_time = time() - forward_time
             loss, stats = self.compute_loss(outputs)
             stats["seq_len"] = seq_len
-            stats['retrieval_position'] = accelerator.unwrap_model(model).model.base_model.config.retrieval_position
+            stats = self.task_specific_stats(stats, model)
             backward_time = time()
             accelerator.backward(loss)
             backward_time = time() - backward_time
@@ -380,4 +383,8 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
         loss = lm_loss + retrieval_loss
         stats = {"lm_loss": float(lm_loss.cpu().detach().float().numpy()), "retrieval_loss": float(retrieval_loss.cpu().detach().float().numpy()), "loss": float(loss.cpu().detach().float().numpy())}
         return loss, stats
+    
+    def task_specific_stats(self, stats, model):
+        stats['retrieval_position'] = self.accelerator.unwrap_model(model).model.base_model.config.retrieval_position
+        return stats
 
