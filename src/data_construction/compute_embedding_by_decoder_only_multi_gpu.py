@@ -60,6 +60,8 @@ def computing_for_decoder_only_model(config):
     with torch.no_grad():
         for batch in tqdm(dataloader, desc='computing', disable=not accelerator.is_local_main_process):
             pids = batch.pop('pids')
+            # move batch to device
+            batch = {k: v.to(accelerator.device) for k, v in batch.items()}
             outputs = model(**batch).last_hidden_state
             embeddings = outputs[:, -1, :].detach().cpu().numpy()
             all_embeddings.append(embeddings)
