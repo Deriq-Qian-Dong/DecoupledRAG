@@ -2,7 +2,9 @@ import os
 import sys
 import json
 import torch
-from utils import *
+import numpy as np
+import yaml
+
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModelForSeq2SeqLM, AutoModel
 from datasets import load_dataset, load_from_disk
 from torch.utils.data import DataLoader, Dataset
@@ -12,8 +14,10 @@ from dataset_factory import MDQADataset
 
 os.environ['http_proxy'] = 'http://gzbh-aip-paddlecloud140.gzbh:8128'
 os.environ['https_proxy'] = 'http://gzbh-aip-paddlecloud140.gzbh:8128'
-
-
+def get_config(path="config/rellama_config.yaml"):
+    with open(path, "r") as yaml_file:
+        config = yaml.safe_load(yaml_file)
+    return config
 def generating_for_decoder_only_model(config):
     tokenizer = AutoTokenizer.from_pretrained(config['model_name_or_path'], trust_remote_code=True)
     if tokenizer.eos_token_id is None:
