@@ -52,8 +52,9 @@ def computing_for_decoder_only_model(config):
     data = []
     local_rank = torch.distributed.get_rank() if torch.distributed.is_initialized() else 0
     world_size = torch.distributed.get_world_size() if torch.distributed.is_initialized() else 1
+    dataset = dataset.shard(num_shards=world_size, index=local_rank, contiguous=True)
     dataloader = DataLoader(dataset, batch_size=config['batch_size'], collate_fn=collate_fn, shuffle=False)
-    dataloader = accelerator.prepare_data_loader(dataloader)
+    # dataloader = accelerator.prepare_data_loader(dataloader)
     all_embeddings = []
     all_pids = []
     with torch.no_grad():
