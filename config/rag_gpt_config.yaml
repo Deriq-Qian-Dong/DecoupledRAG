@@ -1,8 +1,8 @@
 trainer: RAGLanguageModelTrainer
 training:
   project_name: RAG_GPT2-sft
-  model_name_or_path: ../rag_gpt2/SFT-best/
-  tokenizer_name_or_path: ../rag_gpt2/SFT-best/
+  model_name_or_path: ../data/rag_gpt2/dense_retrieval_embeddings_last_layer/SFT-best/
+  tokenizer_name_or_path: ../data/rag_gpt2/dense_retrieval_embeddings_last_layer/SFT-best/
   num_layers_unfrozen: -1
   gradient_checkpointing: true
   optimizer: 
@@ -30,12 +30,12 @@ dataset:
   train:
     dataset_name: RAGPretrainDataset
     batch_size: 200
-    data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train_gpt2/
+    data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train_gpt2_embeddings/
     max_seq_len: 256
   test:
     dataset_name: RAGPretrainDataset
     batch_size: 200
-    data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_test_gpt2/
+    data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_test_gpt2_embeddings/
     max_seq_len: 256
 
 generation_kwargs:
