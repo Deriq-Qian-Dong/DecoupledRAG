@@ -10,7 +10,6 @@ from datasets import load_dataset, load_from_disk
 from torch.utils.data import DataLoader, Dataset
 from accelerate import Accelerator
 from tqdm import tqdm
-from dataset_factory import MDQADataset
 
 os.environ['http_proxy'] = 'http://gzbh-aip-paddlecloud140.gzbh:8128'
 os.environ['https_proxy'] = 'http://gzbh-aip-paddlecloud140.gzbh:8128'
