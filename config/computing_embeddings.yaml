@@ -1,0 +1,7 @@
+max_length: 256
+model_name_or_path: ../gpt2
+batch_size: 512
+model_type: decoder_only
+output_path: output/gpt2_embeddings
+use_safetensors: true
+data_name_or_path: '../data_of_ReGPT/marco/collection.tsv'
