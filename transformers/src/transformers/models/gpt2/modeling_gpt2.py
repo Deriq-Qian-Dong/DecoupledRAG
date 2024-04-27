@@ -1758,6 +1758,7 @@ class GPT2LMandRetrievalHeadsModel(GPT2PreTrainedModel):
         head_mask: Optional[torch.FloatTensor] = None,
         inputs_embeds: Optional[torch.FloatTensor] = None,
         encoder_hidden_states: Optional[torch.Tensor] = None,
+        p_reps: Optional[torch.Tensor] = None,
         labels: Optional[torch.LongTensor] = None,
         use_cache: Optional[bool] = None,
         output_attentions: Optional[bool] = None,
@@ -1795,7 +1796,10 @@ class GPT2LMandRetrievalHeadsModel(GPT2PreTrainedModel):
         # The shape of encoder_hidden_states is (batch_size, num_of_psg_samples, faiss_dimension), the first one is positive sample
 
         loss_fct = CrossEntropyLoss(reduction='mean')
-        p_reps = encoder_hidden_states.view(-1, encoder_hidden_states.size(-1))
+        if p_reps is None:
+            p_reps = encoder_hidden_states.view(-1, encoder_hidden_states.size(-1))
+        else:
+            p_reps = p_reps.view(-1, p_reps.size(-1))
         scores = torch.matmul(q_reps, p_reps.transpose(0, 1))
         target = torch.arange(scores.size(0), device=scores.device, dtype=torch.long)
         target = target * (p_reps.size(0) // q_reps.size(0))

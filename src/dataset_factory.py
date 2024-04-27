@@ -34,14 +34,15 @@ class RAGPretrainDataset(Dataset):
     def __getitem__(self, idx):
         sample = self.datasets[idx]
         text = sample['text']
-        neighbor_embeddings = sample['neighbor_embeddings']
-        return text, neighbor_embeddings
+        neighbor_dr_embeddings = sample['neighbor_embeddings']
+        neighbor_gpt_embeddings = sample['neighbor_gpt2_embeddings']
+        return text, neighbor_dr_embeddings, neighbor_gpt_embeddings
 
     def __len__(self):
         return self.num_samples
 
     def _collate_fn(self, elems):
-        texts, neighbor_embeddings = zip(*elems)
+        texts, p_reps, neighbor_embeddings = zip(*elems)
         batch = self.tokenizer(texts,
                                 max_length=self.args['max_seq_len'],
                                 padding=True,
@@ -50,6 +51,7 @@ class RAGPretrainDataset(Dataset):
         batch["labels"] = batch['input_ids']
         batch['neighbor_embeddings'] = torch.tensor(neighbor_embeddings)
         batch['retrieval_position'] = torch.tensor(batch['input_ids'].size(1) // 2)
+        batch['p_reps'] = torch.tensor(p_reps)
         return batch
 
 class DialogSFTDataset(Dataset):
