@@ -8,11 +8,10 @@ from transformers import DataCollatorWithPadding
 from datasets import load_dataset, load_from_disk
 
 class RAGPretrainDataset(Dataset):
-    def __init__(self, tokenizer, args, select_range=-1):
+    def __init__(self, tokenizer, args):
         self.args = args
         self.tokenizer = tokenizer
         self.epoch = 0
-        self.select_range = select_range
         self.setup_datasets()
 
     def add_input_ids(self, example):
@@ -23,8 +22,6 @@ class RAGPretrainDataset(Dataset):
 
     def setup_datasets(self):
         self.datasets = load_from_disk(self.args['data_name_or_path'])
-        if self.select_range > 0:
-            self.datasets = self.datasets.select(range(self.select_range))
         # self.datasets = self.datasets.map(self.add_input_ids)
         # self.datasets = self.datasets.flatten_indices()
         # self.datasets = self.datasets.sort('input_ids_length', reverse=True)
