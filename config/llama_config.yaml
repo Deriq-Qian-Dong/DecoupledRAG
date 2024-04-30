@@ -29,13 +29,13 @@ dataset:
     data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train_gpt2/
     max_seq_len: 256
     train_or_test: train
-    batch_size: 200
+    batch_size: 32
   test:
     dataset_name: CorpusPretrainDataset
     data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_test_gpt2/
     max_seq_len: 256
     train_or_test: test
-    batch_size: 200
+    batch_size: 32
 
 generation_kwargs:
   min_length: 0
