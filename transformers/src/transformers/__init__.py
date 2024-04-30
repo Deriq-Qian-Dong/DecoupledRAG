@@ -2590,6 +2590,7 @@ else:
             "LlamaForSequenceClassification",
             "LlamaModel",
             "LlamaPreTrainedModel",
+            "LlamaWithRetrievalHeadForCausalLM",
         ]
     )
     _import_structure["models.llava"].extend(

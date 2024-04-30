@@ -97,6 +97,7 @@ if TYPE_CHECKING:
             LlamaForSequenceClassification,
             LlamaModel,
             LlamaPreTrainedModel,
+            LlamaWithRetrievalHeadForCausalLM,
         )
 
     try:
