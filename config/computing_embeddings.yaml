@@ -1,6 +1,6 @@
 max_length: 256
 model_name_or_path: ../Llama-2-7b-chat-hf/
-batch_size: 512
+batch_size: 128
 model_type: decoder_only
 output_path: output/llama2_embeddings
 use_safetensors: true
