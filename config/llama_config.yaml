@@ -1,7 +1,7 @@
 trainer: LanguageModelTrainer
 training:
   project_name: llama2-7b-sft
-  model_name_or_path: meta-llama/Llama-2-7b-hf
+  model_name_or_path: ../Llama-2-7b-hf
   num_layers_unfrozen: 2
   gradient_checkpointing: true
   optimizer: 
@@ -21,15 +21,18 @@ training:
   project_dir: output/
 
 dataset:
-  batch_size: 128
   train:
-    data_name_or_path: Dahoas/rm-static
-    max_seq_len: 128
+    dataset_name: CorpusPretrainDataset
+    data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train_gpt2/
+    max_seq_len: 256
     train_or_test: train
+    batch_size: 200
   test:
-    data_name_or_path: Dahoas/rm-static
-    max_seq_len: 128
+    dataset_name: CorpusPretrainDataset
+    data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_test_gpt2/
+    max_seq_len: 256
     train_or_test: test
+    batch_size: 200
 
 generation_kwargs:
   min_length: 0
