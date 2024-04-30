@@ -31,14 +31,14 @@ dataset:
   train:
     dataset_name: RAGPretrainDataset
     batch_size: 200
-    data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train_gpt2_embeddings/
-    # data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train_gpt2/
+    # data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train_gpt2_embeddings/
+    data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train_gpt2/
     max_seq_len: 256
   test:
     dataset_name: RAGPretrainDataset
     batch_size: 200
-    data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_test_gpt2_embeddings/
-    # data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_test_gpt2/
+    # data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_test_gpt2_embeddings/
+    data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_test_gpt2/
     max_seq_len: 256
 
 generation_kwargs:
