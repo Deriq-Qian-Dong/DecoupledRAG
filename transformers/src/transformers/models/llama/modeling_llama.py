@@ -278,7 +278,8 @@ class LlamaAttention(nn.Module):
         self.rope_theta = config.rope_theta
         self.is_causal = True
         self.is_cross_attention = is_cross_attention
-        self.faiss_dimension = config.faiss_dimension
+        if self.is_cross_attention:
+            self.faiss_dimension = config.faiss_dimension
 
         if (self.head_dim * self.num_heads) != self.hidden_size:
             raise ValueError(
