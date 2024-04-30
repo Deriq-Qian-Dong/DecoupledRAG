@@ -2,6 +2,7 @@ trainer: LanguageModelTrainer
 training:
   project_name: llama2-7b-sft
   model_name_or_path: ../Llama-2-7b-hf
+  tokenizer_name_or_path: ../Llama-2-7b-hf
   num_layers_unfrozen: 2
   gradient_checkpointing: true
   optimizer: 
@@ -19,6 +20,8 @@ training:
   num_epochs: 10
   log_with: tensorboard
   project_dir: output/
+  start_from: 0
+  eval_step: 1000
 
 dataset:
   train:
