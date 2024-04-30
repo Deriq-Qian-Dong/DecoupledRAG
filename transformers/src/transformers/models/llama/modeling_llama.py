@@ -818,7 +818,7 @@ class LlamaDecoderLayer(nn.Module):
             )
             # residual connection and gating
             gating_score = self.act(self.gate_crossattention)
-            hidden_states = gating_score*residual + (1-gating_score)*hidden_states
+            hidden_states = (1-gating_score)*residual + gating_score*hidden_states
 
         outputs = (hidden_states,)
 
