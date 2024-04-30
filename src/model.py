@@ -22,7 +22,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModel, AutoCon
 try:
     from transformers import GPT2LMandRetrievalHeadsModel, LlamaWithRetrievalHeadForCausalLM
 except:
-    pass
+    GPT2LMandRetrievalHeadsModel, LlamaWithRetrievalHeadForCausalLM = None, None
 from peft import LoraConfig, get_peft_model, PeftModel, TaskType
 
 
