@@ -55,6 +55,7 @@ else:
         "LlamaPreTrainedModel",
         "LlamaForSequenceClassification",
         "LlamaForQuestionAnswering",
+        "LlamaWithRetrievalHeadForCausalLM", 
     ]
 
 try:
