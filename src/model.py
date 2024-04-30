@@ -142,21 +142,25 @@ class ReGPTForCausalLM(nn.Module):
                 input_ids = torch.cat([input_ids, next_input_ids], dim=-1)
         return input_ids
 
-class RAGForGPT2CausalLM(nn.Module):
+MODEL_CLASS = {'gpt2': GPT2LMandRetrievalHeadsModel, 'llama': LlamaWithRetrievalHeadForCausalLM}
+class RAGForCausalLM(nn.Module):
     def __init__(self, train_config):
-        super(RAGForGPT2CausalLM, self).__init__()
+        super(RAGForCausalLM, self).__init__()
         config = AutoConfig.from_pretrained(train_config['model_name_or_path'])
         config.add_cross_attention = True
         config.faiss_dimension = train_config['faiss']['dimension']
         config.cross_attention_activation_function = train_config['cross_attention_activation_function']
         config.add_cross_attention_layer_number = train_config['add_cross_attention_layer_number']
-        model = GPT2LMandRetrievalHeadsModel.from_pretrained(train_config['model_name_or_path'], config=config)          
+        model = MODEL_CLASS[train_config['model_type']].from_pretrained(train_config['model_name_or_path'], config=config)          
         freeze_non_crossattention_parameters(model.base_model)
         if train_config['gradient_checkpointing']:
             model.gradient_checkpointing_enable()
             model.enable_input_require_grads()
-        model.base_model.wpe.weight.requires_grad = False
-        model.base_model.get_input_embeddings().weight.requires_grad = False
+        if train_config['model_type']=='gpt2':
+            model.base_model.wpe.weight.requires_grad = False
+            model.base_model.get_input_embeddings().weight.requires_grad = False
+        else:
+            model.base_model.embed_tokens.weight.requires_grad = False
         print_trainable_params_stats(model)
         self.model = model
         self.cross_entropy = nn.CrossEntropyLoss(reduction='mean', ignore_index=-1)
@@ -169,7 +173,8 @@ class RAGForGPT2CausalLM(nn.Module):
         retrieval_position = int(retrieval_position)
         self.model.base_model.config.retrieval_position = retrieval_position
         kwargs['encoder_hidden_states'] = neighbor_embeddings.to(self.dtype)
-        kwargs['p_reps'] = kwargs.pop('p_reps').to(self.dtype)
+        if 'p_reps' in kwargs and kwargs['p_reps'] is not None:
+            kwargs['p_reps'] = kwargs.pop('p_reps').to(self.dtype)
         outputs = self.model(**kwargs)
         return outputs
     
@@ -377,7 +382,7 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
         self.best_perplexity = 1e10
 
     def setup_model(self, train_config):
-        self.model = RAGForGPT2CausalLM(train_config)
+        self.model = RAGForCausalLM(train_config)
 
     def compute_loss(self, outputs):
         lm_loss = outputs.loss

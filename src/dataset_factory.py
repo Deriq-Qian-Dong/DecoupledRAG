@@ -35,7 +35,7 @@ class RAGPretrainDataset(Dataset):
         sample = self.datasets[idx]
         text = sample['text']
         neighbor_dr_embeddings = sample['neighbor_embeddings']
-        neighbor_gpt_embeddings = sample['neighbor_gpt2_embeddings']
+        neighbor_gpt_embeddings = sample.get('neighbor_gpt2_embeddings', None)
         return text, neighbor_dr_embeddings, neighbor_gpt_embeddings
 
     def __len__(self):
@@ -49,9 +49,13 @@ class RAGPretrainDataset(Dataset):
                                 truncation=True,
                                 return_tensors="pt")
         batch["labels"] = batch['input_ids']
-        batch['neighbor_embeddings'] = torch.tensor(neighbor_embeddings)
         batch['retrieval_position'] = torch.tensor(batch['input_ids'].size(1) // 2)
-        batch['p_reps'] = torch.tensor(p_reps)
+        if neighbor_embeddings[0] is not None:
+            batch['neighbor_embeddings'] = torch.tensor(neighbor_embeddings)
+            batch['p_reps'] = torch.tensor(p_reps)
+        else:
+            batch['neighbor_embeddings'] = torch.tensor(p_reps)
+            batch['p_reps'] = None
         return batch
 
 class DialogSFTDataset(Dataset):
