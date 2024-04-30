@@ -18,7 +18,11 @@ from torch.utils.data import DataLoader, Dataset
 from typing import List, Optional, Tuple, Union, Dict
 from deepspeed.ops.adam import DeepSpeedCPUAdam, FusedAdam
 from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR
-from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModel, AutoConfig, GPT2LMandRetrievalHeadsModel, LlamaWithRetrievalHeadForCausalLM
+from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModel, AutoConfig
+try:
+    from transformers import GPT2LMandRetrievalHeadsModel, LlamaWithRetrievalHeadForCausalLM
+except:
+    pass
 from peft import LoraConfig, get_peft_model, PeftModel, TaskType
 
 
