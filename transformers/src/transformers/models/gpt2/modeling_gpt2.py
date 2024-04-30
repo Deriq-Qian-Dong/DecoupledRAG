@@ -668,7 +668,7 @@ class GPT2Block(nn.Module):
             attn_output = cross_attn_outputs[0]
             # residual connection and gating
             gating_score = self.act(self.gate_crossattention)
-            hidden_states = gating_score*residual + (1-gating_score)*attn_output
+            hidden_states = (1-gating_score)*residual + gating_score*attn_output
             outputs = outputs + cross_attn_outputs[2:]  # add cross attentions if we output attention weights
 
         residual = hidden_states
