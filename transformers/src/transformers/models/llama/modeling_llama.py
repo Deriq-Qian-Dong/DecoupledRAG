@@ -1427,8 +1427,6 @@ class LlamaWithRetrievalHeadForCausalLM(LlamaPreTrainedModel):
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
         self.retrieval_head = nn.Linear(config.hidden_size, config.faiss_dimension, bias=True)
         self.negatives_x_device = config.negatives_x_device
-        if self.negatives_x_device:
-            self.world_size = torch.distributed.get_world_size()
         # Initialize weights and apply final processing
         self.post_init()
 
@@ -1454,7 +1452,7 @@ class LlamaWithRetrievalHeadForCausalLM(LlamaPreTrainedModel):
         if t is None:
             return None
         t = t.contiguous()
-
+        self.world_size = torch.distributed.get_world_size()
         all_tensors = [torch.empty_like(t) for _ in range(self.world_size)]
         torch.distributed.all_gather(all_tensors, t)
 
