@@ -1453,6 +1453,7 @@ class LlamaWithRetrievalHeadForCausalLM(LlamaPreTrainedModel):
             return None
         t = t.contiguous()
         self.world_size = torch.distributed.get_world_size()
+        self.process_rank = torch.distributed.get_rank()
         all_tensors = [torch.empty_like(t) for _ in range(self.world_size)]
         torch.distributed.all_gather(all_tensors, t)
 
