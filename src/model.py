@@ -155,6 +155,7 @@ class RAGForCausalLM(nn.Module):
         config.faiss_dimension = train_config['faiss']['dimension']
         config.cross_attention_activation_function = train_config['cross_attention_activation_function']
         config.add_cross_attention_layer_number = train_config['add_cross_attention_layer_number']
+        config.negatives_x_device = train_config['negatives_x_device']
         model = MODEL_CLASS[train_config['model_type']].from_pretrained(train_config['model_name_or_path'], config=config)          
         freeze_non_crossattention_parameters(model.base_model)
         if train_config['gradient_checkpointing']:
@@ -283,9 +284,10 @@ class LanguageModelTrainer:
     def train(self):
         model, optimizer, train_dataloader, scheduler, accelerator, epoch = self.model, self.optimizer, self.train_dataloader, self.scheduler, self.accelerator, self.epoch
         model.train()
-        step = 0
         pbar = tqdm(total=len(train_dataloader))
-        for batch in train_dataloader:
+        for step, batch in enumerate(train_dataloader):
+            if epoch==0 and step<=self.train_config['skip_steps']:
+                continue
             self.iter_count += 1
             total_time = time()
             seq_len = batch['input_ids'].size(1)
@@ -309,7 +311,6 @@ class LanguageModelTrainer:
             optimizer.zero_grad()
             if accelerator.is_main_process:
                 pbar.update(1)
-                step += 1
                 pbar.set_description(f"Epoch {epoch} | Step {step} | Loss: {loss.cpu().detach().float().numpy():.4f}")
             if self.iter_count%self.train_config['eval_step']==0:
                 self.test()

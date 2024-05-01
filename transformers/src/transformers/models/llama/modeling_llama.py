@@ -1426,7 +1426,9 @@ class LlamaWithRetrievalHeadForCausalLM(LlamaPreTrainedModel):
         self.vocab_size = config.vocab_size
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
         self.retrieval_head = nn.Linear(config.hidden_size, config.faiss_dimension, bias=True)
-
+        self.negatives_x_device = config.negatives_x_device
+        if self.negatives_x_device:
+            self.world_size = torch.distributed.get_world_size()
         # Initialize weights and apply final processing
         self.post_init()
 
@@ -1448,6 +1450,19 @@ class LlamaWithRetrievalHeadForCausalLM(LlamaPreTrainedModel):
     def get_decoder(self):
         return self.model
 
+    def _dist_gather_tensor(self, t: Optional[torch.Tensor]):
+        if t is None:
+            return None
+        t = t.contiguous()
+
+        all_tensors = [torch.empty_like(t) for _ in range(self.world_size)]
+        torch.distributed.all_gather(all_tensors, t)
+
+        all_tensors[self.process_rank] = t
+        all_tensors = torch.cat(all_tensors, dim=0)
+
+        return all_tensors
+    
     @add_start_docstrings_to_model_forward(LLAMA_INPUTS_DOCSTRING)
     @replace_return_docstrings(output_type=CausalLMOutputWithPast, config_class=_CONFIG_FOR_DOC)
     def forward(
@@ -1543,6 +1558,9 @@ class LlamaWithRetrievalHeadForCausalLM(LlamaPreTrainedModel):
             p_reps = encoder_hidden_states.view(-1, encoder_hidden_states.size(-1))
         else:
             p_reps = p_reps.view(-1, p_reps.size(-1))
+        if self.negatives_x_device:
+            q_reps = self._dist_gather_tensor(q_reps)
+            p_reps = self._dist_gather_tensor(p_reps)
         scores = torch.matmul(q_reps, p_reps.transpose(0, 1))
         target = torch.arange(scores.size(0), device=scores.device, dtype=torch.long)
         target = target * (p_reps.size(0) // q_reps.size(0))

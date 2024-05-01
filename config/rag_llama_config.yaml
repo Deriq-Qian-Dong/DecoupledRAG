@@ -21,11 +21,13 @@ training:
   log_with: tensorboard
   project_dir: output/
   negatives_in_device: true
+  negatives_x_device: true
   predict_from_last: 10000
   eval_step: 1000
   start_from: 0
   cross_attention_activation_function: relu
   add_cross_attention_layer_number: 1
+  skip_steps: 3000
 
 dataset:
   train:
