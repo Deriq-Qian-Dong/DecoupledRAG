@@ -4,8 +4,8 @@ training:
   project_name: RAG_llama2-sft
   # model_name_or_path: ../Llama-2-7b-chat-hf/
   # tokenizer_name_or_path: ../Llama-2-7b-chat-hf/
-  model_name_or_path: ../rag_llama2/SFT-best/
-  tokenizer_name_or_path: ../rag_llama2/SFT-best/
+  model_name_or_path: ../output/SFT-best/
+  tokenizer_name_or_path: ../output/SFT-best/
   num_layers_unfrozen: -1
   gradient_checkpointing: true
   optimizer: 
@@ -34,13 +34,13 @@ training:
 dataset:
   train:
     dataset_name: RAGPretrainDataset
-    batch_size: 32
+    batch_size: 40
     # data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train_gpt2_embeddings/
     data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train_llama2/
     max_seq_len: 256
   test:
     dataset_name: RAGPretrainDataset
-    batch_size: 32
+    batch_size: 40
     # data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_test_gpt2_embeddings/
     data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_test_llama2/
     max_seq_len: 256
