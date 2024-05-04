@@ -2,7 +2,8 @@ unset https_proxy
 pip install -r requirements.txt
 git config --global user.email "dongqian"
 git config --global user.name "dongqian"
-export https_proxy=http://172.19.57.45:3128
+export https_proxy='http://agent.baidu.com:8891'
+export http_proxy='http://agent.baidu.com:8891'
 mkdir -p ../data_of_ReGPT
 mkdir -p ../data_of_ReGPT/marco
 cp -r ../data/data_of_ReGPT/marco/sorted_datasets_train_llama2/ ../data_of_ReGPT/marco
