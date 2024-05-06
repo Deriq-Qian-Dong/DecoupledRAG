@@ -28,7 +28,7 @@ training:
   eval_step: 1000
   start_from: 0
   cross_attention_activation_function: relu
-  add_cross_attention_layer_number: 2
+  add_cross_attention_layer_number: 3
   skip_steps: 6000
 
 dataset:
