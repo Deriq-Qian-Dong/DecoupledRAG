@@ -399,7 +399,7 @@ class LlamaAttention(nn.Module):
         # upcast attention to fp32
         attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query_states.dtype)
         attn_weights = nn.functional.dropout(attn_weights, p=self.attention_dropout, training=self.training)
-        if self.is_cross_attention:
+        if self.is_cross_attention and self.training:
             causal_mask_for_cross_attn = torch.ones(
                 (1, 1, q_len, kv_len), dtype=torch.bool, device=attn_weights.device
             )
@@ -798,7 +798,7 @@ class LlamaDecoderLayer(nn.Module):
         hidden_states = self.mlp(hidden_states)
         hidden_states = residual + hidden_states
 
-        if self.add_cross_attention:
+        if self.add_cross_attention and encoder_hidden_states is not None:
             # add one self-attention block for cross-attention
             if not hasattr(self, "crossattention"):
                 raise ValueError(
@@ -1784,7 +1784,7 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
         logits = logits.float()
 
         if input_ids.size(1)%self.config.retrieval_step==0 and input_ids.size(1)>10:
-            q_reps = self.retrieval_head(hidden_states[:, self.config.retrieval_position-1, :])
+            q_reps = self.retrieval_head(hidden_states[:, -1, :])
             # Get the top-k similar vectors from knowledge base
             scores = torch.matmul(q_reps, self.kb.t())
             topk_scores, topk_indices = torch.topk(scores, self.config.topk, dim=1)
