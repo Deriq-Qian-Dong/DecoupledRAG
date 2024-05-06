@@ -107,3 +107,30 @@ print(generated_text)
 print('单词个数:', len(generated_text.split()))
 print('用时：',time()-start)
 
+from transformers import AutoConfig, LlamaWithRetrievalHeadForInference, AutoTokenizer
+config = AutoConfig.from_pretrained('../../rag_llama2/one_ca_layer/SFT-best/')
+config.add_cross_attention = True
+config.faiss_dimension = 768
+config.cross_attention_activation_function = 'relu'
+config.add_cross_attention_layer_number = 1
+config.negatives_x_device = True
+
+config.kb_path = '../../data_of_ReGPT/marco/phrases_embeddings.npy'
+config.retrieval_step = 10
+config.topk = 6
+
+model = LlamaWithRetrievalHeadForInference.from_pretrained('../../rag_llama2/one_ca_layer/SFT-best/', config=config)          
+model = model.cuda()
+tokenizer = AutoTokenizer.from_pretrained('../../rag_llama2/one_ca_layer/SFT-best/')
+
+
+input_text = 'The presence of communication amid scientific minds was equally important to the success of the Manhattan Project as scientific intellect was. The only cloud hanging over the impressive achievement of the atomic researchers and engineers is what their success truly meant; hundreds of thousands of innocent lives obliterated.'
+input_ids = tokenizer(input_text, return_tensors="pt").input_ids.to("cuda")
+
+input_ids = input_ids[:,:30]
+outputs = model.generate(input_ids,max_new_tokens=100)
+from datasets import load_dataset
+dataset = load_dataset('csv', data_files={'train': '../../data_of_ReGPT/marco/collection.tsv'}, delimiter='\t',column_names=['pid', 'text'])['train']
+
+
+
