@@ -1686,10 +1686,10 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
         self.vocab_size = config.vocab_size
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
         self.retrieval_head = nn.Linear(config.hidden_size, config.faiss_dimension, bias=True)
-        self.kb = np.load(config.kb_path)
-        self.kb = torch.from_numpy(self.kb)
+        kb = np.load(config.kb_path)
+        kb = torch.from_numpy(kb)
         # Register the kb as a buffer
-        self.register_buffer("kb", self.kb)
+        self.register_buffer("kb", kb)
         # Initialize weights and apply final processing
         self.post_init()
 
