@@ -672,6 +672,9 @@ class GenerationMixin:
 
         if "cache_position" in model_kwargs and model_kwargs["cache_position"] is not None:
             model_kwargs["cache_position"] = model_kwargs["cache_position"][-1:] + 1
+        
+        if getattr(outputs, "encoder_hidden_states", None) is not None:
+            model_kwargs['encoder_hidden_states'] = outputs.encoder_hidden_states
 
         return model_kwargs
 
