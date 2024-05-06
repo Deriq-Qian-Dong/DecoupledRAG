@@ -1783,7 +1783,7 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
             logits = self.lm_head(hidden_states)
         logits = logits.float()
 
-        if input_ids.size(1)%self.config.retrieval_step==0 and input_ids.size(1)>=10:
+        if logits.size(1)%self.config.retrieval_step==0 and logits.size(1)>=10:
             q_reps = self.retrieval_head(hidden_states[:, -1, :])
             # Get the top-k similar vectors from knowledge base
             scores = torch.matmul(q_reps, self.kb.t())
