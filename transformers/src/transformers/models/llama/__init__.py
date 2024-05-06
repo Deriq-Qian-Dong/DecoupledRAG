@@ -56,6 +56,7 @@ else:
         "LlamaForSequenceClassification",
         "LlamaForQuestionAnswering",
         "LlamaWithRetrievalHeadForCausalLM", 
+        "LlamaWithRetrievalHeadForInference",
     ]
 
 try:
@@ -99,6 +100,7 @@ if TYPE_CHECKING:
             LlamaModel,
             LlamaPreTrainedModel,
             LlamaWithRetrievalHeadForCausalLM,
+            LlamaWithRetrievalHeadForInference,
         )
 
     try:
