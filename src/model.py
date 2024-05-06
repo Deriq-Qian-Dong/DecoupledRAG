@@ -398,7 +398,6 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
     
     def task_specific_stats(self, stats, model):
         stats['retrieval_position'] = self.accelerator.unwrap_model(model).model.base_model.config.retrieval_position
-        print(self.config['training']['add_cross_attention_layer_number'])
         for i in range(self.config['training']['add_cross_attention_layer_number']):
             stats[f'gate_score/{i}'] = self.accelerator.unwrap_model(model).model.base_model.layers[-i-1].gate_crossattention.cpu().detach().float().numpy()[0]
         print(stats)

@@ -740,7 +740,7 @@ class LlamaDecoderLayer(nn.Module):
             self.crossattention_input_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
             self.crossattention_post_attention_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
-            self.gate_crossattention = nn.Parameter(torch.zeros(1))
+            self.gate_crossattention = nn.Parameter(torch.ones(1))
             self.act = ACT2FN[config.cross_attention_activation_function]
 
 
@@ -819,7 +819,7 @@ class LlamaDecoderLayer(nn.Module):
             )
             # residual connection and gating
             gating_score = self.act(self.gate_crossattention)
-            hidden_states = (1-gating_score)*residual + gating_score*hidden_states
+            hidden_states = gating_score*residual + (1-gating_score)*hidden_states
 
         outputs = (hidden_states,)
 
