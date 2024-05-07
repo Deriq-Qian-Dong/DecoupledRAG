@@ -30,6 +30,7 @@ training:
   cross_attention_activation_function: silu
   add_cross_attention_layer_number: 1
   skip_steps: 0
+  max_tokens: 10240
 
 dataset:
   train:

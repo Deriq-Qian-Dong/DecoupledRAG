@@ -3,10 +3,37 @@ import re
 import torch
 import numpy as np
 from utils import print_rank_0
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, Sampler
 from transformers import DataCollatorWithPadding
 from datasets import load_dataset, load_from_disk
+import math
 
+class DynamicBatchSampler(Sampler):
+    def __init__(self, dataset, max_tokens):
+        self.dataset = dataset
+        self.max_tokens = max_tokens
+        total_tokens = dataset.total_tokens
+        self.num_samples = math.ceil(total_tokens / self.max_tokens)
+
+    def __iter__(self):
+        batch = []
+        current_batch_tokens = 0
+        
+        for idx in range(len(self.dataset)):
+            seq_len = min(self.dataset[idx][-1], 256)
+            if current_batch_tokens + seq_len > self.max_tokens:
+                if batch:
+                    yield batch
+                batch = []
+                current_batch_tokens = 0
+            batch.append(idx)
+            current_batch_tokens += seq_len
+
+        if batch:
+            yield batch
+
+    def __len__(self):
+        return self.num_samples
 class RAGPretrainDataset(Dataset):
     def __init__(self, tokenizer, args):
         self.args = args
