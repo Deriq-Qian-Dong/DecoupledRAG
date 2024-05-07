@@ -204,9 +204,9 @@ class LanguageModelTrainer:
         
     def set_epoch_to_dataset(self):
         self.train_dataset.set_epoch(self.epoch)
-        sampler = DynamicBatchSampler(self.train_dataset, self.config['training']['max_tokens'])
+        sampler = DynamicBatchSampler(self.train_dataset, self.config['training']['max_tokens'], num_replicas=self.accelerator.num_processes, rank=self.accelerator.process_index)
         self.train_dataloader = DataLoader(self.train_dataset, batch_sampler=sampler, shuffle=False, collate_fn=self.train_dataset._collate_fn)
-        self.train_dataloader = self.accelerator.prepare_data_loader(self.train_dataloader)
+        # self.train_dataloader = self.accelerator.prepare_data_loader(self.train_dataloader)
 
     def setup_model(self, train_config):
         model = AutoModelForCausalLM.from_pretrained(train_config['model_name_or_path'], use_cache=not train_config['gradient_checkpointing'])
@@ -292,12 +292,14 @@ class LanguageModelTrainer:
             self.iter_count += 1
             total_time = time()
             seq_len = batch['input_ids'].size(1)
+            batch_size = batch.input_ids.shape[0]
             batch = accelerator.prepare(batch)
             forward_time = time()
             outputs = model(**batch)
             forward_time = time() - forward_time
             loss, stats = self.compute_loss(outputs)
             stats["seq_len"] = seq_len
+            stats["batch_size"] = batch_size
             stats = self.task_specific_stats(stats, model)
             backward_time = time()
             accelerator.backward(loss)
