@@ -13,6 +13,7 @@ class DynamicBatchSampler(DistributedSampler):
         super().__init__(dataset, num_replicas=num_replicas, rank=rank, shuffle=False)
         self.dataset = dataset
         self.max_tokens = max_tokens
+        dataset.update_total_tokens()
         total_tokens = dataset.total_tokens
         self.num_samples = math.ceil(total_tokens / self.max_tokens)
 
@@ -54,6 +55,11 @@ class RAGPretrainDataset(Dataset):
         # self.datasets = self.datasets.flatten_indices()
         # self.datasets = self.datasets.sort('input_ids_length', reverse=True)
         self.num_samples = len(self.datasets)
+        input_ids_lengths = self.datasets['input_ids_length']
+        input_ids_lengths = [min(self.args['max_seq_len'], length) for length in input_ids_lengths]
+        self.total_tokens = sum(input_ids_lengths)
+    
+    def update_total_tokens(self):
         input_ids_lengths = self.datasets['input_ids_length']
         input_ids_lengths = [min(self.args['max_seq_len'], length) for length in input_ids_lengths]
         self.total_tokens = sum(input_ids_lengths)
