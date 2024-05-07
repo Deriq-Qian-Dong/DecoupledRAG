@@ -45,4 +45,4 @@ for step, batch in enumerate(dataloader):
     accelerator.log(stats, step)
     if accelerator.is_main_process:
         pbar.update(1)
-
+print(step, accelerator.process_index)
