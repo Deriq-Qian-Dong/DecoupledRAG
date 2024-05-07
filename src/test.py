@@ -29,9 +29,9 @@ tokenizer = AutoTokenizer.from_pretrained('./output/SFT-new/')
 args = {'data_name_or_path':'../data_of_ReGPT/marco/sorted_datasets_train_llama2/','max_seq_len':256}
 data = RAGPretrainDataset(tokenizer, args)
 max_tokens = 32 * 256  # 设置每个batch的最大token数
-sampler = DynamicBatchSampler(data, max_tokens)
-dataloader = DataLoader(data, batch_sampler=sampler, shuffle=False, collate_fn=data._collate_fn)
 accelerator = Accelerator(log_with='tensorboard', project_dir='output_test/')
+sampler = DynamicBatchSampler(data, max_tokens, num_replicas=accelerator.num_processes, rank=accelerator.process_index)
+dataloader = DataLoader(data, batch_sampler=sampler, shuffle=False, collate_fn=data._collate_fn)
 current_time = datetime.datetime.now()
 timestamp = current_time.strftime("%Y-%m-%d-%H-%M-%S")
 accelerator.init_trackers(project_name=f'test_{timestamp}')

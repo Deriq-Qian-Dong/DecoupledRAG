@@ -3,13 +3,14 @@ import re
 import torch
 import numpy as np
 from utils import print_rank_0
-from torch.utils.data import DataLoader, Dataset, BatchSampler
+from torch.utils.data import DataLoader, Dataset, BatchSampler, DistributedSampler
 from transformers import DataCollatorWithPadding
 from datasets import load_dataset, load_from_disk
 import math
 
-class DynamicBatchSampler(BatchSampler):
-    def __init__(self, dataset, max_tokens):
+class DynamicBatchSampler(DistributedSampler):
+    def __init__(self, dataset, max_tokens, num_replicas, rank):
+        super().__init__(dataset, num_replicas=num_replicas, rank=rank, shuffle=False)
         self.dataset = dataset
         self.max_tokens = max_tokens
         total_tokens = dataset.total_tokens
