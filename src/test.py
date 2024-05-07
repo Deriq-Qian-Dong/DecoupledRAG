@@ -35,7 +35,7 @@ accelerator = Accelerator(log_with='tensorboard', project_dir='output_test/')
 current_time = datetime.datetime.now()
 timestamp = current_time.strftime("%Y-%m-%d-%H-%M-%S")
 accelerator.init_trackers(project_name=f'test_{timestamp}')
-dataloader = accelerator.prepare_data_loader(dataloader)
+# dataloader = accelerator.prepare_data_loader(dataloader)
 pbar = tqdm(total=len(dataloader))
 for step, batch in enumerate(dataloader):
     batch_size = batch.input_ids.shape[0]
