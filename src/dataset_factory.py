@@ -12,9 +12,9 @@ class DynamicBatchSampler(Sampler):
     def __init__(self, dataset, max_tokens, num_replicas, rank):
         self.dataset = dataset.datasets.shard(num_shards=num_replicas, index=rank)
         self.max_tokens = max_tokens
-        dataset.update_total_tokens()
-        total_tokens = dataset.total_tokens
-        print(rank, len(dataset))
+        self.dataset.update_total_tokens()
+        total_tokens = self.dataset.total_tokens
+        print(rank, len(self.dataset))
         self.num_samples = math.ceil(total_tokens / self.max_tokens)
 
     def __iter__(self):
