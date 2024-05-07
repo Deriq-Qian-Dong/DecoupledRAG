@@ -54,6 +54,7 @@ class RAGPretrainDataset(Dataset):
         # self.datasets = self.datasets.map(self.add_input_ids)
         # self.datasets = self.datasets.flatten_indices()
         # self.datasets = self.datasets.sort('input_ids_length', reverse=True)
+        self.datasets = self.datasets.select(range(2205416-10000,2205416))
         self.num_samples = len(self.datasets)
         input_ids_lengths = self.datasets['input_ids_length']
         input_ids_lengths = [min(self.args['max_seq_len'], length) for length in input_ids_lengths]
