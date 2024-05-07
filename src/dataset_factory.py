@@ -36,13 +36,13 @@ class RAGPretrainDataset(Dataset):
         text = sample['text']
         neighbor_dr_embeddings = sample['neighbor_embeddings']
         neighbor_gpt_embeddings = sample.get('neighbor_gpt2_embeddings', None)
-        return text, neighbor_dr_embeddings, neighbor_gpt_embeddings
+        return text, neighbor_dr_embeddings, neighbor_gpt_embeddings, sample['input_ids_length']
 
     def __len__(self):
         return self.num_samples
 
     def _collate_fn(self, elems):
-        texts, p_reps, neighbor_embeddings = zip(*elems)
+        texts, p_reps, neighbor_embeddings, _ = zip(*elems)
         batch = self.tokenizer(texts,
                                 max_length=self.args['max_seq_len'],
                                 padding=True,
