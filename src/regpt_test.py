@@ -108,7 +108,8 @@ print('单词个数:', len(generated_text.split()))
 print('用时：',time()-start)
 
 from transformers import AutoConfig, LlamaWithRetrievalHeadForInference, AutoTokenizer
-config = AutoConfig.from_pretrained('../../rag_llama2/one_ca_layer/SFT-best/')
+model_path = '../../rag_llama2/two_ca_layer/SFT-best/'
+config = AutoConfig.from_pretrained(model_path)
 config.add_cross_attention = True
 config.faiss_dimension = 768
 config.cross_attention_activation_function = 'relu'
@@ -119,9 +120,9 @@ config.kb_path = '../../data_of_ReGPT/marco/phrases_embeddings.npy'
 config.retrieval_step = 10
 config.topk = 6
 
-model = LlamaWithRetrievalHeadForInference.from_pretrained('../../rag_llama2/one_ca_layer/SFT-best/', config=config)          
+model = LlamaWithRetrievalHeadForInference.from_pretrained(model_path, config=config)          
 model = model.cuda()
-tokenizer = AutoTokenizer.from_pretrained('../../rag_llama2/one_ca_layer/SFT-best/')
+tokenizer = AutoTokenizer.from_pretrained(model_path)
 
 
 input_text = 'The presence of communication amid scientific minds was equally important to the success of the Manhattan Project as scientific intellect was. The only cloud hanging over the impressive achievement of the atomic researchers and engineers is what their success truly meant; hundreds of thousands of innocent lives obliterated.'
