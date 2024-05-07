@@ -1549,7 +1549,10 @@ class LlamaWithRetrievalHeadForCausalLM(LlamaPreTrainedModel):
             shift_labels = shift_labels.to(shift_logits.device)
             loss = loss_fct(shift_logits, shift_labels)
 
-        q_reps = self.retrieval_head(hidden_states[:, self.config.retrieval_position-1, :])
+        # q_reps = self.retrieval_head(hidden_states[:, self.config.retrieval_position-1, :])
+        q_reps = self.retrieval_head(hidden_states[:, :self.config.retrieval_position, :])
+        # Compute the mean pooling of q_reps
+        q_reps = q_reps.mean(dim=1)
         # The shape of q_reps is (batch_size, faiss_dimension)
         # The shape of encoder_hidden_states is (batch_size, num_of_psg_samples, faiss_dimension), the first one is positive sample
 
