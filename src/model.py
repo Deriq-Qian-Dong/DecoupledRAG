@@ -231,6 +231,19 @@ class LanguageModelTrainer:
     
     def setup_config(self, train_config, dataset_config):
         return train_config, dataset_config
+    
+    def _prepare_inputs(self, record):
+        prepared = {}
+        local_rank = self.accelerator.process_index
+        for key in record:
+            x = record[key]
+            if isinstance(x, torch.Tensor):
+                prepared[key] = x.to(local_rank)
+            elif x is None:
+                prepared[key] = x
+            else:
+                prepared[key] = self._prepare_inputs(x)
+        return prepared
 
     def setup(self):
         config = self.config
@@ -293,6 +306,7 @@ class LanguageModelTrainer:
             total_time = time()
             seq_len = batch['input_ids'].size(1)
             batch_size = batch.input_ids.shape[0]
+            batch = self._prepare_inputs(batch)
             batch = accelerator.prepare(batch)
             forward_time = time()
             outputs = model(**batch)
