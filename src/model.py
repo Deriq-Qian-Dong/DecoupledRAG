@@ -344,6 +344,7 @@ class LanguageModelTrainer:
         model, tokenizer, optimizer, scheduler, test_dataloader, accelerator, iter_count = self.model, self.tokenizer, self.optimizer, self.scheduler, self.test_dataloader, self.accelerator, self.iter_count
         model.eval()
         total_loss = 0
+        total_retrieval_loss = 0
         with torch.no_grad():
             for batch in tqdm(test_dataloader, desc=f"Evaluation of step {iter_count}", disable=not accelerator.is_main_process):
                 batch = accelerator.prepare(batch)
