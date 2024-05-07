@@ -30,6 +30,7 @@ args = {'data_name_or_path':'../data_of_ReGPT/marco/sorted_datasets_train_llama2
 data = RAGPretrainDataset(tokenizer, args)
 max_tokens = 32 * 256  # 设置每个batch的最大token数
 accelerator = Accelerator(log_with='tensorboard', project_dir='output_test/')
+print('world size: %d\nlocal rank: %d' % (accelerator.world_size, accelerator.process_index))
 sampler = DynamicBatchSampler(data, max_tokens, num_replicas=accelerator.num_processes, rank=accelerator.process_index)
 dataloader = DataLoader(data, batch_sampler=sampler, shuffle=False, collate_fn=data._collate_fn)
 current_time = datetime.datetime.now()
