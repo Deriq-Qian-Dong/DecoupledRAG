@@ -3,12 +3,12 @@ import re
 import torch
 import numpy as np
 from utils import print_rank_0
-from torch.utils.data import DataLoader, Dataset, Sampler
+from torch.utils.data import DataLoader, Dataset, BatchSampler
 from transformers import DataCollatorWithPadding
 from datasets import load_dataset, load_from_disk
 import math
 
-class DynamicBatchSampler(Sampler):
+class DynamicBatchSampler(BatchSampler):
     def __init__(self, dataset, max_tokens):
         self.dataset = dataset
         self.max_tokens = max_tokens
