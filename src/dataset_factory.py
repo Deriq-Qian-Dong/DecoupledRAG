@@ -15,6 +15,7 @@ class DynamicBatchSampler(DistributedSampler):
         self.max_tokens = max_tokens
         dataset.update_total_tokens()
         total_tokens = dataset.total_tokens
+        print(rank, len(dataset))
         self.num_samples = math.ceil(total_tokens / self.max_tokens)
 
     def __iter__(self):
