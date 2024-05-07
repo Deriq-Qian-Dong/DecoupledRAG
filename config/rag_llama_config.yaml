@@ -29,8 +29,8 @@ training:
   start_from: 0
   cross_attention_activation_function: silu
   add_cross_attention_layer_number: 1
-  skip_steps: 3600
-  max_tokens: 10240
+  skip_steps: 1800
+  max_tokens: 16384
 
 dataset:
   train:
