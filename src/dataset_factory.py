@@ -77,7 +77,7 @@ class RAGPretrainDataset(Dataset):
         return text, neighbor_dr_embeddings, neighbor_gpt_embeddings, sample['input_ids_length']
 
     def __len__(self):
-        return self.num_samples
+        return len(self.datasets)
 
     def _collate_fn(self, elems):
         texts, p_reps, neighbor_embeddings, _ = zip(*elems)
