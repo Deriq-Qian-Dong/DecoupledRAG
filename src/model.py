@@ -312,8 +312,8 @@ class LanguageModelTrainer:
             outputs = model(**batch)
             forward_time = time() - forward_time
             loss, stats = self.compute_loss(outputs)
-            stats["seq_len"] = seq_len
-            stats["batch_size"] = batch_size
+            stats["training/seq_len"] = seq_len
+            stats["training/batch_size"] = batch_size
             stats = self.task_specific_stats(stats, model)
             backward_time = time()
             accelerator.backward(loss)
@@ -322,7 +322,7 @@ class LanguageModelTrainer:
             stats["time/backward"] = backward_time
             opt_time = time()
             for group_number, lr in enumerate(scheduler.get_last_lr()):
-                stats[f"learning_rate"] = lr
+                stats[f"training/learning_rate"] = lr
             optimizer.step()
             scheduler.step()
             optimizer.zero_grad()
@@ -415,11 +415,11 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
         lm_loss = outputs.loss
         retrieval_loss = outputs.retrieval_loss
         loss = lm_loss + retrieval_loss
-        stats = {"lm_loss": float(lm_loss.cpu().detach().float().numpy()), "retrieval_loss": float(retrieval_loss.cpu().detach().float().numpy()), "loss": float(loss.cpu().detach().float().numpy())}
+        stats = {"training/lm_loss": float(lm_loss.cpu().detach().float().numpy()), "training/retrieval_loss": float(retrieval_loss.cpu().detach().float().numpy()), "training/loss": float(loss.cpu().detach().float().numpy())}
         return loss, stats
     
     def task_specific_stats(self, stats, model):
-        stats['retrieval_position'] = self.accelerator.unwrap_model(model).model.base_model.config.retrieval_position
+        stats['training/retrieval_position'] = self.accelerator.unwrap_model(model).model.base_model.config.retrieval_position
         for i in range(self.config['training']['add_cross_attention_layer_number']):
             stats[f'gate_score/{i}'] = float(self.accelerator.unwrap_model(model).model.base_model.layers[-i-1].gate_crossattention.cpu().detach().float().numpy()[0])
         return stats
