@@ -351,12 +351,16 @@ class LanguageModelTrainer:
                 loss = outputs.loss
                 loss = accelerator.gather_for_metrics(loss)
                 total_loss += loss.cpu().detach().float().numpy().mean()
+                retrieval_loss = outputs.retrieval_loss
+                retrieval_loss = accelerator.gather_for_metrics(retrieval_loss)
+                total_retrieval_loss += retrieval_loss.cpu().detach().float().numpy().mean()
         total_loss /= len(test_dataloader)
+        total_retrieval_loss /= len(test_dataloader)
         perplexity = np.exp(total_loss)
-        accelerator.print(f"Step {iter_count} | Perplexity: {perplexity:.4f} | Loss: {total_loss:.4f}")
+        accelerator.print(f"Step {iter_count} | Perplexity: {perplexity:.4f} | Loss: {total_loss:.4f} | Retrieval Loss: {total_retrieval_loss:.4f}")
         directory = f"output/SFT-best/"
         accelerator.wait_for_everyone()
-        stats = {"test/perplexity": perplexity, "test/loss": total_loss}
+        stats = {"test/perplexity": perplexity, "test/loss": total_loss, "test/retrieval_loss": total_retrieval_loss}
         accelerator.log(stats, step=self.iter_count)
         if accelerator.is_main_process:
             if perplexity<self.best_perplexity:
