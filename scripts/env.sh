@@ -8,6 +8,7 @@ mkdir -p ../data_of_ReGPT
 mkdir -p ../data_of_ReGPT/marco
 cp -r ../data/data_of_ReGPT/marco/sorted_datasets_train_llama2/ ../data_of_ReGPT/marco
 cp -r ../data/data_of_ReGPT/marco/sorted_datasets_test_llama2/ ../data_of_ReGPT/marco
+cp -r ../data/data_of_ReGPT/marco/phrases_embeddings.npy ../data_of_ReGPT/marco
 # cp -r ../data/data_of_ReGPT/WikiText-103/ ../data_of_ReGPT/
 # cp -r ../data/data_of_ReGPT/phrases_WikiText-103/ ../data_of_ReGPT/
 # cp -r ../data/data_of_ReGPT/llama2-7b-phrase-tokenizer-trained-on-WikiText103/ ../data_of_ReGPT/
