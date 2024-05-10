@@ -1786,8 +1786,24 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
             logits = self.lm_head(hidden_states)
         logits = logits.float()
 
+        loss = None
+        if labels is not None:
+            # Shift so that tokens < n predict n
+            shift_logits = logits[..., :-1, :].contiguous()
+            shift_labels = labels[..., 1:].contiguous()
+            # Flatten the tokens
+            loss_fct = CrossEntropyLoss()
+            shift_logits = shift_logits.view(-1, self.config.vocab_size)
+            shift_labels = shift_labels.view(-1)
+            # Enable model parallelism
+            shift_labels = shift_labels.to(shift_logits.device)
+            loss = loss_fct(shift_logits, shift_labels)
+
         # current sequence length
-        curr_seq_len = past_key_values[0][0].size(-2) if past_key_values is not None else 0
+        if past_key_values is not None:
+            curr_seq_len = past_key_values[0][0].size(-2)
+        else:
+            curr_seq_len = input_ids.size(-1)
         if curr_seq_len%self.config.retrieval_step==0 and curr_seq_len>=10:
             q_reps = self.retrieval_head(hidden_states)
             # Compute the mean pooling of q_reps
@@ -1801,6 +1817,7 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
 
 
         return CausalLMOutputWithPast(
+            loss=loss,
             logits=logits,
             past_key_values=outputs.past_key_values,
             hidden_states=outputs.hidden_states,

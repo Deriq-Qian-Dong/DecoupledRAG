@@ -112,7 +112,7 @@ model_path = '../../rag_llama2/two_ca_layer/SFT-best/'
 config = AutoConfig.from_pretrained(model_path)
 config.add_cross_attention = True
 config.faiss_dimension = 768
-config.cross_attention_activation_function = 'relu'
+config.cross_attention_activation_function = 'silu'
 config.add_cross_attention_layer_number = 1
 config.negatives_x_device = True
 

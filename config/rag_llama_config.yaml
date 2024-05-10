@@ -31,6 +31,7 @@ training:
   add_cross_attention_layer_number: 1
   skip_steps: 500
   max_tokens: 16384
+  kb_path: ../data_of_ReGPT/marco/phrases_embeddings.npy
 
 dataset:
   train:

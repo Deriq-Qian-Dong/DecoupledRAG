@@ -20,9 +20,9 @@ from deepspeed.ops.adam import DeepSpeedCPUAdam, FusedAdam
 from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModel, AutoConfig
 try:
-    from transformers import GPT2LMandRetrievalHeadsModel, LlamaWithRetrievalHeadForCausalLM
+    from transformers import GPT2LMandRetrievalHeadsModel, LlamaWithRetrievalHeadForCausalLM, LlamaWithRetrievalHeadForInference
 except:
-    GPT2LMandRetrievalHeadsModel, LlamaWithRetrievalHeadForCausalLM = None, None
+    GPT2LMandRetrievalHeadsModel, LlamaWithRetrievalHeadForCausalLM, LlamaWithRetrievalHeadForInference = None, None, None
 from peft import LoraConfig, get_peft_model, PeftModel, TaskType
 
 
@@ -427,3 +427,76 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
             stats[f'gate_score/{i}'] = float(self.accelerator.unwrap_model(model).model.base_model.layers[-i-1].gate_crossattention.cpu().detach().float().numpy()[0])
         return stats
 
+class RAGLanguageModelTester(RAGLanguageModelTrainer):
+    def __init__(self, config):
+        self.config = config
+        RAG_kwargs = config['RAG_kwargs']
+        generation_kwargs = config['generation_kwargs']
+        self.config['training'].update(RAG_kwargs)
+        self.config['training'].update(generation_kwargs)
+        self.config['dataset']['train'].update(RAG_kwargs)
+        self.config['dataset']['test'].update(RAG_kwargs)
+        
+        train_config = config['training']
+        model_config = AutoConfig.from_pretrained(train_config['model_name_or_path'])
+        model_config.add_cross_attention = True
+        model_config.faiss_dimension = train_config['faiss']['dimension']
+        model_config.cross_attention_activation_function = train_config['cross_attention_activation_function']
+        model_config.add_cross_attention_layer_number = train_config['add_cross_attention_layer_number']
+        model_config.kb_path = train_config['kb_path']
+        model_config.retrieval_step = train_config['retrieval_step']
+        model_config.topk = train_config['topk']
+        
+        self.model = LlamaWithRetrievalHeadForInference.from_pretrained(config['training']['model_name_or_path'], config=model_config)
+        tokenizer = AutoTokenizer.from_pretrained(config['training']['tokenizer_name_or_path'])
+        dataset_config = config['dataset']
+        self.test_dataset = dataset_class[dataset_config['test']['dataset_name']](tokenizer, dataset_config['test'])
+        self.test_dataloader = DataLoader(self.test_dataset, batch_size=dataset_config['test']['batch_size'], shuffle=False, collate_fn=self.test_dataset._collate_fn)
+        self.tokenizer = tokenizer
+        self.accelerator = Accelerator(log_with=config['training']['log_with'], project_dir=config['training']['project_dir'])
+        self.model = self.accelerator.prepare_model(self.model)
+        self.test_dataloader = self.accelerator.prepare_data_loader(self.test_dataloader)
+
+    def test(self):
+        model, tokenizer, test_dataloader, accelerator = self.model, self.tokenizer, self.test_dataloader, self.accelerator
+        model.eval()
+        total_loss = 0
+        total_retrieval_loss = 0
+        with torch.no_grad():
+            for batch in tqdm(test_dataloader, desc=f"Evaluation", disable=not accelerator.is_main_process):
+                neighbor_embeddings = batch.pop('neighbor_embeddings')
+                retrieval_position = batch.pop('retrieval_position')
+                retrieval_position = int(retrieval_position)
+                retrieval_step = self.config.training['retrieval_step']
+                seq_len = batch['input_ids'].size(1)
+                labels = batch.pop('labels')
+                if retrieval_step<0:
+                    retrieval_step = retrieval_position
+                # generate with teacher forcing and retrieval for each retrieval_step
+                for i in range(retrieval_step, seq_len, retrieval_step):
+
+                batch = accelerator.prepare(batch)
+                outputs = model(**batch)
+                loss = outputs.loss
+                loss = accelerator.gather_for_metrics(loss)
+                total_loss += loss.cpu().detach().float().numpy().mean()
+                retrieval_loss = outputs.retrieval_loss
+                retrieval_loss = accelerator.gather_for_metrics(retrieval_loss)
+                total_retrieval_loss += retrieval_loss.cpu().detach().float().numpy().mean()
+        total_loss /= len(test_dataloader)
+        total_retrieval_loss /= len(test_dataloader)
+        perplexity = np.exp(total_loss)
+        accelerator.print(f"Step {iter_count} | Perplexity: {perplexity:.4f} | Loss: {total_loss:.4f} | Retrieval Loss: {total_retrieval_loss:.4f}")
+        directory = f"output/SFT-best/"
+        accelerator.wait_for_everyone()
+        stats = {"test/perplexity": perplexity, "test/loss": total_loss, "test/retrieval_loss": total_retrieval_loss}
+        accelerator.log(stats, step=self.iter_count)
+        if accelerator.is_main_process:
+            if perplexity<self.best_perplexity:
+                self.best_perplexity = perplexity
+                accelerator.unwrap_model(model).save_pretrained(directory)
+                tokenizer.save_pretrained(directory)
+            directory = f"output/SFT-new/"
+            accelerator.unwrap_model(model).save_pretrained(directory)
+            tokenizer.save_pretrained(directory)
+        model.train()
