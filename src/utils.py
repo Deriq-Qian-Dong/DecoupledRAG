@@ -39,6 +39,9 @@ def print_trainable_params_stats(model: nn.Module):
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print_rank_0(f"Number of trainable parameters: {trainable_params/1000000}M")
     print_rank_0(f"Ratio of trainable parameters: {trainable_params / num_params:.2%}")
+    for para_name, para in model.named_parameters():
+        if para.requires_grad==True:
+            print_rank_0(f"Trainable parameter: {para_name}")
 
 
 # 加载 YAML 配置文件

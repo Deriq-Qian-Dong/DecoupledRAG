@@ -300,7 +300,7 @@ class LanguageModelTrainer:
         model.train()
         pbar = tqdm(total=len(train_dataloader))
         for step, batch in enumerate(train_dataloader):
-            if epoch==0 and step<=self.train_config['skip_steps']:
+            if epoch==0 and step<self.train_config['skip_steps']:
                 if accelerator.is_main_process:
                     pbar.update(1)
                     pbar.set_description(f"Epoch {epoch} | Skiping {step}/{self.train_config['skip_steps']}")
