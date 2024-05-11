@@ -120,7 +120,7 @@ def freeze_non_crossattention_parameters(model: nn.Module):
     """Freezes non cross-attention parameters of the specified model."""
     hidden_layers = hf_get_decoder_blocks(model)
     hidden_layers_to_processing = list(hidden_layers)
-    hidden_layers_to_processing.append(findattr(model, ("lm_head", )))
+    hidden_layers_to_processing.append(findattr(model, ("lm_head", "model.lm_head")))
     for layer in hidden_layers_to_processing:
         for para_name, para in layer.named_parameters():
             if "crossattention" not in para_name:
