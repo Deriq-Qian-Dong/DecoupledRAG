@@ -1550,7 +1550,6 @@ class LlamaWithRetrievalHeadForCausalLM(LlamaPreTrainedModel):
             loss = loss_fct(shift_logits, shift_labels)
 
         # q_reps = self.retrieval_head(hidden_states[:, self.config.retrieval_position-1, :])
-        print(self.config.retrieval_position)
         q_reps = self.retrieval_head(hidden_states[:, :self.config.retrieval_position, :])
         # Compute the mean pooling of q_reps
         q_reps = q_reps.mean(dim=1)
