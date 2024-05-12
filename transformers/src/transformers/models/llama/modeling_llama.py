@@ -370,8 +370,11 @@ class LlamaAttention(nn.Module):
             value_states = torch.cat(value_states, dim=-1)
 
         else:
+            self.q_proj.weight = nn.Parameter(self.q_proj.weight.to(hidden_states.dtype))
             query_states = self.q_proj(hidden_states)
             if self.is_cross_attention:
+                self.k_proj.weight = nn.Parameter(self.k_proj.weight.to(hidden_states.dtype))
+                self.v_proj.weight = nn.Parameter(self.v_proj.weight.to(hidden_states.dtype))
                 key_states = self.k_proj(encoder_hidden_states)
                 value_states = self.v_proj(encoder_hidden_states)
             else:
@@ -434,6 +437,7 @@ class LlamaAttention(nn.Module):
             o_proj_slices = self.o_proj.weight.split(self.hidden_size // self.config.pretraining_tp, dim=1)
             attn_output = sum([F.linear(attn_output[i], o_proj_slices[i]) for i in range(self.config.pretraining_tp)])
         else:
+            self.o_proj.weight = nn.Parameter(self.o_proj.weight.to(attn_output.dtype))
             attn_output = self.o_proj(attn_output)
 
         if not output_attentions:
