@@ -345,6 +345,7 @@ class LlamaAttention(nn.Module):
             # cast to fp32
             input_dtype = encoder_hidden_states.dtype
             encoder_hidden_states = encoder_hidden_states.to(torch.float32)
+            hidden_states = hidden_states.to(torch.float32)
         bsz, q_len, _ = hidden_states.size()
         if encoder_hidden_states is not None:
             kv_len = encoder_hidden_states.size(1)
@@ -371,8 +372,6 @@ class LlamaAttention(nn.Module):
         else:
             query_states = self.q_proj(hidden_states)
             if self.is_cross_attention:
-                # cast query_states to fp32
-                query_states = query_states.to(torch.float32)
                 key_states = self.k_proj(encoder_hidden_states)
                 value_states = self.v_proj(encoder_hidden_states)
             else:
