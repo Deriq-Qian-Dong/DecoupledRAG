@@ -371,8 +371,8 @@ class LlamaAttention(nn.Module):
             query_states = self.q_proj(hidden_states)
             if self.is_cross_attention:
                 # cast self.k_proj and self.v_proj to fp32
-                self.k_proj.weight = self.k_proj.weight.to(torch.float32)
-                self.v_proj.weight = self.v_proj.weight.to(torch.float32)
+                self.k_proj.weight = self.k_proj.weight.float()
+                self.v_proj.weight = self.v_proj.weight.float()
                 # cast query_states to fp32
                 query_states = query_states.to(torch.float32)
                 key_states = self.k_proj(encoder_hidden_states)
@@ -437,6 +437,9 @@ class LlamaAttention(nn.Module):
             o_proj_slices = self.o_proj.weight.split(self.hidden_size // self.config.pretraining_tp, dim=1)
             attn_output = sum([F.linear(attn_output[i], o_proj_slices[i]) for i in range(self.config.pretraining_tp)])
         else:
+            if self.is_cross_attention:
+                # cast o_proj to fp32
+                self.o_proj.weight = self.o_proj.weight.float()
             attn_output = self.o_proj(attn_output)
 
         if not output_attentions:
