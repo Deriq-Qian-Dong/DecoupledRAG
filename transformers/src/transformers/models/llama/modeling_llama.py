@@ -291,11 +291,10 @@ class LlamaAttention(nn.Module):
         if not is_cross_attention:
             self.k_proj = nn.Linear(self.hidden_size, self.num_key_value_heads * self.head_dim, bias=config.attention_bias)
             self.v_proj = nn.Linear(self.hidden_size, self.num_key_value_heads * self.head_dim, bias=config.attention_bias)
-            self.o_proj = nn.Linear(self.hidden_size, self.hidden_size, bias=config.attention_bias)
         else:
-            self.k_proj = nn.Linear(self.faiss_dimension, self.num_key_value_heads * self.head_dim, bias=config.attention_bias).to(dtype=torch.float32) 
-            self.v_proj = nn.Linear(self.faiss_dimension, self.num_key_value_heads * self.head_dim, bias=config.attention_bias).to(dtype=torch.float32) 
-            self.o_proj = nn.Linear(self.hidden_size, self.hidden_size, bias=config.attention_bias).to(dtype=torch.float32) 
+            self.k_proj = nn.Linear(self.faiss_dimension, self.num_key_value_heads * self.head_dim, bias=config.attention_bias)
+            self.v_proj = nn.Linear(self.faiss_dimension, self.num_key_value_heads * self.head_dim, bias=config.attention_bias)
+        self.o_proj = nn.Linear(self.hidden_size, self.hidden_size, bias=config.attention_bias)
         self._init_rope()
 
     def _init_rope(self):
@@ -337,15 +336,6 @@ class LlamaAttention(nn.Module):
         encoder_hidden_states: Optional[torch.Tensor] = None,
         **kwargs,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
-        if hidden_states.dtype == torch.float16:
-            max_dtype = torch.finfo(hidden_states.dtype).max
-            clamp_value = torch.where(torch.isinf(hidden_states).any(), max_dtype - 1000, max_dtype)
-            hidden_states = torch.clamp(hidden_states, min=-clamp_value, max=clamp_value)
-        if encoder_hidden_states is not None:
-            # cast to fp32
-            input_dtype = encoder_hidden_states.dtype
-            encoder_hidden_states = encoder_hidden_states.to(torch.float32)
-            hidden_states = hidden_states.to(torch.float32)
         bsz, q_len, _ = hidden_states.size()
         if encoder_hidden_states is not None:
             kv_len = encoder_hidden_states.size(1)
@@ -370,11 +360,8 @@ class LlamaAttention(nn.Module):
             value_states = torch.cat(value_states, dim=-1)
 
         else:
-            self.q_proj.weight = nn.Parameter(self.q_proj.weight.to(hidden_states.dtype))
             query_states = self.q_proj(hidden_states)
             if self.is_cross_attention:
-                self.k_proj.weight = nn.Parameter(self.k_proj.weight.to(hidden_states.dtype))
-                self.v_proj.weight = nn.Parameter(self.v_proj.weight.to(hidden_states.dtype))
                 key_states = self.k_proj(encoder_hidden_states)
                 value_states = self.v_proj(encoder_hidden_states)
             else:
@@ -437,15 +424,10 @@ class LlamaAttention(nn.Module):
             o_proj_slices = self.o_proj.weight.split(self.hidden_size // self.config.pretraining_tp, dim=1)
             attn_output = sum([F.linear(attn_output[i], o_proj_slices[i]) for i in range(self.config.pretraining_tp)])
         else:
-            self.o_proj.weight = nn.Parameter(self.o_proj.weight.to(attn_output.dtype))
             attn_output = self.o_proj(attn_output)
 
         if not output_attentions:
             attn_weights = None
-        else:
-            attn_weights = attn_weights.to(input_dtype) if encoder_hidden_states is not None else attn_weights
-        # cast back to the original dtype
-        attn_output = attn_output.to(input_dtype) if encoder_hidden_states is not None else attn_output
         return attn_output, attn_weights, past_key_value
 
 
