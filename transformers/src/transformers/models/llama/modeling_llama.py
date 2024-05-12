@@ -291,10 +291,11 @@ class LlamaAttention(nn.Module):
         if not is_cross_attention:
             self.k_proj = nn.Linear(self.hidden_size, self.num_key_value_heads * self.head_dim, bias=config.attention_bias)
             self.v_proj = nn.Linear(self.hidden_size, self.num_key_value_heads * self.head_dim, bias=config.attention_bias)
+            self.o_proj = nn.Linear(self.hidden_size, self.hidden_size, bias=config.attention_bias)
         else:
-            self.k_proj = nn.Linear(self.faiss_dimension, self.num_key_value_heads * self.head_dim, bias=config.attention_bias)
-            self.v_proj = nn.Linear(self.faiss_dimension, self.num_key_value_heads * self.head_dim, bias=config.attention_bias)
-        self.o_proj = nn.Linear(self.hidden_size, self.hidden_size, bias=config.attention_bias)
+            self.k_proj = nn.Linear(self.faiss_dimension, self.num_key_value_heads * self.head_dim, bias=config.attention_bias).to(dtype=torch.float32) 
+            self.v_proj = nn.Linear(self.faiss_dimension, self.num_key_value_heads * self.head_dim, bias=config.attention_bias).to(dtype=torch.float32) 
+            self.o_proj = nn.Linear(self.hidden_size, self.hidden_size, bias=config.attention_bias).to(dtype=torch.float32) 
         self._init_rope()
 
     def _init_rope(self):
@@ -370,9 +371,6 @@ class LlamaAttention(nn.Module):
         else:
             query_states = self.q_proj(hidden_states)
             if self.is_cross_attention:
-                # cast self.k_proj and self.v_proj to fp32
-                self.k_proj.weight = self.k_proj.weight.float()
-                self.v_proj.weight = self.v_proj.weight.float()
                 # cast query_states to fp32
                 query_states = query_states.to(torch.float32)
                 key_states = self.k_proj(encoder_hidden_states)
@@ -437,9 +435,6 @@ class LlamaAttention(nn.Module):
             o_proj_slices = self.o_proj.weight.split(self.hidden_size // self.config.pretraining_tp, dim=1)
             attn_output = sum([F.linear(attn_output[i], o_proj_slices[i]) for i in range(self.config.pretraining_tp)])
         else:
-            if self.is_cross_attention:
-                # cast o_proj to fp32
-                self.o_proj.weight = self.o_proj.weight.float()
             attn_output = self.o_proj(attn_output)
 
         if not output_attentions:
