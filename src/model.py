@@ -157,7 +157,7 @@ class RAGForCausalLM(nn.Module):
         config.add_cross_attention_layer_number = train_config['add_cross_attention_layer_number']
         config.negatives_x_device = train_config['negatives_x_device']
         model = MODEL_CLASS[train_config['model_type']].from_pretrained(train_config['model_name_or_path'], config=config)          
-        freeze_non_crossattention_parameters(model)
+        freeze_non_crossattention_parameters(model, train_config['freeze_retrieval_head'])
         if train_config['gradient_checkpointing']:
             model.gradient_checkpointing_enable()
             model.enable_input_require_grads()

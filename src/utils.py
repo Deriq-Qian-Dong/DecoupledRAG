@@ -119,15 +119,17 @@ def freeze_bottom_causal_layers(model: nn.Module, num_layers_unfrozen: int = 0):
     for layer in hidden_layers_to_freeze:
         layer.requires_grad_(False)
 
-def freeze_non_crossattention_parameters(model: nn.Module):
+def freeze_non_crossattention_parameters(model: nn.Module, freeze_retrieval_head=False):
     """Freezes non cross-attention parameters of the specified model."""
     hidden_layers = hf_get_decoder_blocks(model)
     hidden_layers_to_processing = list(hidden_layers)
-    hidden_layers_to_processing.append(findattr(model, ("lm_head", "model.lm_head")))
+    hidden_layers_to_processing.append(findattr(model, ("lm_head", "model.lm_head", "retrieval_head", "model.retrieval_head")))
     for layer in hidden_layers_to_processing:
         for para_name, para in layer.named_parameters():
             if "crossattention" not in para_name:
                 if 'retrieval_head' not in para_name:
+                    para.requires_grad_(False)
+                elif freeze_retrieval_head:
                     para.requires_grad_(False)
 
 class Searcher:
