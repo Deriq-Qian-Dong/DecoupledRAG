@@ -33,6 +33,7 @@ training:
   max_tokens: 16384
   kb_path: ../data_of_ReGPT/marco/phrases_embeddings.npy
   freeze_retrieval_head: true
+  freeze_lm_head: true
 
 dataset:
   train:
