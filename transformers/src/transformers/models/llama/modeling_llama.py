@@ -340,10 +340,10 @@ class LlamaAttention(nn.Module):
             max_dtype = torch.finfo(hidden_states.dtype).max
             clamp_value = torch.where(torch.isinf(hidden_states).any(), max_dtype - 1000, max_dtype)
             hidden_states = torch.clamp(hidden_states, min=-clamp_value, max=clamp_value)
-        if encoder_hidden_states is not None and encoder_hidden_states.dtype == torch.float16:
-            max_dtype = torch.finfo(encoder_hidden_states.dtype).max
-            clamp_value = torch.where(torch.isinf(encoder_hidden_states).any(), max_dtype - 1000, max_dtype)
-            encoder_hidden_states = torch.clamp(encoder_hidden_states, min=-clamp_value, max=clamp_value)
+        if encoder_hidden_states is not None:
+            # cast to fp32
+            input_dtype = encoder_hidden_states.dtype
+            encoder_hidden_states = encoder_hidden_states.to(torch.float32)
         bsz, q_len, _ = hidden_states.size()
         if encoder_hidden_states is not None:
             kv_len = encoder_hidden_states.size(1)
