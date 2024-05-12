@@ -442,9 +442,10 @@ class LlamaAttention(nn.Module):
 
         if not output_attentions:
             attn_weights = None
+        else:
+            attn_weights = attn_weights.to(input_dtype) if encoder_hidden_states is not None else attn_weights
         # cast back to the original dtype
         attn_output = attn_output.to(input_dtype) if encoder_hidden_states is not None else attn_output
-        attn_weights = attn_weights.to(input_dtype) if encoder_hidden_states is not None else attn_weights
         return attn_output, attn_weights, past_key_value
 
 
