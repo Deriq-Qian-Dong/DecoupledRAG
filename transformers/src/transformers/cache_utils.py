@@ -444,12 +444,18 @@ class QRepsCache:
         self,
         q_reps,
     ):
-        self.count += q_reps.shape[1]
         if self.mean_of_q_reps is None:
             self.mean_of_q_reps = q_reps.mean(dim=1)
+            self.count = q_reps.shape[1]
         else:
             self.mean_of_q_reps = (self.mean_of_q_reps * (self.count - q_reps.shape[1]) + q_reps.sum(dim=1)) / self.count
+            self.count += q_reps.shape[1]
         return self.mean_of_q_reps
     
     def get_mean_of_q_reps(self):
         return self.mean_of_q_reps
+    
+    def reset(self):
+        self.mean_of_q_reps = None
+        self.count = 0
+ 
