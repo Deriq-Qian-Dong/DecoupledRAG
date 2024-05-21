@@ -115,6 +115,8 @@ config.negatives_x_device = True
 config.kb_path = '../../data_of_ReGPT/marco/phrases_embeddings.npy'
 config.retrieval_step = 10
 config.topk = 6
+config.q_reps_cache_type = 'RunningAverageQRepsCache'
+config.q_reps_cache_window_size = 10
 
 model = LlamaWithRetrievalHeadForInference.from_pretrained(model_path, config=config)          
 model = model.cuda()

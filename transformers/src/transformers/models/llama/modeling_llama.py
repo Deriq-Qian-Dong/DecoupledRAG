@@ -31,7 +31,7 @@ from torch import nn
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 
 from ...activations import ACT2FN
-from ...cache_utils import Cache, DynamicCache, StaticCache, QRepsCache
+from ...cache_utils import Cache, DynamicCache, StaticCache, QRepsCache, RunningAverageQRepsCache
 from ...modeling_attn_mask_utils import AttentionMaskConverter
 from ...modeling_outputs import (
     BaseModelOutputWithPast,
@@ -1679,6 +1679,8 @@ class LlamaWithRetrievalHeadForCausalLM(LlamaPreTrainedModel):
             )
         return reordered_past
 
+QRPESCACHEDICT = {"RunningAverageQRepsCache": RunningAverageQRepsCache, "QRepsCache": QRepsCache}
+
 class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
     _tied_weights_keys = ["lm_head.weight"]
 
@@ -1692,7 +1694,7 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
         kb = torch.from_numpy(kb)
         # Register the kb as a buffer
         self.register_buffer("kb", kb)
-        self.q_reps_cache = QRepsCache()
+        self.q_reps_cache = QRPESCACHEDICT[config.q_reps_cache_type](window_size=config.q_reps_cache_window_size)
         # Initialize weights and apply final processing
         self.post_init()
 

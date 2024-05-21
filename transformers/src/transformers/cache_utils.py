@@ -436,7 +436,7 @@ class StaticCache(Cache):
 
 
 class QRepsCache:
-    def __init__(self) -> None:
+    def __init__(self, **kwargs):
         self.mean_of_q_reps = None
         self.count = 0
 
@@ -459,3 +459,27 @@ class QRepsCache:
         self.mean_of_q_reps = None
         self.count = 0
  
+class RunningAverageQRepsCache(QRepsCache):
+    def __init__(self, **kwargs):
+        super().__init__()
+        self.window_size = kwargs.get("window_size", 100)
+        self.q_reps_list = None
+
+    def update(
+        self,
+        q_reps,
+    ):
+        if self.q_reps_list is None:
+            self.q_reps_list = q_reps
+            self.count = q_reps.shape[1]
+        else:
+            self.q_reps_list = torch.cat([self.q_reps_list, q_reps], dim=1)
+            self.count += q_reps.shape[1]
+        if self.q_reps_list.shape[1] > self.window_size:
+            self.q_reps_list = self.q_reps_list[:, -self.window_size:]
+        self.mean_of_q_reps = self.q_reps_list.mean(dim=1)
+        return self.mean_of_q_reps
+    
+    def reset(self):
+        super().reset()
+        self.q_reps_list = None
