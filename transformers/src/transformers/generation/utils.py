@@ -1835,7 +1835,7 @@ class GenerationMixin:
                     "A `static_cache` was used to generate but there was a failure when trying to  release the cache. "
                     " Make sure this model implements a `_reset_cache` function."
                 )
-            self._reset_cache()
+        self._reset_cache()
 
         return result
 

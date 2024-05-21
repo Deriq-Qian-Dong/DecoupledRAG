@@ -1921,7 +1921,6 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
             )
         return reordered_past
     
-    @staticmethod
     def _reset_cache(self):
         for layer in self.model.layers:
             layer.self_attn.past_key_value = None
