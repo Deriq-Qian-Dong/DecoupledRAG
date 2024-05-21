@@ -1921,9 +1921,7 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
             )
         return reordered_past
     
-    def _reset_cache(self):
-        for layer in self.model.layers:
-            layer.self_attn.past_key_value = None
+    def _reset_q_reps_cache(self):
         self.q_reps_cache.reset()
 
 
