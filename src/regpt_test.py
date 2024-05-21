@@ -127,8 +127,5 @@ input_ids = tokenizer(input_text, return_tensors="pt").input_ids.to("cuda")
 input_ids = input_ids[:,:30]
 outputs = model.generate(input_ids,max_new_tokens=100)
 print(tokenizer.decode(outputs[0]))
-from datasets import load_dataset
-dataset = load_dataset('csv', data_files={'train': '../../data_of_ReGPT/marco/collection.tsv'}, delimiter='\t',column_names=['pid', 'text'])['train']
-
-
-
+from datasets import load_dataset, load_from_disk
+dataset = load_from_disk('../../data_of_ReGPT/marco/collection/')

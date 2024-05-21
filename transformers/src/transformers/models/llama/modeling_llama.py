@@ -1920,6 +1920,11 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
                 tuple(past_state.index_select(0, beam_idx.to(past_state.device)) for past_state in layer_past),
             )
         return reordered_past
+    
+    def _reset_cache(self):
+        for layer in self.model.layers:
+            layer.self_attn.past_key_value = None
+        self.q_reps_cache = QRepsCache()
 
 
 @add_start_docstrings(
