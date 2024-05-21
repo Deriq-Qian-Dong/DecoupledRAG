@@ -433,3 +433,23 @@ class StaticCache(Cache):
     def to_legacy_cache(self):
         """Dummy function for BC. We have to keep it because otherwise the call in the forward of models will break it"""
         return None
+
+
+class QRepsCache:
+    def __init__(self) -> None:
+        self.mean_of_q_reps = None
+        self.count = 0
+
+    def update(
+        self,
+        q_reps,
+    ):
+        self.count += q_reps.shape[1]
+        if self.mean_of_q_reps is None:
+            self.mean_of_q_reps = q_reps.mean(dim=1)
+        else:
+            self.mean_of_q_reps = (self.mean_of_q_reps * (self.count - q_reps.shape[1]) + q_reps.sum(dim=1)) / self.count
+        return self.mean_of_q_reps
+    
+    def get_mean_of_q_reps(self):
+        return self.mean_of_q_reps

@@ -110,10 +110,6 @@ print('用时：',time()-start)
 from transformers import AutoConfig, LlamaWithRetrievalHeadForInference, AutoTokenizer
 model_path = '../../rag_llama2/two_ca_layer/SFT-best/'
 config = AutoConfig.from_pretrained(model_path)
-config.add_cross_attention = True
-config.faiss_dimension = 768
-config.cross_attention_activation_function = 'silu'
-config.add_cross_attention_layer_number = 1
 config.negatives_x_device = True
 
 config.kb_path = '../../data_of_ReGPT/marco/phrases_embeddings.npy'
@@ -130,6 +126,7 @@ input_ids = tokenizer(input_text, return_tensors="pt").input_ids.to("cuda")
 
 input_ids = input_ids[:,:30]
 outputs = model.generate(input_ids,max_new_tokens=100)
+print(tokenizer.decode(outputs[0]))
 from datasets import load_dataset
 dataset = load_dataset('csv', data_files={'train': '../../data_of_ReGPT/marco/collection.tsv'}, delimiter='\t',column_names=['pid', 'text'])['train']
 

@@ -157,6 +157,7 @@ class BaseModelOutputWithPast(ModelOutput):
     past_key_values: Optional[Tuple[Tuple[torch.FloatTensor]]] = None
     hidden_states: Optional[Tuple[torch.FloatTensor, ...]] = None
     attentions: Optional[Tuple[torch.FloatTensor, ...]] = None
+    mean_hidden_state: Optional[torch.FloatTensor] = None
 
 
 @dataclass

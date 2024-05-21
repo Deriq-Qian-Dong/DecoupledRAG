@@ -31,7 +31,7 @@ from torch import nn
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 
 from ...activations import ACT2FN
-from ...cache_utils import Cache, DynamicCache, StaticCache
+from ...cache_utils import Cache, DynamicCache, StaticCache, QRepsCache
 from ...modeling_attn_mask_utils import AttentionMaskConverter
 from ...modeling_outputs import (
     BaseModelOutputWithPast,
@@ -1692,6 +1692,7 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
         kb = torch.from_numpy(kb)
         # Register the kb as a buffer
         self.register_buffer("kb", kb)
+        self.q_reps_cache = QRepsCache()
         # Initialize weights and apply final processing
         self.post_init()
 
@@ -1798,21 +1799,17 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
             shift_labels = shift_labels.to(shift_logits.device)
             loss = loss_fct(shift_logits, shift_labels)
 
+        q_reps = self.retrieval_head(hidden_states)
+        q_reps = self.q_reps_cache.update(q_reps)
         # current sequence length
-        if past_key_values is not None:
-            curr_seq_len = past_key_values[0][0].size(-2)
-        else:
-            curr_seq_len = input_ids.size(-1)
+        curr_seq_len = self.q_reps_cache.count
         if curr_seq_len%self.config.retrieval_step==0 and curr_seq_len>=10:
-            q_reps = self.retrieval_head(hidden_states)
-            # Compute the mean pooling of q_reps
-            q_reps = q_reps.mean(dim=1)
             # Get the top-k similar vectors from knowledge base
             scores = torch.matmul(q_reps, self.kb.t())
             topk_scores, topk_indices = torch.topk(scores, self.config.topk, dim=1)
             # Get the vectors from the knowledge base
             encoder_hidden_states = self.kb[topk_indices]
-            print(hidden_states.size())
+            print(self.q_reps_cache.count)
             print("Retrieval at step: %d\ntopk_indices: %s" % (curr_seq_len, topk_indices))
 
 
