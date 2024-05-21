@@ -1922,7 +1922,7 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
         return reordered_past
     
     def _reset_q_reps_cache(self):
-        self.q_reps_cache.reset()
+        self.q_reps_cache = QRepsCache()
 
 
 @add_start_docstrings(
