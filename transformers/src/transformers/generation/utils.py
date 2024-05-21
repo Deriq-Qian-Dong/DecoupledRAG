@@ -1836,8 +1836,8 @@ class GenerationMixin:
                     " Make sure this model implements a `_reset_cache` function."
                 )
             self._reset_cache()
-        if callable(getattr(self, "_reset_q_reps_cache", None)):
-            self._reset_q_reps_cache()
+        # if callable(getattr(self, "_reset_q_reps_cache", None)):
+        #     self._reset_q_reps_cache()
 
         return result
 
