@@ -464,12 +464,13 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
                 neighbor_embeddings = batch.pop('neighbor_embeddings')
                 retrieval_position = batch.pop('retrieval_position')
                 retrieval_position = int(retrieval_position)
-                retrieval_step = self.config.training['retrieval_step']
+                retrieval_step = self.config['training']['retrieval_step']
                 input_ids = batch.pop('input_ids')
                 seq_len = input_ids.size(1)
                 labels = batch.pop('labels')
                 if retrieval_step<0:
                     retrieval_step = retrieval_position
+                model.config.retrieval_step = retrieval_position
                 # generate with teacher forcing and retrieval for each retrieval_step
                 neighbor_embeddings = None
                 past_key_values = None
