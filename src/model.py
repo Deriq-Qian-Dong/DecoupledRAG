@@ -243,6 +243,8 @@ class LanguageModelTrainer:
                 prepared[key] = x
             elif isinstance(x, bool):
                 prepared[key] = x
+            elif isinstance(x, tuple):
+                prepared[key] = x
             else:
                 prepared[key] = self._prepare_inputs(x)
         return prepared
@@ -461,10 +463,12 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
         model, tokenizer, test_dataloader, accelerator = self.model, self.tokenizer, self.test_dataloader, self.accelerator
         model.eval()
         total_loss = 0
+        pbar = tqdm(test_dataloader, desc=f"Evaluation", disable=not accelerator.is_main_process)
         with torch.no_grad():
-            for batch in tqdm(test_dataloader, desc=f"Evaluation", disable=not accelerator.is_main_process):
+            for step,batch in enumerate(test_dataloader):
                 neighbor_embeddings = batch.pop('neighbor_embeddings')
                 retrieval_position = batch.pop('retrieval_position')
+                batch.pop('attention_mask')
                 retrieval_position = int(retrieval_position)
                 retrieval_step = self.config['training']['retrieval_step']
                 input_ids = batch.pop('input_ids')
@@ -472,7 +476,7 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
                 labels = batch.pop('labels')
                 if retrieval_step<0:
                     retrieval_step = retrieval_position
-                model.config.retrieval_step = retrieval_position
+                model.config.retrieval_step = retrieval_step
                 # generate with teacher forcing and retrieval for each retrieval_step
                 neighbor_embeddings = None
                 past_key_values = None
@@ -490,10 +494,12 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
                     neighbor_embeddings = outputs.encoder_hidden_states
                     past_key_values = outputs.past_key_values
                 model._reset_q_reps_cache()
+                if accelerator.is_main_process:
+                    pbar.update(1)
+                    pbar.set_description(f"Step {step} | Loss: {total_loss/(step+1):.4f} | Perplexity: {np.exp(total_loss/(step+1)):.4f} | Retrieval Position: {retrieval_position}")
         total_loss /= len(test_dataloader)
         perplexity = np.exp(total_loss)
         accelerator.print(f"Perplexity: {perplexity:.4f} | Loss: {total_loss:.4f}")
-        accelerator.wait_for_everyone()
 
     def run(self):
         self.test()
