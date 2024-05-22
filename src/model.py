@@ -241,6 +241,8 @@ class LanguageModelTrainer:
                 prepared[key] = x.to(local_rank)
             elif x is None:
                 prepared[key] = x
+            elif isinstance(x, bool):
+                prepared[key] = x
             else:
                 prepared[key] = self._prepare_inputs(x)
         return prepared
