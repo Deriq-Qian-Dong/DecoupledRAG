@@ -1911,6 +1911,7 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
                 "use_cache": use_cache,
                 "attention_mask": attention_mask,
                 "encoder_hidden_states": encoder_hidden_states,
+                "labels": kwargs.get("labels", None),
             }
         )
         return model_inputs
