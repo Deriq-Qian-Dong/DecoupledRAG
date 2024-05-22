@@ -1,5 +1,5 @@
 from transformers import AutoConfig, LlamaWithRetrievalHeadForInference, AutoTokenizer
-model_path = '../24_ca_layer/SFT-best/'
+model_path = './output/SFT-best/'
 config = AutoConfig.from_pretrained(model_path)
 config.negatives_x_device = True
 
