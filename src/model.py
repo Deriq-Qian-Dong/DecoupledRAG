@@ -442,6 +442,8 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
         model_config.kb_path = train_config['kb_path']
         model_config.retrieval_step = train_config['retrieval_step']
         model_config.topk = train_config['topk']
+        model_config.q_reps_cache_type = train_config['q_reps_cache_type']
+        model_config.q_reps_cache_window_size = train_config['q_reps_cache_window_size']
         
         self.model = LlamaWithRetrievalHeadForInference.from_pretrained(config['training']['model_name_or_path'], config=model_config)
         tokenizer = AutoTokenizer.from_pretrained(config['training']['tokenizer_name_or_path'])
