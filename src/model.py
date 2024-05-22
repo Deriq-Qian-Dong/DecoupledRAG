@@ -483,7 +483,6 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
                     batch['past_key_values'] = past_key_values
                     model_inputs = model.prepare_inputs_for_generation(**batch)
                     batch = self._prepare_inputs(model_inputs)
-                    batch = accelerator.prepare(batch)
                     outputs = model(**batch)
                     loss = outputs.loss
                     loss = accelerator.gather_for_metrics(loss)
