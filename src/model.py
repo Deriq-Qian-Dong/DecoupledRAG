@@ -508,7 +508,7 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
         pbar = tqdm(test_dataloader, desc=f"Evaluation", disable=not accelerator.is_main_process)
         with torch.no_grad():
             for step,batch in enumerate(test_dataloader):
-                neighbor_embeddings = batch.pop('neighbor_embeddings')
+                ground_neighbor_embeddings = batch.pop('neighbor_embeddings')
                 retrieval_position = batch.pop('retrieval_position')
                 batch.pop('attention_mask')
                 retrieval_position = int(retrieval_position)
@@ -540,7 +540,7 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
                 batch['input_ids'] = input_ids
                 batch['labels'] = labels
                 batch['past_key_values'] = None
-                batch['encoder_hidden_states'] = neighbor_embeddings
+                batch['encoder_hidden_states'] = ground_neighbor_embeddings
                 model_inputs = model.prepare_inputs_for_generation(**batch)
                 batch = self._prepare_inputs(model_inputs)
                 outputs = model(**batch)
