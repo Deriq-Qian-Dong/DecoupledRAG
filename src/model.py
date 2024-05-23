@@ -522,20 +522,20 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
                 # generate with teacher forcing and retrieval for each retrieval_step
                 neighbor_embeddings = None
                 past_key_values = None
-                for i in range(retrieval_step, seq_len+retrieval_step, retrieval_step):
-                    batch['input_ids'] = input_ids[:, i-retrieval_step:i]
-                    batch['labels'] = labels[:, i-retrieval_step:i]
-                    batch['encoder_hidden_states'] = neighbor_embeddings
-                    batch['past_key_values'] = past_key_values
-                    model_inputs = model.prepare_inputs_for_generation(**batch)
-                    batch = self._prepare_inputs(model_inputs)
-                    outputs = model(**batch)
-                    # loss = outputs.loss
-                    # loss = accelerator.gather_for_metrics(loss)
-                    # total_loss += loss.cpu().detach().float().numpy().mean()
-                    neighbor_embeddings = outputs.encoder_hidden_states
-                    # past_key_values = outputs.past_key_values
-                    break
+                # for i in range(retrieval_step, seq_len+retrieval_step, retrieval_step):
+                #     batch['input_ids'] = input_ids[:, i-retrieval_step:i]
+                #     batch['labels'] = labels[:, i-retrieval_step:i]
+                #     batch['encoder_hidden_states'] = neighbor_embeddings
+                #     batch['past_key_values'] = past_key_values
+                #     model_inputs = model.prepare_inputs_for_generation(**batch)
+                #     batch = self._prepare_inputs(model_inputs)
+                #     outputs = model(**batch)
+                #     # loss = outputs.loss
+                #     # loss = accelerator.gather_for_metrics(loss)
+                #     # total_loss += loss.cpu().detach().float().numpy().mean()
+                #     neighbor_embeddings = outputs.encoder_hidden_states
+                #     # past_key_values = outputs.past_key_values
+                #     break
                 batch = {}
                 batch['input_ids'] = input_ids
                 batch['labels'] = labels
