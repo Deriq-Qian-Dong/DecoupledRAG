@@ -131,3 +131,110 @@ outputs = model.generate(input_ids,max_new_tokens=100)
 print(tokenizer.decode(outputs[0]))
 from datasets import load_dataset, load_from_disk
 dataset = load_from_disk('../../data_of_ReGPT/marco/collection/')
+
+
+import os
+import sys
+import torch
+import random
+import datetime
+import numpy as np
+from utils import *
+from tqdm import tqdm
+from time import time
+from torch import Tensor, nn
+from dataset_factory import *
+import torch_optimizer as optim
+import torch.distributed as dist
+from dataclasses import dataclass
+from accelerate import Accelerator
+from transformers.file_utils import ModelOutput
+from torch.utils.data import DataLoader, Dataset
+from typing import List, Optional, Tuple, Union, Dict
+from deepspeed.ops.adam import DeepSpeedCPUAdam, FusedAdam
+from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR
+from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModel, AutoConfig
+try:
+    from transformers import GPT2LMandRetrievalHeadsModel, LlamaWithRetrievalHeadForCausalLM, LlamaWithRetrievalHeadForInference
+except:
+    GPT2LMandRetrievalHeadsModel, LlamaWithRetrievalHeadForCausalLM, LlamaWithRetrievalHeadForInference = None, None, None
+from peft import LoraConfig, get_peft_model, PeftModel, TaskType
+config = get_config('../config/rag_llama_test_config.yaml')
+config['dataset']['test']
+from transformers import AutoTokenizer
+tokenizer = AutoTokenizer.from_pretrained('../output/SFT-best/')
+%cd /root/paddlejob/workspace/env_run/ReGPT
+dataset = RAGPretrainDataset(tokenizer, config['dataset']['test'])
+
+RAG_kwargs = config['RAG_kwargs']
+generation_kwargs = config['generation_kwargs']
+config['training'].update(RAG_kwargs)
+config['training'].update(generation_kwargs)
+config['dataset']['train'].update(RAG_kwargs)
+config['dataset']['test'].update(RAG_kwargs)
+
+train_config = config['training']
+model_config = AutoConfig.from_pretrained(train_config['model_name_or_path'])
+model_config.kb_path = train_config['kb_path']
+model_config.retrieval_step = train_config['retrieval_step']
+model_config.topk = train_config['topk']
+model_config.q_reps_cache_type = train_config['q_reps_cache_type']
+model_config.q_reps_cache_window_size = train_config['q_reps_cache_window_size']
+
+model = LlamaWithRetrievalHeadForInference.from_pretrained(config['training']['model_name_or_path'], config=model_config)
+tokenizer = AutoTokenizer.from_pretrained(config['training']['tokenizer_name_or_path'])
+dataset_config = config['dataset']
+dataset_class = {"RAGPretrainDataset": RAGPretrainDataset, "DialogSFTDataset": DialogSFTDataset, "CorpusPretrainDataset": CorpusPretrainDataset, "ReGPTDialogSFTDataset": ReGPTDialogSFTDataset, "ReGPTCorpusPretrainDataset": ReGPTCorpusPretrainDataset, "ReGPTLongDocumentSummarizationSFTDataset": ReGPTLongDocumentSummarizationSFTDataset,"ReGPTDocumentSummarizationSFTDataset":ReGPTDocumentSummarizationSFTDataset, "ReGPTCorpusPretrainFromAfsDataset":ReGPTCorpusPretrainFromAfsDataset}
+test_dataset = dataset_class[dataset_config['test']['dataset_name']](tokenizer, dataset_config['test'])
+test_dataloader = DataLoader(test_dataset, batch_size=4, shuffle=False, collate_fn=test_dataset._collate_fn)
+def _prepare_inputs(record):
+    prepared = {}
+    local_rank = "cuda:0"
+    for key in record:
+        x = record[key]
+        if isinstance(x, torch.Tensor):
+            prepared[key] = x.to(local_rank)
+        elif x is None:
+            prepared[key] = x
+        elif isinstance(x, bool):
+            prepared[key] = x
+        elif isinstance(x, tuple):
+            prepared[key] = x
+        else:
+            prepared[key] = _prepare_inputs(x)
+    return prepared
+model = model.cuda()
+model.eval()
+total_loss = 0
+pbar = tqdm(test_dataloader, desc=f"Evaluation")
+with torch.no_grad():
+    for step,batch in enumerate(test_dataloader):
+        neighbor_embeddings = batch.pop('neighbor_embeddings')
+        retrieval_position = batch.pop('retrieval_position')
+        batch.pop('attention_mask')
+        retrieval_position = int(retrieval_position)
+        retrieval_step = config['training']['retrieval_step']
+        input_ids = batch.pop('input_ids')
+        seq_len = input_ids.size(1)
+        labels = batch.pop('labels')
+        if retrieval_step<0:
+            retrieval_step = retrieval_position
+        model.config.retrieval_step = retrieval_step
+        # generate with teacher forcing and retrieval for each retrieval_step
+        neighbor_embeddings = None
+        past_key_values = None
+        for i in range(retrieval_step, seq_len+retrieval_step, retrieval_step):
+            batch['input_ids'] = input_ids[:, i-retrieval_step:i]
+            batch['labels'] = labels[:, i-retrieval_step:i]
+            batch['encoder_hidden_states'] = neighbor_embeddings
+            batch['past_key_values'] = past_key_values
+            model_inputs = model.prepare_inputs_for_generation(**batch)
+            batch = _prepare_inputs(model_inputs)
+            outputs = model(**batch)
+            loss = outputs.loss
+            total_loss += loss.cpu().detach().float().numpy().mean()
+            neighbor_embeddings = outputs.encoder_hidden_states
+            past_key_values = outputs.past_key_values
+        model._reset_q_reps_cache()
+        pbar.update(1)
+        pbar.set_description(f"Step {step} | Loss: {total_loss/(step+1):.4f} | Perplexity: {np.exp(total_loss/(step+1)):.4f} | Retrieval Position: {retrieval_position}")

@@ -501,5 +501,59 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
         perplexity = np.exp(total_loss)
         accelerator.print(f"Perplexity: {perplexity:.4f} | Loss: {total_loss:.4f}")
 
+    def test2(self):
+        model, tokenizer, test_dataloader, accelerator = self.model, self.tokenizer, self.test_dataloader, self.accelerator
+        model.eval()
+        total_loss = 0
+        pbar = tqdm(test_dataloader, desc=f"Evaluation", disable=not accelerator.is_main_process)
+        with torch.no_grad():
+            for step,batch in enumerate(test_dataloader):
+                neighbor_embeddings = batch.pop('neighbor_embeddings')
+                retrieval_position = batch.pop('retrieval_position')
+                batch.pop('attention_mask')
+                retrieval_position = int(retrieval_position)
+                retrieval_step = self.config['training']['retrieval_step']
+                input_ids = batch.pop('input_ids')
+                seq_len = input_ids.size(1)
+                labels = batch.pop('labels')
+                if retrieval_step<0:
+                    retrieval_step = retrieval_position
+                model.config.retrieval_step = retrieval_step
+                # generate with teacher forcing and retrieval for each retrieval_step
+                neighbor_embeddings = None
+                past_key_values = None
+                for i in range(retrieval_step, seq_len+retrieval_step, retrieval_step):
+                    batch['input_ids'] = input_ids[:, i-retrieval_step:i]
+                    batch['labels'] = labels[:, i-retrieval_step:i]
+                    batch['encoder_hidden_states'] = neighbor_embeddings
+                    batch['past_key_values'] = past_key_values
+                    model_inputs = model.prepare_inputs_for_generation(**batch)
+                    batch = self._prepare_inputs(model_inputs)
+                    outputs = model(**batch)
+                    loss = outputs.loss
+                    loss = accelerator.gather_for_metrics(loss)
+                    total_loss += loss.cpu().detach().float().numpy().mean()
+                    neighbor_embeddings = outputs.encoder_hidden_states
+                    past_key_values = outputs.past_key_values
+                    break
+                batch = {}
+                batch['input_ids'] = input_ids
+                batch['labels'] = labels
+                batch['past_key_values'] = None
+                batch['encoder_hidden_states'] = neighbor_embeddings
+                model_inputs = model.prepare_inputs_for_generation(**batch)
+                batch = self._prepare_inputs(model_inputs)
+                outputs = model(**batch)
+                loss = outputs.loss
+                # print(i,loss)
+                total_loss += loss.cpu().detach().float().numpy().mean()
+                model._reset_q_reps_cache()
+                if accelerator.is_main_process:
+                    pbar.update(1)
+                    pbar.set_description(f"Step {step} | Loss: {total_loss/(step+1):.4f} | Perplexity: {np.exp(total_loss/(step+1)):.4f} | Retrieval Position: {retrieval_position}")
+        total_loss /= len(test_dataloader)
+        perplexity = np.exp(total_loss)
+        accelerator.print(f"Perplexity: {perplexity:.4f} | Loss: {total_loss:.4f}")
+
     def run(self):
-        self.test()
+        self.test2()
