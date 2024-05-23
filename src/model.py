@@ -501,7 +501,7 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
         perplexity = np.exp(total_loss)
         accelerator.print(f"Perplexity: {perplexity:.4f} | Loss: {total_loss:.4f}")
 
-    def test2(self):
+    def test2(self, inject_ground_truth=False, inject_external_knowledge=False):
         model, tokenizer, test_dataloader, accelerator = self.model, self.tokenizer, self.test_dataloader, self.accelerator
         model.eval()
         total_loss = 0
@@ -522,25 +522,28 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
                 # generate with teacher forcing and retrieval for each retrieval_step
                 neighbor_embeddings = None
                 past_key_values = None
-                # for i in range(retrieval_step, seq_len+retrieval_step, retrieval_step):
-                #     batch['input_ids'] = input_ids[:, i-retrieval_step:i]
-                #     batch['labels'] = labels[:, i-retrieval_step:i]
-                #     batch['encoder_hidden_states'] = neighbor_embeddings
-                #     batch['past_key_values'] = past_key_values
-                #     model_inputs = model.prepare_inputs_for_generation(**batch)
-                #     batch = self._prepare_inputs(model_inputs)
-                #     outputs = model(**batch)
-                #     # loss = outputs.loss
-                #     # loss = accelerator.gather_for_metrics(loss)
-                #     # total_loss += loss.cpu().detach().float().numpy().mean()
-                #     neighbor_embeddings = outputs.encoder_hidden_states
-                #     # past_key_values = outputs.past_key_values
-                #     break
+                for i in range(retrieval_step, seq_len+retrieval_step, retrieval_step):
+                    batch['input_ids'] = input_ids[:, i-retrieval_step:i]
+                    batch['labels'] = labels[:, i-retrieval_step:i]
+                    batch['encoder_hidden_states'] = neighbor_embeddings
+                    batch['past_key_values'] = past_key_values
+                    model_inputs = model.prepare_inputs_for_generation(**batch)
+                    batch = self._prepare_inputs(model_inputs)
+                    outputs = model(**batch)
+                    neighbor_embeddings = outputs.encoder_hidden_states
+                    break
                 batch = {}
                 batch['input_ids'] = input_ids
                 batch['labels'] = labels
                 batch['past_key_values'] = None
-                batch['encoder_hidden_states'] = ground_neighbor_embeddings
+                if inject_external_knowledge:
+                    if inject_ground_truth:
+                        batch['encoder_hidden_states'] = ground_neighbor_embeddings
+                    else:
+                        # inject self-retrieved external knowledge
+                        batch['encoder_hidden_states'] = neighbor_embeddings
+                else:
+                    batch['encoder_hidden_states'] = None
                 model_inputs = model.prepare_inputs_for_generation(**batch)
                 batch = self._prepare_inputs(model_inputs)
                 outputs = model(**batch)
@@ -558,4 +561,9 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
 
     def run(self):
         while True:
-            self.test2()
+            self.accelerator.print("inject_ground_truth")
+            self.test2(inject_ground_truth=True, inject_external_knowledge=True)
+            self.accelerator.print("inject self-retrieved external knowledge")
+            self.test2(inject_ground_truth=False, inject_external_knowledge=True)
+            self.accelerator.print("don't inject external knowledge")
+            self.test2(inject_ground_truth=False, inject_external_knowledge=False)
