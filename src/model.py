@@ -556,4 +556,5 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
         accelerator.print(f"Perplexity: {perplexity:.4f} | Loss: {total_loss:.4f}")
 
     def run(self):
-        self.test2()
+        while True:
+            self.test2()
