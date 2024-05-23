@@ -530,11 +530,11 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
                     model_inputs = model.prepare_inputs_for_generation(**batch)
                     batch = self._prepare_inputs(model_inputs)
                     outputs = model(**batch)
-                    loss = outputs.loss
-                    loss = accelerator.gather_for_metrics(loss)
-                    total_loss += loss.cpu().detach().float().numpy().mean()
+                    # loss = outputs.loss
+                    # loss = accelerator.gather_for_metrics(loss)
+                    # total_loss += loss.cpu().detach().float().numpy().mean()
                     neighbor_embeddings = outputs.encoder_hidden_states
-                    past_key_values = outputs.past_key_values
+                    # past_key_values = outputs.past_key_values
                     break
                 batch = {}
                 batch['input_ids'] = input_ids
@@ -546,6 +546,7 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
                 outputs = model(**batch)
                 loss = outputs.loss
                 # print(i,loss)
+                loss = accelerator.gather_for_metrics(loss)
                 total_loss += loss.cpu().detach().float().numpy().mean()
                 model._reset_q_reps_cache()
                 if accelerator.is_main_process:
