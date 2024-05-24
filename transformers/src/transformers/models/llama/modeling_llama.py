@@ -1811,8 +1811,8 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
             topk_scores, topk_indices = torch.topk(scores, self.config.topk, dim=1)
             # Get the vectors from the knowledge base
             encoder_hidden_states = self.kb[topk_indices]
-            # print(self.q_reps_cache.count)
-            # print("Retrieval at step: %d\ntopk_indices: %s" % (curr_seq_len, topk_indices))
+            print(self.q_reps_cache.count)
+            print("Retrieval at step: %d\ntopk_indices: %s" % (curr_seq_len, topk_indices))
 
 
         return CausalLMOutputWithPast(
