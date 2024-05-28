@@ -507,6 +507,7 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
         total_loss /= len(test_dataloader)
         perplexity = np.exp(total_loss)
         accelerator.print(f"Perplexity: {perplexity:.4f} | Loss: {total_loss:.4f}")
+        return perplexity
 
     def run(self):
         while True:
@@ -520,6 +521,8 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
                 self.accelerator.print(f"\033[31mretrieval_step: {i}\033[0m")
                 self.config['training']['retrieval_step'] = i
                 self.accelerator.print("\033[31minject self-retrieved external knowledge\033[0m")
-                self.test(inject_ground_truth=False, inject_external_knowledge=True)
+                ppl1 = self.test(inject_ground_truth=False, inject_external_knowledge=True)
                 self.accelerator.print("\033[31mdon't inject external knowledge\033[0m")
-                self.test(inject_ground_truth=False, inject_external_knowledge=False)
+                ppl2 = self.test(inject_ground_truth=False, inject_external_knowledge=False)
+                # print the ratio of perplexity improvement
+                self.accelerator.print(f"\033[31mPerplexity Improvement: {(ppl2-ppl1)/ppl2:.4f}\033[0m")
