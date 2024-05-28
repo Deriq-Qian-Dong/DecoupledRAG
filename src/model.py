@@ -510,13 +510,16 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
 
     def run(self):
         while True:
-            self.accelerator.print("\033[31mdon't inject external knowledge\033[0m")
-            self.test(inject_ground_truth=False, inject_external_knowledge=False)
-            self.accelerator.print("\033[31minject_ground_truth\033[0m")
-            self.test(inject_ground_truth=True, inject_external_knowledge=True)
-            self.accelerator.print("\033[31minject self-retrieved external knowledge\033[0m")
-            self.test(inject_ground_truth=False, inject_external_knowledge=True)
-            for i in range(1, 64, 1):
+            # self.accelerator.print("\033[31mdon't inject external knowledge\033[0m")
+            # self.test(inject_ground_truth=False, inject_external_knowledge=False)
+            # self.accelerator.print("\033[31minject_ground_truth\033[0m")
+            # self.test(inject_ground_truth=True, inject_external_knowledge=True)
+            # self.accelerator.print("\033[31minject self-retrieved external knowledge\033[0m")
+            # self.test(inject_ground_truth=False, inject_external_knowledge=True)
+            for i in range(10, 130, 2):
                 self.accelerator.print(f"\033[31mretrieval_step: {i}\033[0m")
                 self.config['training']['retrieval_step'] = i
+                self.accelerator.print("\033[31minject self-retrieved external knowledge\033[0m")
                 self.test(inject_ground_truth=False, inject_external_knowledge=True)
+                self.accelerator.print("\033[31mdon't inject external knowledge\033[0m")
+                self.test(inject_ground_truth=False, inject_external_knowledge=False)
