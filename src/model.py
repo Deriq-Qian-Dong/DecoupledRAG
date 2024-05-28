@@ -485,7 +485,7 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
                     batch['input_ids'] = input_ids[:, i-retrieval_step:i]
                     batch['labels'] = labels
                     if inject_external_knowledge:
-                        if inject_ground_truth:
+                        if inject_ground_truth and neighbor_embeddings is not None:
                             batch['encoder_hidden_states'] = ground_neighbor_embeddings
                         else:
                             batch['encoder_hidden_states'] = neighbor_embeddings
@@ -548,8 +548,6 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
                     else:
                         # inject self-retrieved external knowledge
                         batch['encoder_hidden_states'] = neighbor_embeddings
-                else:
-                    batch['encoder_hidden_states'] = None
                 model_inputs = model.prepare_inputs_for_generation(**batch)
                 batch = self._prepare_inputs(model_inputs)
                 outputs = model(**batch)
@@ -567,8 +565,8 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
 
     def run(self):
         while True:
-            self.accelerator.print("\033[31mdon't inject external knowledge\033[0m")
-            self.test(inject_ground_truth=False, inject_external_knowledge=False)
+            # self.accelerator.print("\033[31mdon't inject external knowledge\033[0m")
+            # self.test(inject_ground_truth=False, inject_external_knowledge=False)
             self.accelerator.print("\033[31minject_ground_truth\033[0m")
             self.test(inject_ground_truth=True, inject_external_knowledge=True)
             self.accelerator.print("\033[31minject self-retrieved external knowledge\033[0m")
