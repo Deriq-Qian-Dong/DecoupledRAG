@@ -483,3 +483,23 @@ class RunningAverageQRepsCache(QRepsCache):
     def reset(self):
         super().reset()
         self.q_reps_list = None
+
+class LogitsCache:
+    def __init__(self, **kwargs):
+        self.logits = None
+
+    def update(
+        self,
+        logits,
+    ):
+        if self.logits is None:
+            self.logits = logits
+        else:
+            self.logits = torch.cat([self.logits, logits], dim=1)
+        return self.logits
+    
+    def get_logits(self):
+        return self.logits
+    
+    def reset(self):
+        self.logits = None

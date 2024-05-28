@@ -31,7 +31,7 @@ from torch import nn
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 
 from ...activations import ACT2FN
-from ...cache_utils import Cache, DynamicCache, StaticCache, QRepsCache, RunningAverageQRepsCache
+from ...cache_utils import Cache, DynamicCache, StaticCache, QRepsCache, RunningAverageQRepsCache, LogitsCache
 from ...modeling_attn_mask_utils import AttentionMaskConverter
 from ...modeling_outputs import (
     BaseModelOutputWithPast,
@@ -1695,6 +1695,7 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
         # Register the kb as a buffer
         self.register_buffer("kb", kb)
         self.q_reps_cache = QRPESCACHEDICT[config.q_reps_cache_type](window_size=config.q_reps_cache_window_size)
+        self.logits_cache = LogitsCache()
         # Initialize weights and apply final processing
         self.post_init()
 
@@ -1790,16 +1791,19 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
 
         loss = None
         if labels is not None:
-            # Shift so that tokens < n predict n
-            shift_logits = logits[..., :-1, :].contiguous()
-            shift_labels = labels[..., 1:].contiguous()
-            # Flatten the tokens
-            loss_fct = CrossEntropyLoss(reduction="sum")
-            shift_logits = shift_logits.view(-1, self.config.vocab_size)
-            shift_labels = shift_labels.view(-1)
-            # Enable model parallelism
-            shift_labels = shift_labels.to(shift_logits.device)
-            loss = loss_fct(shift_logits, shift_labels)
+            self.logits_cache.update(logits)
+            if self.logits_cache.logits.shape[1]==labels.shape[1]:
+                logits = self.logits_cache.logits
+                # Shift so that tokens < n predict n
+                shift_logits = logits[..., :-1, :].contiguous()
+                shift_labels = labels[..., 1:].contiguous()
+                # Flatten the tokens
+                loss_fct = CrossEntropyLoss()
+                shift_logits = shift_logits.view(-1, self.config.vocab_size)
+                shift_labels = shift_labels.view(-1)
+                # Enable model parallelism
+                shift_labels = shift_labels.to(shift_logits.device)
+                loss = loss_fct(shift_logits, shift_labels)
 
         q_reps = self.retrieval_head(hidden_states)
         q_reps = self.q_reps_cache.update(q_reps)
