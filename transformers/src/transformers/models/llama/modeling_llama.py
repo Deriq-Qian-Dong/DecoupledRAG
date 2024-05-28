@@ -1804,6 +1804,7 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
                 # Enable model parallelism
                 shift_labels = shift_labels.to(shift_logits.device)
                 loss = loss_fct(shift_logits, shift_labels)
+                self.logits_cache.reset()
 
         q_reps = self.retrieval_head(hidden_states)
         q_reps = self.q_reps_cache.update(q_reps)
