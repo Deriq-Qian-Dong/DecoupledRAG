@@ -459,7 +459,7 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
         self.model = self.accelerator.prepare_model(self.model)
         self.test_dataloader = self.accelerator.prepare_data_loader(self.test_dataloader)
 
-    def test(self):
+    def test(self, inject_ground_truth=False, inject_external_knowledge=False):
         model, tokenizer, test_dataloader, accelerator = self.model, self.tokenizer, self.test_dataloader, self.accelerator
         model.eval()
         total_loss = 0
