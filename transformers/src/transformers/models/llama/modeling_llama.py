@@ -1932,6 +1932,7 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
     
     def _reset_q_reps_cache(self):
         self.q_reps_cache.reset()
+        self.logits_cache.reset()
 
 
 @add_start_docstrings(
