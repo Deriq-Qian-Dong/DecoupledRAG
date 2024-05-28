@@ -503,7 +503,7 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
                 model._reset_q_reps_cache()
                 if accelerator.is_main_process:
                     pbar.update(1)
-                    pbar.set_description(f"Step {step} | Loss: {total_loss/(step+1):.4f} | Perplexity: {np.exp(total_loss/(step+1)):.4f} | Retrieval Position: {retrieval_position}")
+                    pbar.set_description(f"Step {step} | Loss: {total_loss/(step+1):.4f} | Perplexity: {np.exp(total_loss/(step+1)):.4f} | Retrieval step: {retrieval_step}")
         total_loss /= len(test_dataloader)
         perplexity = np.exp(total_loss)
         accelerator.print(f"Perplexity: {perplexity:.4f} | Loss: {total_loss:.4f}")
