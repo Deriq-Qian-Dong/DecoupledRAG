@@ -466,7 +466,7 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
         pbar = tqdm(test_dataloader, desc=f"Evaluation", disable=not accelerator.is_main_process)
         with torch.no_grad():
             for step,batch in enumerate(test_dataloader):
-                neighbor_embeddings = batch.pop('neighbor_embeddings')
+                ground_neighbor_embeddings = batch.pop('neighbor_embeddings')
                 retrieval_position = batch.pop('retrieval_position')
                 batch.pop('attention_mask')
                 retrieval_position = int(retrieval_position)
@@ -484,7 +484,11 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
                     batch = {}
                     batch['input_ids'] = input_ids[:, i-retrieval_step:i]
                     batch['labels'] = labels
-                    batch['encoder_hidden_states'] = neighbor_embeddings
+                    if inject_external_knowledge:
+                        if inject_ground_truth:
+                            batch['encoder_hidden_states'] = ground_neighbor_embeddings
+                        else:
+                            batch['encoder_hidden_states'] = neighbor_embeddings
                     batch['past_key_values'] = past_key_values
                     model_inputs = model.prepare_inputs_for_generation(**batch)
                     batch = self._prepare_inputs(model_inputs)
@@ -493,7 +497,7 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
                     if loss is not None:
                         loss = accelerator.gather_for_metrics(loss)
                         total_loss += loss.cpu().detach().float().numpy().mean()
-                    # neighbor_embeddings = outputs.encoder_hidden_states
+                    neighbor_embeddings = outputs.encoder_hidden_states
                     past_key_values = outputs.past_key_values
                 model._reset_q_reps_cache()
                 if accelerator.is_main_process:
@@ -563,10 +567,9 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
 
     def run(self):
         while True:
-            # self.accelerator.print("\033[31minject_ground_truth\033[0m")
-            # self.test2(inject_ground_truth=True, inject_external_knowledge=True)
-            # self.accelerator.print("\033[31minject self-retrieved external knowledge\033[0m")
-            # self.test2(inject_ground_truth=False, inject_external_knowledge=True)
+            self.accelerator.print("\033[31minject_ground_truth\033[0m")
+            self.test(inject_ground_truth=True, inject_external_knowledge=True)
+            self.accelerator.print("\033[31minject self-retrieved external knowledge\033[0m")
+            self.test(inject_ground_truth=False, inject_external_knowledge=True)
             self.accelerator.print("\033[31mdon't inject external knowledge\033[0m")
             self.test(inject_ground_truth=False, inject_external_knowledge=True)
-            self.test2(inject_ground_truth=False, inject_external_knowledge=False)
