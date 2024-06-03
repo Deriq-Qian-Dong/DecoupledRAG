@@ -261,7 +261,7 @@ class QADataset(Dataset):
         self.setup_datasets()
     
     def setup_datasets(self):
-        self.datasets = load_from_disk(self.args['data_name_or_path'])['test']
+        self.datasets = load_from_disk(self.args['data_name_or_path'])
         self.datasets = self.datasets.filter(self.filter_empty)
         self.num_samples = len(self.datasets)
     
@@ -277,24 +277,28 @@ class QADataset(Dataset):
     def _collate_fn(self, elems):
         qrys, anss = zip(*elems)
         self.tokenizer.padding_side = 'left'
-        qrys_dict = self.tokenizer(qrys,
-                                      max_length=self.args['max_seq_len'],
-                                      padding=True,
-                                      truncation=True,
-                                      return_tensors="pt")
-        self.tokenizer.padding_side = 'right'
-        anss_dict = self.tokenizer(anss,
-                                        max_length=self.args['max_seq_len'],
-                                        padding=True,
-                                        truncation=True,
-                                        return_tensors="pt")
-        batch = {}
-        batch['retrieval_position'] = torch.tensor(qrys_dict['input_ids'].size(1))
-        for key in qrys_dict:
-            batch[key] = torch.cat([qrys_dict[key], anss_dict[key]], dim=1)
+        # qrys_dict = self.tokenizer(qrys,
+        #                               max_length=self.args['max_seq_len'],
+        #                               padding=True,
+        #                               truncation=True,
+        #                               return_tensors="pt")
+        # self.tokenizer.padding_side = 'right'
+        # anss_dict = self.tokenizer(anss,
+        #                                 max_length=self.args['max_seq_len'],
+        #                                 padding=True,
+        #                                 truncation=True,
+        #                                 return_tensors="pt")
+
+        batch = self.tokenizer(qrys, anss,
+                                    max_length=self.args['max_seq_len'],
+                                    padding=True,
+                                    truncation=True,
+                                    return_tensors="pt")
+        batch['retrieval_position'] = torch.tensor(1)
+        ans_lens = [len(self.tokenizer(ans)['input_ids']) for ans in anss]
         batch["labels"] = batch['input_ids'].clone()
-        batch["labels"][:, :qrys_dict['input_ids'].size(1)] = -100
-        batch["labels"][batch['attention_mask'] == 0] = -100
+        for i in range(len(batch['labels'])):
+            batch['labels'][i, :-ans_lens[i]] = -100
         return batch
     
     def filter_empty(self, example):
