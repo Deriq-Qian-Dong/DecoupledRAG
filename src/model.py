@@ -581,7 +581,7 @@ class RAGQATester(RAGLanguageModelTester):
 
     def run(self):
         self.accelerator.print("\033[31mdon't inject external knowledge\033[0m")
-        ppl2 = self.test(f'retrieval_step_{i}/vanilla', inject_external_knowledge=False)
+        ppl2 = self.test(f'vanilla', inject_external_knowledge=False)
         while True:
             for i in range(25, 0, -1):
                 self.accelerator.print(f"\033[31mretrieval_step: {i}\033[0m")
