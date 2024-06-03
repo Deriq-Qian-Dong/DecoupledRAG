@@ -61,5 +61,5 @@ generation_kwargs:
 RAG_kwargs:
   faiss:
     dimension: 768
-  retrieval_step: -1
+  retrieval_step: 100
   topk: 6
