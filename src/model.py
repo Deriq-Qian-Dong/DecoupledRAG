@@ -531,7 +531,7 @@ class RAGQATester(RAGLanguageModelTester):
     def __init__(self, config):
         super().__init__(config)
 
-    def test(self, inject_external_knowledge=False):
+    def test(self, log_name, inject_external_knowledge=False):
         model, tokenizer, test_dataloader, accelerator = self.model, self.tokenizer, self.test_dataloader, self.accelerator
         model.eval()
         total_loss = 0
@@ -565,6 +565,9 @@ class RAGQATester(RAGLanguageModelTester):
                     if loss is not None:
                         loss = accelerator.gather_for_metrics(loss)
                         total_loss += loss.cpu().detach().float().numpy().mean()
+                        stats = {f"{log_name}/loss": float(loss.cpu().detach().float().numpy())}
+                        if accelerator.is_main_process:
+                            accelerator.log(stats, step=step)
                     neighbor_embeddings = outputs.encoder_hidden_states
                     past_key_values = outputs.past_key_values
                 model._reset_q_reps_cache()
@@ -582,8 +585,8 @@ class RAGQATester(RAGLanguageModelTester):
                 self.accelerator.print(f"\033[31mretrieval_step: {i}\033[0m")
                 self.config['training']['retrieval_step'] = i
                 self.accelerator.print("\033[31mdon't inject external knowledge\033[0m")
-                ppl2 = self.test(inject_external_knowledge=False)
+                ppl2 = self.test(f'retrieval_step_{i}/vanilla', inject_external_knowledge=False)
                 self.accelerator.print("\033[31minject self-retrieved external knowledge\033[0m")
-                ppl1 = self.test(inject_external_knowledge=True)
+                ppl1 = self.test(f'retrieval_step_{i}/inject', inject_external_knowledge=True)
                 # print the ratio of perplexity improvement
                 self.accelerator.print(f"\033[31mPerplexity Improvement: {(ppl2-ppl1)/ppl2:.4f}\033[0m")

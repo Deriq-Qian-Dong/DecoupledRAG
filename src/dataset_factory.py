@@ -297,8 +297,8 @@ class QADataset(Dataset):
         batch['retrieval_position'] = torch.tensor(1)
         ans_lens = [len(self.tokenizer(ans)['input_ids']) for ans in anss]
         batch["labels"] = batch['input_ids'].clone()
-        # for i in range(len(batch['labels'])):
-            # batch['labels'][i, :-ans_lens[i]] = -100
+        for i in range(len(batch['labels'])):
+            batch['labels'][i, :-ans_lens[i]] = -100
         return batch
     
     def filter_empty(self, example):
