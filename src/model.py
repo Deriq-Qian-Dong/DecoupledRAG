@@ -581,9 +581,9 @@ class RAGQATester(RAGLanguageModelTester):
             for i in range(25, 0, -1):
                 self.accelerator.print(f"\033[31mretrieval_step: {i}\033[0m")
                 self.config['training']['retrieval_step'] = i
-                self.accelerator.print("\033[31minject self-retrieved external knowledge\033[0m")
-                ppl1 = self.test(inject_external_knowledge=True)
                 self.accelerator.print("\033[31mdon't inject external knowledge\033[0m")
                 ppl2 = self.test(inject_external_knowledge=False)
+                self.accelerator.print("\033[31minject self-retrieved external knowledge\033[0m")
+                ppl1 = self.test(inject_external_knowledge=True)
                 # print the ratio of perplexity improvement
                 self.accelerator.print(f"\033[31mPerplexity Improvement: {(ppl2-ppl1)/ppl2:.4f}\033[0m")
