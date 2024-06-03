@@ -41,7 +41,7 @@ def preprocess_dataset(corpus_name, data_path, split='train'):
 
 def preprocess_qa_dataset(corpus_name, data_path, split='train'):
     dataset = load_from_disk(data_path)[split]
-    tokenizer = AutoTokenizer.from_pretrained("../output/SFT-best")
+    tokenizer = AutoTokenizer.from_pretrained("output/SFT-best")
     def filter_empty(example):
         return len(example['answers']) > 0 and len(example['answers'][0])>0
 
