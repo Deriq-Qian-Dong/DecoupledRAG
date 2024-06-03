@@ -564,8 +564,8 @@ class RAGQATester(RAGLanguageModelTester):
                     loss = outputs.loss
                     if loss is not None:
                         loss = accelerator.gather_for_metrics(loss)
-                        total_loss += loss.cpu().detach().float().numpy().mean()
                         stats = {f"{log_name}/loss": float(loss.cpu().detach().float().numpy())}
+                        total_loss += loss.cpu().detach().float().numpy().mean()
                         if accelerator.is_main_process:
                             accelerator.log(stats, step=step)
                     neighbor_embeddings = outputs.encoder_hidden_states
