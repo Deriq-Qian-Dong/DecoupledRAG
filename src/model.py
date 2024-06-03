@@ -456,6 +456,9 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
         self.test_dataloader = DataLoader(self.test_dataset, batch_size=dataset_config['test']['batch_size'], shuffle=False, collate_fn=self.test_dataset._collate_fn)
         self.tokenizer = tokenizer
         self.accelerator = Accelerator(log_with=config['training']['log_with'], project_dir=config['training']['project_dir'])
+        current_time = datetime.datetime.now()
+        timestamp = current_time.strftime("%Y-%m-%d-%H-%M-%S")
+        self.accelerator.init_trackers(project_name=f'{train_config["project_name"]}_{timestamp}')
         self.model = self.accelerator.prepare_model(self.model)
         self.test_dataloader = self.accelerator.prepare_data_loader(self.test_dataloader)
 
