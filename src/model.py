@@ -30,7 +30,7 @@ torch.manual_seed(random.randint(0, 1000000))
 
 optimizer_class = {"AdamW": FusedAdam, "Lamb": optim.Lamb, "DeepSpeedCPUAdam": DeepSpeedCPUAdam}
 scheduler_class = {"CosineAnnealingLR": CosineAnnealingLR, "LinearLR": LinearLR}
-dataset_class = {"RAGPretrainDataset": RAGPretrainDataset, "DialogSFTDataset": DialogSFTDataset, "CorpusPretrainDataset": CorpusPretrainDataset, "ReGPTDialogSFTDataset": ReGPTDialogSFTDataset, "ReGPTCorpusPretrainDataset": ReGPTCorpusPretrainDataset, "ReGPTLongDocumentSummarizationSFTDataset": ReGPTLongDocumentSummarizationSFTDataset,"ReGPTDocumentSummarizationSFTDataset":ReGPTDocumentSummarizationSFTDataset, "ReGPTCorpusPretrainFromAfsDataset":ReGPTCorpusPretrainFromAfsDataset}
+dataset_class = {"RAGPretrainDataset": RAGPretrainDataset, "DialogSFTDataset": DialogSFTDataset, "CorpusPretrainDataset": CorpusPretrainDataset, "ReGPTDialogSFTDataset": ReGPTDialogSFTDataset, "ReGPTCorpusPretrainDataset": ReGPTCorpusPretrainDataset, "ReGPTLongDocumentSummarizationSFTDataset": ReGPTLongDocumentSummarizationSFTDataset,"ReGPTDocumentSummarizationSFTDataset":ReGPTDocumentSummarizationSFTDataset, "ReGPTCorpusPretrainFromAfsDataset":ReGPTCorpusPretrainFromAfsDataset, "QADataset":QADataset}
 
 @dataclass
 class ReGPTOutput(ModelOutput):
@@ -524,5 +524,66 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
                 ppl1 = self.test(inject_ground_truth=False, inject_external_knowledge=True)
                 self.accelerator.print("\033[31mdon't inject external knowledge\033[0m")
                 ppl2 = self.test(inject_ground_truth=False, inject_external_knowledge=False)
+                # print the ratio of perplexity improvement
+                self.accelerator.print(f"\033[31mPerplexity Improvement: {(ppl2-ppl1)/ppl2:.4f}\033[0m")
+
+class RAGQATester(RAGLanguageModelTester):
+    def __init__(self, config):
+        super().__init__(config)
+
+    def test(self, inject_external_knowledge=False):
+        model, tokenizer, test_dataloader, accelerator = self.model, self.tokenizer, self.test_dataloader, self.accelerator
+        model.eval()
+        total_loss = 0
+        pbar = tqdm(test_dataloader, desc=f"Evaluation", disable=not accelerator.is_main_process)
+        with torch.no_grad():
+            for step,batch in enumerate(test_dataloader):
+                retrieval_position = batch.pop('retrieval_position')
+                batch.pop('attention_mask')
+                retrieval_position = int(retrieval_position)
+                retrieval_step = self.config['training']['retrieval_step']
+                input_ids = batch.pop('input_ids')
+                seq_len = input_ids.size(1)
+                labels = batch.pop('labels')
+                if retrieval_step<0:
+                    retrieval_step = retrieval_position
+                model.config.retrieval_step = retrieval_step
+                # generate with teacher forcing and retrieval for each retrieval_step
+                neighbor_embeddings = None
+                past_key_values = None
+                for i in range(retrieval_step, seq_len+retrieval_step, retrieval_step):
+                    batch = {}
+                    batch['input_ids'] = input_ids[:, i-retrieval_step:i]
+                    batch['labels'] = labels
+                    if inject_external_knowledge:
+                        batch['encoder_hidden_states'] = neighbor_embeddings
+                    batch['past_key_values'] = past_key_values
+                    model_inputs = model.prepare_inputs_for_generation(**batch)
+                    batch = self._prepare_inputs(model_inputs)
+                    outputs = model(**batch)
+                    loss = outputs.loss
+                    if loss is not None:
+                        loss = accelerator.gather_for_metrics(loss)
+                        total_loss += loss.cpu().detach().float().numpy().mean()
+                    neighbor_embeddings = outputs.encoder_hidden_states
+                    past_key_values = outputs.past_key_values
+                model._reset_q_reps_cache()
+                if accelerator.is_main_process:
+                    pbar.update(1)
+                    pbar.set_description(f"Step {step} | Loss: {total_loss/(step+1):.4f} | Perplexity: {np.exp(total_loss/(step+1)):.4f} | Retrieval step: {retrieval_step}")
+        total_loss /= len(test_dataloader)
+        perplexity = np.exp(total_loss)
+        accelerator.print(f"Perplexity: {perplexity:.4f} | Loss: {total_loss:.4f}")
+        return perplexity
+
+    def run(self):
+        while True:
+            for i in range(1, 25):
+                self.accelerator.print(f"\033[31mretrieval_step: {i}\033[0m")
+                self.config['training']['retrieval_step'] = i
+                self.accelerator.print("\033[31minject self-retrieved external knowledge\033[0m")
+                ppl1 = self.test(inject_external_knowledge=True)
+                self.accelerator.print("\033[31mdon't inject external knowledge\033[0m")
+                ppl2 = self.test(inject_external_knowledge=False)
                 # print the ratio of perplexity improvement
                 self.accelerator.print(f"\033[31mPerplexity Improvement: {(ppl2-ppl1)/ppl2:.4f}\033[0m")

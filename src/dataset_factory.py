@@ -253,3 +253,49 @@ class ReGPTDocumentSummarizationSFTDataset(ReGPTDialogSFTDataset, DocumentSummar
     
     def setup_datasets(self):
         DocumentSummarizationSFTDataset.setup_datasets(self)
+
+class QADataset(Dataset):
+    def __init__(self, tokenizer, args):
+        self.args = args
+        self.tokenizer = tokenizer
+        self.setup_datasets()
+    
+    def setup_datasets(self):
+        self.datasets = load_from_disk(self.args['data_name_or_path'])['test']
+        self.datasets = self.datasets.filter(self.filter_empty)
+        self.num_samples = len(self.datasets)
+    
+    def __getitem__(self, idx):
+        sample = self.datasets[idx]
+        query = sample['query']+"\n\nThe answer is:"
+        answer = sample['answers'][0]
+        return query, answer 
+    
+    def __len__(self):
+        return self.num_samples
+    
+    def _collate_fn(self, elems):
+        qrys, anss = zip(*elems)
+        self.tokenizer.padding_side = 'left'
+        qrys_dict = self.tokenizer(qrys,
+                                      max_length=self.args['max_seq_len'],
+                                      padding=True,
+                                      truncation=True,
+                                      return_tensors="pt")
+        self.tokenizer.padding_side = 'right'
+        anss_dict = self.tokenizer(anss,
+                                        max_length=self.args['max_seq_len'],
+                                        padding=True,
+                                        truncation=True,
+                                        return_tensors="pt")
+        batch = {}
+        batch['retrieval_position'] = torch.tensor(qrys_dict['input_ids'].size(1))
+        for key in qrys_dict:
+            batch[key] = torch.cat([qrys_dict[key], anss_dict[key]], dim=1)
+        batch["labels"] = batch['input_ids'].clone()
+        batch["labels"][:, :qrys_dict['input_ids'].size(1)] = -100
+        batch["labels"][batch['attention_mask'] == 0] = -100
+        return batch
+    
+    def filter_empty(self, example):
+        return len(example['answers']) > 0
