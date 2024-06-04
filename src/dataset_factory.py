@@ -90,7 +90,9 @@ class RAGPretrainDataset(Dataset):
                                 truncation=True,
                                 return_tensors="pt")
         batch["labels"] = batch['input_ids']
-        batch['retrieval_position'] = torch.tensor(batch['input_ids'].size(1) // 2)
+        ret_pos = batch['input_ids'].size(1) // 2
+        shape = (batch['input_ids'].size(0), 1)
+        batch['retrieval_position'] = torch.full(shape, ret_pos, dtype=torch.long)
         if neighbor_embeddings[0] is not None:
             batch['neighbor_embeddings'] = torch.tensor(neighbor_embeddings)
             batch['p_reps'] = torch.tensor(p_reps)
@@ -277,29 +279,57 @@ class QADataset(Dataset):
     def _collate_fn(self, elems):
         qrys, anss = zip(*elems)
         self.tokenizer.padding_side = 'left'
-        # qrys_dict = self.tokenizer(qrys,
-        #                               max_length=self.args['max_seq_len'],
-        #                               padding=True,
-        #                               truncation=True,
-        #                               return_tensors="pt")
-        # self.tokenizer.padding_side = 'right'
-        # anss_dict = self.tokenizer(anss,
-        #                                 max_length=self.args['max_seq_len'],
-        #                                 padding=True,
-        #                                 truncation=True,
-        #                                 return_tensors="pt")
-
+        self.tokenizer.truncation_side = 'left'
         batch = self.tokenizer(qrys, anss,
                                     max_length=self.args['max_seq_len'],
                                     padding=True,
                                     truncation=True,
                                     return_tensors="pt")
-        batch['retrieval_position'] = torch.tensor(1)
         ans_lens = [len(self.tokenizer(ans)['input_ids']) for ans in anss]
         batch["labels"] = batch['input_ids'].clone()
         for i in range(len(batch['labels'])):
             batch['labels'][i, :-ans_lens[i]] = -100
+        retrieval_positions = []
+        seq_len = batch['input_ids'].size(1)
+        for i in range(len(batch['labels'])):
+            ans_len = ans_lens[i]
+            retrieval_position = seq_len - ans_len
+            if retrieval_position <= 0:
+                retrieval_position = seq_len//2
+            retrieval_positions.append(retrieval_position)
+        batch['retrieval_position'] = torch.tensor(retrieval_positions).reshape(-1, 1)
         return batch
     
     def filter_empty(self, example):
         return len(example['answers']) > 0
+    
+
+class QASFTDataset(QADataset):
+    def __init__(self, tokenizer, args):
+        super().__init__(tokenizer, args)
+    
+    def setup_datasets(self):
+        self.datasets = load_from_disk(self.args['data_name_or_path'])
+        self.num_samples = len(self.datasets)
+    
+    def _collate_fn(self, elems):
+        qrys, anss = zip(*elems)
+        self.tokenizer.padding_side = 'left'
+        self.tokenizer.truncation_side = 'left'
+        batch = self.tokenizer(qrys, anss,
+                                    max_length=self.args['max_seq_len'],
+                                    padding=True,
+                                    truncation=True,
+                                    return_tensors="pt")
+        ans_lens = [len(self.tokenizer(ans)['input_ids']) for ans in anss]
+        batch["labels"] = batch['input_ids'].clone()
+        retrieval_positions = []
+        seq_len = batch['input_ids'].size(1)
+        for i in range(len(batch['labels'])):
+            ans_len = ans_lens[i]
+            retrieval_position = seq_len - ans_len
+            if retrieval_position <= 0:
+                retrieval_position = seq_len//2
+            retrieval_positions.append(retrieval_position)
+        batch['retrieval_position'] = torch.tensor(retrieval_positions).reshape(-1, 1)
+        return batch

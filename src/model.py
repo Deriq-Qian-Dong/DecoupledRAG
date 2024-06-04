@@ -174,9 +174,6 @@ class RAGForCausalLM(nn.Module):
     def forward(self, **kwargs):
         self.dtype = self.model.parameters().__next__().dtype
         neighbor_embeddings = kwargs.pop('neighbor_embeddings')
-        retrieval_position = kwargs.pop('retrieval_position')
-        retrieval_position = int(retrieval_position)
-        self.model.base_model.config.retrieval_position = retrieval_position
         kwargs['encoder_hidden_states'] = neighbor_embeddings.to(self.dtype)
         if 'p_reps' in kwargs and kwargs['p_reps'] is not None:
             kwargs['p_reps'] = kwargs.pop('p_reps').to(self.dtype)
@@ -426,7 +423,6 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
         return loss, stats
     
     def task_specific_stats(self, stats, model):
-        stats['training/retrieval_position'] = self.accelerator.unwrap_model(model).model.base_model.config.retrieval_position
         for i in range(self.config['training']['add_cross_attention_layer_number']):
             stats[f'gate_score/{i}'] = float(self.accelerator.unwrap_model(model).model.base_model.layers[-i-1].gate_crossattention.cpu().detach().float().numpy()[0])
         return stats
@@ -470,15 +466,11 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
         with torch.no_grad():
             for step,batch in enumerate(test_dataloader):
                 ground_neighbor_embeddings = batch.pop('neighbor_embeddings')
-                retrieval_position = batch.pop('retrieval_position')
                 batch.pop('attention_mask')
-                retrieval_position = int(retrieval_position)
                 retrieval_step = self.config['training']['retrieval_step']
                 input_ids = batch.pop('input_ids')
                 seq_len = input_ids.size(1)
                 labels = batch.pop('labels')
-                if retrieval_step<0:
-                    retrieval_step = retrieval_position
                 model.config.retrieval_step = retrieval_step
                 labels[:, :retrieval_step] = -100  # don't calculate loss for the first retrieval steps
                 # generate with teacher forcing and retrieval for each retrieval_step
@@ -541,15 +533,11 @@ class RAGQATester(RAGLanguageModelTester):
         pbar = tqdm(test_dataloader, desc=f"Evaluation", disable=not accelerator.is_main_process)
         with torch.no_grad():
             for step,batch in enumerate(test_dataloader):
-                retrieval_position = batch.pop('retrieval_position')
                 batch.pop('attention_mask')
-                retrieval_position = int(retrieval_position)
                 retrieval_step = self.config['training']['retrieval_step']
                 input_ids = batch.pop('input_ids')
                 seq_len = input_ids.size(1)
                 labels = batch.pop('labels')
-                if retrieval_step<0:
-                    retrieval_step = retrieval_position
                 model.config.retrieval_step = retrieval_step
                 # generate with teacher forcing and retrieval for each retrieval_step
                 neighbor_embeddings = None

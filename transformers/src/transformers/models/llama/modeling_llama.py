@@ -334,6 +334,7 @@ class LlamaAttention(nn.Module):
         use_cache: bool = False,
         cache_position: Optional[torch.LongTensor] = None,
         encoder_hidden_states: Optional[torch.Tensor] = None,
+        retrieval_position: Optional[torch.LongTensor] = None,
         **kwargs,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         bsz, q_len, _ = hidden_states.size()
@@ -401,9 +402,11 @@ class LlamaAttention(nn.Module):
         attn_weights = nn.functional.dropout(attn_weights, p=self.attention_dropout, training=self.training)
         if self.is_cross_attention and self.training:
             causal_mask_for_cross_attn = torch.ones(
-                (1, 1, q_len, kv_len), dtype=torch.bool, device=attn_weights.device
+                (bsz, 1, q_len, kv_len), dtype=torch.bool, device=attn_weights.device
             )
-            causal_mask_for_cross_attn[:, :, :self.config.retrieval_position, :] = 0
+            # causal_mask_for_cross_attn[:, :, :self.config.retrieval_position, :] = 0
+            for i in range(bsz):
+                causal_mask_for_cross_attn[i, :, :retrieval_position[i], :] = 0
             mask_value = 0
             mask_value = torch.full([], mask_value, dtype=attn_weights.dtype, device=attn_weights.device)
             attn_weights = torch.where(causal_mask_for_cross_attn, attn_weights.to(attn_weights.dtype), mask_value)
@@ -753,6 +756,7 @@ class LlamaDecoderLayer(nn.Module):
         use_cache: Optional[bool] = False,
         cache_position: Optional[torch.LongTensor] = None,
         encoder_hidden_states: Optional[torch.Tensor] = None,
+        retrieval_position: Optional[torch.LongTensor] = None,
         **kwargs,
     ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
         """
@@ -814,6 +818,7 @@ class LlamaDecoderLayer(nn.Module):
                 use_cache=False,
                 cache_position=cache_position,
                 encoder_hidden_states=encoder_hidden_states,
+                retrieval_position=retrieval_position,
                 **kwargs,
             )
             # residual connection and gating
@@ -1016,6 +1021,7 @@ class LlamaModel(LlamaPreTrainedModel):
         return_dict: Optional[bool] = None,
         cache_position: Optional[torch.LongTensor] = None,
         encoder_hidden_states: Optional[torch.Tensor] = None,
+        retrieval_position: Optional[torch.LongTensor] = None,
     ) -> Union[Tuple, BaseModelOutputWithPast]:
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
@@ -1079,6 +1085,7 @@ class LlamaModel(LlamaPreTrainedModel):
                     use_cache,
                     cache_position,
                     encoder_hidden_states,
+                    retrieval_position,
                 )
             else:
                 layer_outputs = decoder_layer(
@@ -1090,6 +1097,7 @@ class LlamaModel(LlamaPreTrainedModel):
                     use_cache=use_cache,
                     cache_position=cache_position,
                     encoder_hidden_states=encoder_hidden_states,
+                    retrieval_position=retrieval_position,
                 )
 
             hidden_states = layer_outputs[0]
@@ -1479,6 +1487,7 @@ class LlamaWithRetrievalHeadForCausalLM(LlamaPreTrainedModel):
         cache_position: Optional[torch.LongTensor] = None,
         encoder_hidden_states: Optional[torch.Tensor] = None,
         p_reps: Optional[torch.Tensor] = None,
+        retrieval_position: Optional[torch.LongTensor] = None,
     ) -> Union[Tuple, CausalLMOutputWithPast]:
         r"""
         Args:
@@ -1524,6 +1533,7 @@ class LlamaWithRetrievalHeadForCausalLM(LlamaPreTrainedModel):
             return_dict=return_dict,
             cache_position=cache_position,
             encoder_hidden_states=encoder_hidden_states,
+            retrieval_position=retrieval_position,
         )
 
         hidden_states = outputs[0]
@@ -1548,13 +1558,15 @@ class LlamaWithRetrievalHeadForCausalLM(LlamaPreTrainedModel):
             shift_labels = shift_labels.to(shift_logits.device)
             loss = loss_fct(shift_logits, shift_labels)
 
-        # q_reps = self.retrieval_head(hidden_states[:, self.config.retrieval_position-1, :])
-        q_reps = self.retrieval_head(hidden_states[:, :self.config.retrieval_position, :])
+        # q_reps = self.retrieval_head(hidden_states[:, :self.config.retrieval_position, :])
         # Compute the mean pooling of q_reps
-        q_reps = q_reps.mean(dim=1)
+        # q_reps = q_reps.mean(dim=1)
         # The shape of q_reps is (batch_size, faiss_dimension)
         # The shape of encoder_hidden_states is (batch_size, num_of_psg_samples, faiss_dimension), the first one is positive sample
-
+        q_reps = []
+        for i in range(hidden_states.size(0)):
+            q_reps.append(self.retrieval_head(hidden_states[i, :retrieval_position[i], :]).mean(dim=0))
+        q_reps = torch.stack(q_reps)
         loss_fct = CrossEntropyLoss(reduction='mean')
         if p_reps is None:
             p_reps = encoder_hidden_states.view(-1, encoder_hidden_states.size(-1))
@@ -1917,6 +1929,7 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
                 "attention_mask": attention_mask,
                 "encoder_hidden_states": encoder_hidden_states,
                 "labels": kwargs.get("labels", None),
+                "retrieval_position": kwargs.get("retrieval_position", None),
             }
         )
         return model_inputs
