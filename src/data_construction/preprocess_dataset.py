@@ -61,4 +61,4 @@ def preprocess_qa_dataset(corpus_name, data_path, split='train'):
 # if os.path.exists(f'../data_of_ReGPT/{corpus_name}/test.txt'):
     # preprocess_dataset(corpus_name, f'../data_of_ReGPT/{corpus_name}/test.txt', split='test')
 
-preprocess_qa_dataset(corpus_name, f'../{corpus_name}', split='test')
+preprocess_qa_dataset(corpus_name, f'../{corpus_name}', split='train')
