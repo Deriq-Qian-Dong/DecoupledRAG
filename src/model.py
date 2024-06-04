@@ -585,11 +585,16 @@ class RAGQATester(RAGLanguageModelTester):
     def run(self):
         self.accelerator.print("\033[31mdon't inject external knowledge\033[0m")
         ppl2 = self.test(f'vanilla', inject_external_knowledge=False)
-        while True:
-            for i in range(25, 0, -1):
-                self.accelerator.print(f"\033[31mretrieval_step: {i}\033[0m")
-                self.config['training']['retrieval_step'] = i
-                self.accelerator.print("\033[31minject self-retrieved external knowledge\033[0m")
-                ppl1 = self.test(f'retrieval_step_{i}/inject', inject_external_knowledge=True)
-                # print the ratio of perplexity improvement
-                self.accelerator.print(f"\033[31mPerplexity Improvement: {(ppl2-ppl1)/ppl2:.4f}\033[0m")
+        stats = {"ppl_of_vanilla": ppl2}
+        self.accelerator.log(stats, step=0)
+        for i in range(1, 25):
+            self.accelerator.print(f"\033[31mretrieval_step: {i}\033[0m")
+            self.config['training']['retrieval_step'] = i
+            self.accelerator.print("\033[31minject self-retrieved external knowledge\033[0m")
+            ppl1 = self.test(f'retrieval_step_{i}/inject', inject_external_knowledge=True)
+            # print the ratio of perplexity improvement
+            imp = (ppl2-ppl1)/ppl2
+            self.accelerator.print(f"\033[31mPerplexity Improvement: {imp:.4f}\033[0m")
+            stats = {f"Improvement": imp}
+            stats['ppl_of_inject'] = ppl1
+            self.accelerator.log(stats, step=i)
