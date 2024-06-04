@@ -467,6 +467,7 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
             for step,batch in enumerate(test_dataloader):
                 ground_neighbor_embeddings = batch.pop('neighbor_embeddings')
                 batch.pop('attention_mask')
+                batch.pop('retrieval_position')
                 retrieval_step = self.config['training']['retrieval_step']
                 input_ids = batch.pop('input_ids')
                 seq_len = input_ids.size(1)
