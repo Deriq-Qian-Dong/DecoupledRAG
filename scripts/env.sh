@@ -22,3 +22,5 @@ cp -r ../data/data_of_ReGPT/msmarco_qa/ ../data_of_ReGPT/
 # cp -r ../data/data_of_ReGPT/c4_en/ ../data_of_ReGPT/
 sh scripts/update_transformers.sh
 cp -r ../data/rag_llama2/24_ca_layer/ ../
+mkdir -p output
+mv ../24_ca_layer/* output/
