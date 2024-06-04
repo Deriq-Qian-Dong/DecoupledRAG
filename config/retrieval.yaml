@@ -1,0 +1,24 @@
+batch_size: 256
+dev_batch_size: 256
+q_max_seq_len: 512
+p_max_seq_len: 512
+retriever_model_name_or_path: ../data/RetroMAE_BEIR/
+model_out_dir: output/
+learning_rate: 1e-5
+report: 10
+num_epochs: 1000
+qrels: ''
+# collection: ../En-Wiki/corpus.tsv
+collection: ../mdqa_data/incontext_corpus.json
+query: ''
+dev_query: ../mdqa_data/eval_questions.tsv
+gradient_checkpoint: true
+negatives_x_device: true
+negatives_in_device: true
+use_faiss: false
+project_dir: output/
+project_name: dense_retrieval_pretrain_with_query_generation
+dataset_class_name: CorpusPretrainDatasetByQueryGeneration
+corpus_name: InContextExamples
+warm_start_from: ''
+top_k: 10
