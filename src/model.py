@@ -535,6 +535,7 @@ class RAGQATester(RAGLanguageModelTester):
         with torch.no_grad():
             for step,batch in enumerate(test_dataloader):
                 batch.pop('attention_mask')
+                batch.pop('retrieval_position')
                 retrieval_step = self.config['training']['retrieval_step']
                 input_ids = batch.pop('input_ids')
                 seq_len = input_ids.size(1)
