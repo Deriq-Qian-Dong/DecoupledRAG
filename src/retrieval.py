@@ -25,7 +25,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 from transformers import AutoConfig, AutoTokenizer, BertModel
 from utils import merge, read_embed, search, get_config, dict_to_HParams
-from datasets import load_form_disk
+from datasets import load_from_disk
 
 SEED = 2024
 best_mrr=-1
@@ -87,7 +87,7 @@ def validate_multi_gpu(model, query_loader, passage_loader, epoch, args, writer,
         else:
             para_embs = corpus_embeddings[local_rank*shard_cnt:(local_rank+1)*shard_cnt]
         engine = torch.from_numpy(para_embs).cuda()
-    qid_list = load_form_disk(args.dev_query)['query_id']
+    qid_list = load_from_disk(args.dev_query)['query_id']
     search(engine, q_output_file_name, qid_list, f"{args.model_out_dir}/res.top%d.part%d.step%d.%s"%(top_k, local_rank, epoch, corpus_name), top_k=top_k, use_faiss=args.use_faiss)
     torch.distributed.barrier() 
     if local_rank==0:
