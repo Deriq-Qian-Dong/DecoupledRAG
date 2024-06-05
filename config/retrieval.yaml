@@ -20,6 +20,6 @@ use_faiss: false
 project_dir: output/
 project_name: dense_retrieval_pretrain_with_query_generation
 dataset_class_name: CorpusPretrainDatasetByQueryGeneration
-corpus_name: InContextExamples
+corpus_name: marco
 warm_start_from: ''
-top_k: 10
+top_k: 50
