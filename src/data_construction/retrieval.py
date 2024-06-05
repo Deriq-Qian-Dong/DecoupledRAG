@@ -24,7 +24,8 @@ from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 from transformers import AutoConfig, AutoTokenizer, BertModel
-from utils import build_engine, load_qid, merge, read_embed, search, save_to_json, load_from_json, get_config, dict_to_HParams
+from utils import merge, read_embed, search, get_config, dict_to_HParams
+from datasets import load_form_disk
 
 SEED = 2024
 best_mrr=-1
@@ -33,19 +34,21 @@ torch.cuda.manual_seed_all(SEED)
 random.seed(SEED)
 
 
-def main_multi(args, model, optimizer, writer):
+def main_multi(args, model, optimizer, writer, corpus_embeddings=None):
     epoch = 0
     local_rank = torch.distributed.get_rank()
 
     # 加载数据集
     query_dataset = dataset_factory.QueryDataset(args)
     query_loader = DataLoader(query_dataset, batch_size=args.dev_batch_size, collate_fn=query_dataset._collate_fn, num_workers=3)
-    passage_dataset = dataset_factory.PassageDataset(args)
-    passage_loader = DataLoader(passage_dataset, batch_size=args.dev_batch_size, collate_fn=passage_dataset._collate_fn, num_workers=3)
-    validate_multi_gpu(model, query_loader, passage_loader, epoch, args, writer, args.corpus_name)
+    if corpus_embeddings is None:
+        passage_dataset = dataset_factory.PassageDataset(args)
+        passage_loader = DataLoader(passage_dataset, batch_size=args.dev_batch_size, collate_fn=passage_dataset._collate_fn, num_workers=3)
+        validate_multi_gpu(model, query_loader, passage_loader, epoch, args, writer, args.corpus_name)
+    else:
+        validate_multi_gpu(model, query_loader, None, epoch, args, writer, args.corpus_name, corpus_embeddings)
 
-
-def validate_multi_gpu(model, query_loader, passage_loader, epoch, args, writer, corpus_name):
+def validate_multi_gpu(model, query_loader, passage_loader, epoch, args, writer, corpus_name, corpus_embeddings=None):
     local_start = time.time()
     local_rank = torch.distributed.get_rank()
     world_size = torch.distributed.get_world_size()
@@ -63,23 +66,28 @@ def validate_multi_gpu(model, query_loader, passage_loader, epoch, args, writer,
         emb_matrix = np.concatenate(q_embs, axis=0)
         np.save(q_output_file_name, emb_matrix)
         print("predict q_embs cnt: %s" % len(emb_matrix))
-    with torch.no_grad():
-        model.eval()
-        para_embs = []
-        for records in tqdm(passage_loader, disable=args.local_rank>0):
-            with autocast():
-                output = model(passage_inputs=_prepare_inputs(records))
-                p_reps = output['p_reps']
-            para_embs.append(p_reps.cpu().detach().numpy())
-    torch.distributed.barrier() 
-    para_embs = np.concatenate(para_embs, axis=0)
-    print("predict embs cnt: %s" % len(para_embs))
-    print('create index done!')
-    if args.use_faiss:
-        engine = build_engine(para_embs, dim=para_embs.shape[1])
-    else:
+    if corpus_embeddings is None:
+        with torch.no_grad():
+            model.eval()
+            para_embs = []
+            for records in tqdm(passage_loader, disable=args.local_rank>0):
+                with autocast():
+                    output = model(passage_inputs=_prepare_inputs(records))
+                    p_reps = output['p_reps']
+                para_embs.append(p_reps.cpu().detach().numpy())
+        torch.distributed.barrier() 
+        para_embs = np.concatenate(para_embs, axis=0)
+        print("predict embs cnt: %s" % len(para_embs))
+        print('create index done!')
         engine = torch.from_numpy(para_embs).cuda()
-    qid_list = load_qid(args.dev_query)
+    else:
+        shard_cnt = corpus_embeddings.shape[0]//world_size
+        if local_rank==world_size-1:
+            para_embs = corpus_embeddings[local_rank*shard_cnt:]
+        else:
+            para_embs = corpus_embeddings[local_rank*shard_cnt:(local_rank+1)*shard_cnt]
+        engine = torch.from_numpy(para_embs).cuda()
+    qid_list = load_form_disk(args.dev_query)['query_id']
     search(engine, q_output_file_name, qid_list, f"{args.model_out_dir}/res.top%d.part%d.step%d.%s"%(top_k, local_rank, epoch, corpus_name), top_k=top_k, use_faiss=args.use_faiss)
     torch.distributed.barrier() 
     if local_rank==0:
@@ -146,9 +154,10 @@ def main_cli(config_path):
     print("model loaded on GPU%d"%local_rank)
     print(args.model_out_dir)
     os.makedirs(args.model_out_dir, exist_ok=True)
-
-
-    main_multi(args, model, optimizer, writer)
+    corpus_embeddings = None
+    if args.corpus_embeddings:
+        corpus_embeddings = np.load(args.corpus_embeddings)
+    main_multi(args, model, optimizer, writer, corpus_embeddings)
 
 if __name__ == '__main__':
     config_path = sys.argv[1]

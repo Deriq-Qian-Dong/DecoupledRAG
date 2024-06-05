@@ -4,7 +4,7 @@ import torch
 import numpy as np
 from utils import print_rank_0
 from torch.utils.data import DataLoader, Dataset, BatchSampler, DistributedSampler, Sampler
-from transformers import DataCollatorWithPadding
+from transformers import DataCollatorWithPadding, AutoTokenizer
 from datasets import load_dataset, load_from_disk
 import math
 
@@ -333,3 +333,49 @@ class QASFTDataset(QADataset):
             retrieval_positions.append(retrieval_position)
         batch['retrieval_position'] = torch.tensor(retrieval_positions).reshape(-1, 1)
         return batch
+    
+class QueryDataset(Dataset):
+    def __init__(self, args):
+        self.tokenizer = AutoTokenizer.from_pretrained(args.retriever_model_name_or_path)
+        self.args = args
+        self.collection = load_from_disk(args.dev_query)['query']
+        self.num_samples = len(self.collection)
+        
+    def _collate_fn(self, qrys):
+        return self.tokenizer(qrys, padding=True, truncation=True, return_tensors="pt", max_length=self.args.q_max_seq_len)
+
+    def __getitem__(self, idx):
+        return self.collection[idx]
+
+    def __len__(self):
+        return self.num_samples
+    
+class PassageDataset(Dataset):
+    def __init__(self, args):
+        self.tokenizer = AutoTokenizer.from_pretrained(args.retriever_model_name_or_path)
+        try:
+            self.rank = torch.distributed.get_rank()
+            self.n_procs = torch.distributed.get_world_size() 
+        except:
+            self.rank = self.n_procs = 0
+        self.args = args
+        self.collection = load_from_disk(args.collection)['text']
+        total_cnt = len(self.collection)
+        shard_cnt = total_cnt//self.n_procs
+        if self.rank!=self.n_procs-1:
+            self.collection = self.collection[self.rank*shard_cnt:(self.rank+1)*shard_cnt]
+        else:
+            self.collection = self.collection[self.rank*shard_cnt:]
+        self.num_samples = len(self.collection)
+        print('rank:',self.rank,'samples:',self.num_samples)
+
+    def _collate_fn(self, psgs):
+        p_records = self.tokenizer(psgs, padding=True, truncation=True, return_tensors="pt", max_length=self.args.p_max_seq_len)
+        return p_records
+
+    def __getitem__(self, idx):
+        psg = self.collection[idx]
+        return psg
+
+    def __len__(self):
+        return self.num_samples
