@@ -271,13 +271,14 @@ class QADataset(Dataset):
         sample = self.datasets[idx]
         query = sample['query']+"\n\nThe answer is:"
         answer = sample['answers'][0]
-        return query, answer 
+        neighbor_embeddings = sample.get('neighbor_embeddings')
+        return query, answer, neighbor_embeddings
     
     def __len__(self):
         return self.num_samples
     
     def _collate_fn(self, elems):
-        qrys, anss = zip(*elems)
+        qrys, anss, neighbor_embeddings = zip(*elems)
         self.tokenizer.padding_side = 'left'
         self.tokenizer.truncation_side = 'left'
         batch = self.tokenizer(qrys, anss,
@@ -298,6 +299,7 @@ class QADataset(Dataset):
                 retrieval_position = seq_len//2
             retrieval_positions.append(retrieval_position)
         batch['retrieval_position'] = torch.tensor(retrieval_positions).reshape(-1, 1)
+        batch['neighbor_embeddings'] = torch.tensor(neighbor_embeddings)
         return batch
     
     def filter_empty(self, example):
@@ -313,7 +315,7 @@ class QASFTDataset(QADataset):
         self.num_samples = len(self.datasets)
     
     def _collate_fn(self, elems):
-        qrys, anss = zip(*elems)
+        qrys, anss, neighbor_embeddings = zip(*elems)
         self.tokenizer.padding_side = 'left'
         self.tokenizer.truncation_side = 'left'
         batch = self.tokenizer(qrys, anss,
@@ -332,6 +334,7 @@ class QASFTDataset(QADataset):
                 retrieval_position = seq_len//2
             retrieval_positions.append(retrieval_position)
         batch['retrieval_position'] = torch.tensor(retrieval_positions).reshape(-1, 1)
+        batch['neighbor_embeddings'] = torch.tensor(neighbor_embeddings)
         return batch
     
 class QueryDataset(Dataset):
