@@ -5,7 +5,7 @@ from datasets import load_dataset, load_from_disk
 from transformers import AutoTokenizer
 
 corpus_name = sys.argv[1]
-
+split = sys.argv[2]
 def add_neighbors(example):
     pid = example['pid']
     matrix = np.load('../../data_of_ReGPT/marco/neighbors.P2P.DPR34-1.top50.npy')
@@ -46,7 +46,7 @@ def preprocess_qa_dataset(corpus_name, data_path, split='train'):
         return len(example['answers']) > 0 and len(example['answers'][0])>0
 
     def add_text_length(example):
-        example["text_length"] = len(tokenizer(example["query"], example["answers"][0])['input_ids'])
+        example["input_ids_length"] = len(tokenizer(example["query"]+"\n\nThe answer is:", example["answers"][0])['input_ids'])
         return example
     
     dataset = dataset.filter(filter_empty)
@@ -61,4 +61,4 @@ def preprocess_qa_dataset(corpus_name, data_path, split='train'):
 # if os.path.exists(f'../data_of_ReGPT/{corpus_name}/test.txt'):
     # preprocess_dataset(corpus_name, f'../data_of_ReGPT/{corpus_name}/test.txt', split='test')
 
-preprocess_qa_dataset(corpus_name, f'../{corpus_name}', split='train')
+preprocess_qa_dataset(corpus_name, f'../{corpus_name}', split=split)

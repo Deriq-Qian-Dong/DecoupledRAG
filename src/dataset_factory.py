@@ -264,8 +264,10 @@ class QADataset(Dataset):
     
     def setup_datasets(self):
         self.datasets = load_from_disk(self.args['data_name_or_path'])
-        self.datasets = self.datasets.filter(self.filter_empty)
         self.num_samples = len(self.datasets)
+        input_ids_lengths = self.datasets['input_ids_length']
+        input_ids_lengths = [min(self.args['max_seq_len'], length) for length in input_ids_lengths]
+        self.total_tokens = sum(input_ids_lengths)
     
     def __getitem__(self, idx):
         sample = self.datasets[idx]
@@ -308,15 +310,16 @@ class QADataset(Dataset):
     def set_epoch(self, epoch):
         self.epoch = epoch
         print_rank_0(f'[!] set epoch to {epoch}')
+
+    def update_total_tokens(self):
+        input_ids_lengths = self.datasets['input_ids_length']
+        input_ids_lengths = [min(self.args['max_seq_len'], length) for length in input_ids_lengths]
+        self.total_tokens = sum(input_ids_lengths)
     
 
 class QASFTDataset(QADataset):
     def __init__(self, tokenizer, args):
         super().__init__(tokenizer, args)
-    
-    def setup_datasets(self):
-        self.datasets = load_from_disk(self.args['data_name_or_path'])
-        self.num_samples = len(self.datasets)
     
     def _collate_fn(self, elems):
         qrys, anss, neighbor_embeddings = zip(*elems)
