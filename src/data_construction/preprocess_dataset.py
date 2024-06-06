@@ -40,7 +40,7 @@ def preprocess_dataset(corpus_name, data_path, split='train'):
     dataset.save_to_disk(f'../data_of_ReGPT/{corpus_name}/sorted_datasets_{split}')
 
 def preprocess_qa_dataset(corpus_name, data_path, split='train'):
-    dataset = load_from_disk(data_path)[split]
+    dataset = load_from_disk(data_path)
     tokenizer = AutoTokenizer.from_pretrained("output/SFT-best")
     def filter_empty(example):
         return len(example['answers']) > 0 and len(example['answers'][0])>0
