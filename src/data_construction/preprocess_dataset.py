@@ -49,11 +49,11 @@ def preprocess_qa_dataset(corpus_name, data_path, split='train'):
         example["input_ids_length"] = len(tokenizer(example["query"]+"\n\nThe answer is:", example["answers"][0])['input_ids'])
         return example
     
-    dataset = dataset.filter(filter_empty)
+    # dataset = dataset.filter(filter_empty)
 
     dataset = dataset.map(add_text_length)
 
-    dataset = dataset.sort("text_length", reverse=True)
+    dataset = dataset.sort("input_ids_length", reverse=True)
 
     dataset.save_to_disk(f'../data_of_ReGPT/{corpus_name}/sorted_datasets_{split}')
 
