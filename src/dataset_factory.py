@@ -274,13 +274,13 @@ class QADataset(Dataset):
         query = sample['query']+"\n\nThe answer is:"
         answer = sample['answers'][0]
         neighbor_embeddings = sample.get('neighbor_embeddings')
-        return query, answer, neighbor_embeddings
+        return query, answer, neighbor_embeddings, sample['input_ids_length']
     
     def __len__(self):
         return self.num_samples
     
     def _collate_fn(self, elems):
-        qrys, anss, neighbor_embeddings = zip(*elems)
+        qrys, anss, neighbor_embeddings, _ = zip(*elems)
         self.tokenizer.padding_side = 'left'
         self.tokenizer.truncation_side = 'left'
         batch = self.tokenizer(qrys, anss,
@@ -322,7 +322,7 @@ class QASFTDataset(QADataset):
         super().__init__(tokenizer, args)
     
     def _collate_fn(self, elems):
-        qrys, anss, neighbor_embeddings = zip(*elems)
+        qrys, anss, neighbor_embeddings, _ = zip(*elems)
         self.tokenizer.padding_side = 'left'
         self.tokenizer.truncation_side = 'left'
         batch = self.tokenizer(qrys, anss,
