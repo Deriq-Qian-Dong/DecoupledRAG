@@ -67,6 +67,7 @@ class RAGPretrainDataset(Dataset):
         input_ids_lengths = self.datasets['input_ids_length']
         input_ids_lengths = [min(self.args['max_seq_len'], length) for length in input_ids_lengths]
         self.total_tokens = sum(input_ids_lengths)
+        self.num_samples = len(self.datasets)
     
     def set_epoch(self, epoch):
         self.epoch = epoch
