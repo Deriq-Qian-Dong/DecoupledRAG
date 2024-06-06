@@ -305,6 +305,10 @@ class QADataset(Dataset):
     def filter_empty(self, example):
         return len(example['answers']) > 0
     
+    def set_epoch(self, epoch):
+        self.epoch = epoch
+        print_rank_0(f'[!] set epoch to {epoch}')
+    
 
 class QASFTDataset(QADataset):
     def __init__(self, tokenizer, args):
