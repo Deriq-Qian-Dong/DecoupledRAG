@@ -577,7 +577,7 @@ class RAGQATester(RAGLanguageModelTester):
         ppl2 = self.test(f'vanilla', inject_external_knowledge=False)
         stats = {"ppl_of_vanilla": ppl2}
         self.accelerator.log(stats, step=0)
-        for i in range(10, 25):
+        for i in range(10, 11):
             self.accelerator.print(f"\033[31mretrieval_step: {i}\033[0m")
             self.config['training']['retrieval_step'] = i
             self.accelerator.print("\033[31minject self-retrieved external knowledge\033[0m")
