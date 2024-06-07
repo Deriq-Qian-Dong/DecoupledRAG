@@ -1,7 +1,7 @@
 trainer: RAGQATester
 training:
   model_type: llama
-  project_name: RAG_llama2-sft
+  project_name: RAG_llama2-qa_eval
   # model_name_or_path: ../Llama-2-7b-chat-hf/
   # tokenizer_name_or_path: ../Llama-2-7b-chat-hf/
   model_name_or_path: ./output/SFT-best/
