@@ -1583,6 +1583,7 @@ class LlamaWithRetrievalHeadForCausalLM(LlamaPreTrainedModel):
         if not return_dict:
             output = (logits,) + outputs[1:]
             return (loss,) + output if loss is not None else output
+        print(retrieval_position)
 
         return CausalLMOutputWithPast(
             loss=loss,
