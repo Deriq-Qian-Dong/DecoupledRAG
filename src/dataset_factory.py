@@ -75,16 +75,19 @@ class RAGPretrainDataset(Dataset):
 
     def __getitem__(self, idx):
         sample = self.datasets[idx]
+        if 'text' in sample:
+            text = sample['text']
+        else:
+            text = sample['query']+"\n\nThe answer is:"+sample['answers'][0]
         text = sample['text']
-        neighbor_dr_embeddings = sample['neighbor_embeddings']
-        neighbor_gpt_embeddings = sample.get('neighbor_gpt2_embeddings', None)
-        return text, neighbor_dr_embeddings, neighbor_gpt_embeddings, sample['input_ids_length']
+        neighbor_embeddings = sample['neighbor_embeddings']
+        return text, neighbor_embeddings, sample['input_ids_length']
 
     def __len__(self):
         return len(self.datasets)
 
     def _collate_fn(self, elems):
-        texts, p_reps, neighbor_embeddings, _ = zip(*elems)
+        texts, neighbor_embeddings, _ = zip(*elems)
         batch = self.tokenizer(texts,
                                 max_length=self.args['max_seq_len'],
                                 padding=True,
@@ -94,12 +97,7 @@ class RAGPretrainDataset(Dataset):
         ret_pos = batch['input_ids'].size(1) // 2
         shape = (batch['input_ids'].size(0), 1)
         batch['retrieval_position'] = torch.full(shape, ret_pos, dtype=torch.long)
-        if neighbor_embeddings[0] is not None:
-            batch['neighbor_embeddings'] = torch.tensor(neighbor_embeddings)
-            batch['p_reps'] = torch.tensor(p_reps)
-        else:
-            batch['neighbor_embeddings'] = torch.tensor(p_reps)
-            batch['p_reps'] = None
+        batch['neighbor_embeddings'] = torch.tensor(neighbor_embeddings)
         return batch
 
 class DialogSFTDataset(Dataset):
