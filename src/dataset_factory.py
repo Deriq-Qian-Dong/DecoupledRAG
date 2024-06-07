@@ -343,7 +343,7 @@ class QASFTDataset(QADataset):
                 retrieval_position = seq_len//2
             retrieval_positions.append(retrieval_position)
         batch['retrieval_position'] = torch.tensor(retrieval_positions).reshape(-1, 1)
-        batch['neighbor_embeddings'] = torch.tensor(neighbor_embeddings)
+        batch['neighbor_embeddings'] = torch.tensor(neighbor_embeddings)[:, :6, :]
         return batch
     
 class QueryDataset(Dataset):
