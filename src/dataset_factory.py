@@ -79,7 +79,6 @@ class RAGPretrainDataset(Dataset):
             text = sample['text']
         else:
             text = sample['query']+"\n\nThe answer is:"+sample['answers'][0]
-        text = sample['text']
         neighbor_embeddings = sample['neighbor_embeddings']
         return text, neighbor_embeddings, sample['input_ids_length']
 
