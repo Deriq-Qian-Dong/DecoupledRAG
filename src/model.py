@@ -375,6 +375,7 @@ class LanguageModelTrainer:
             directory = f"output/SFT-new/"
             accelerator.unwrap_model(model).save_pretrained(directory)
             tokenizer.save_pretrained(directory)
+        accelerator.wait_for_everyone()
         model.train()
 
 class ReGPTLanguageModelTrainer(LanguageModelTrainer):
