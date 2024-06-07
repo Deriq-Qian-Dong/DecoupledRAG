@@ -25,11 +25,11 @@ training:
   negatives_in_device: true
   negatives_x_device: true
   predict_from_last: 10000
-  eval_step: 0
+  eval_step: 100
   start_from: 0
   cross_attention_activation_function: silu
   add_cross_attention_layer_number: 24
-  skip_steps: 600
+  skip_steps: 0
   max_tokens: 16384
   kb_path: ../data_of_ReGPT/marco/phrases_embeddings.npy
   freeze_retrieval_head: false
