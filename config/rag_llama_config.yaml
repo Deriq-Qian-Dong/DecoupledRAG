@@ -40,7 +40,8 @@ dataset:
     dataset_name: RAGPretrainDataset
     batch_size: 32
     # data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train_gpt2_embeddings/
-    data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train_llama2/
+    # data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train_llama2/
+    data_name_or_path: ../data_of_ReGPT/msmarco_qa/sorted_datasets_train/
     max_seq_len: 256
   test:
     dataset_name: RAGPretrainDataset
