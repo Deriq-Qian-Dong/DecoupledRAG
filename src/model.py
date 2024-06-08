@@ -300,6 +300,9 @@ class LanguageModelTrainer:
         model, optimizer, train_dataloader, scheduler, accelerator, epoch = self.model, self.optimizer, self.train_dataloader, self.scheduler, self.accelerator, self.epoch
         model.train()
         pbar = tqdm(total=len(train_dataloader))
+        local_rank = accelerator.process_index
+        number_of_steps = len(train_dataloader)
+        print(f"Number of steps of process {local_rank}: {number_of_steps}")
         for step, batch in enumerate(train_dataloader):
             if epoch==0 and step<self.train_config['skip_steps']:
                 if accelerator.is_main_process:
