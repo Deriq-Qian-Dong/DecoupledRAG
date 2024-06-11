@@ -303,8 +303,10 @@ class LanguageModelTrainer:
         local_rank = accelerator.process_index
         number_of_steps = len(train_dataloader)
         print(f"Number of steps of process {local_rank}: {number_of_steps}")
+        if os.path.exists(f"output/process_{local_rank}_steps.txt"):
+            os.remove(f"output/process_{local_rank}_steps.txt")
         for step, batch in enumerate(train_dataloader):
-            with open(f"output/process_{local_rank}_steps.txt", 'w') as f:
+            with open(f"output/process_{local_rank}_steps.txt", 'a') as f:
                 f.write(str(step)+'\t'+str(batch['input_ids'].size(0))+'\n')
             if epoch==0 and step<self.train_config['skip_steps']:
                 if accelerator.is_main_process:
