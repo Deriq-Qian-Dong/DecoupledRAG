@@ -1457,17 +1457,25 @@ class LlamaWithRetrievalHeadForCausalLM(LlamaPreTrainedModel):
         return self.model
 
     def _dist_gather_tensor(self, t: Optional[torch.Tensor]):
-        if t is None:
-            return None
-        t = t.contiguous()
+        if t is not None:
+            t = t.contiguous()
         self.world_size = torch.distributed.get_world_size()
         self.process_rank = torch.distributed.get_rank()
-        local_size = torch.tensor([t.size(0)], device=t.device, dtype=torch.int64)
-        all_sizes = [torch.zeros(1, device=t.device, dtype=torch.int64) for _ in range(self.world_size)]
+        has_t = torch.tensor([t is not None], device=self.model.device, dtype=torch.int64)
+        all_has_t = [torch.zeros(1, device=self.model.device, dtype=torch.int64) for _ in range(self.world_size)]
+        torch.distributed.all_gather(all_has_t, has_t)
+        if has_t.item() == 0:
+            local_size = torch.tensor([0], device=self.model.device, dtype=torch.int64)
+        else:
+            local_size = torch.tensor([t.size(0)], device=t.device, dtype=torch.int64)
+        all_sizes = [torch.zeros(1, device=self.model.device, dtype=torch.int64) for _ in range(self.world_size)]
         torch.distributed.all_gather(all_sizes, local_size)
         max_size = max([s.item() for s in all_sizes])
-        padded_t = torch.zeros(max_size, *t.size()[1:], device=t.device, dtype=t.dtype)
-        padded_t[: t.size(0)] = t
+        if t is not None:
+            padded_t = torch.zeros(max_size, *t.size()[1:], device=t.device, dtype=t.dtype)
+            padded_t[: t.size(0)] = t
+        else:
+            padded_t = torch.zeros(max_size, self.config.faiss_dimension, device=self.model.device, dtype=torch.int64)
         
         all_tensors = [torch.empty_like(padded_t) for _ in range(self.world_size)]
         torch.distributed.all_gather(all_tensors, padded_t)
