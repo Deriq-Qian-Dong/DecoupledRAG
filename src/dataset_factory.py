@@ -21,6 +21,7 @@ class DynamicBatchSampler(Sampler):
         batch = []
         current_batch_tokens = 0
         max_seq_len_in_batch = 0
+        batches_yielded = 0
         
         for idx in range(len(self.dataset)):
             seq_len = min(self.dataset[idx][-1], self.dataset.args['max_seq_len'])
@@ -28,13 +29,16 @@ class DynamicBatchSampler(Sampler):
             if current_batch_tokens + max_seq_len_in_batch > self.max_tokens:
                 if batch:
                     yield batch
+                    batches_yielded += 1
+                    if batches_yielded >= self.num_samples:
+                        break
                 batch = []
                 max_seq_len_in_batch = 0
                 current_batch_tokens = 0
             batch.append(idx)
             current_batch_tokens += max_seq_len_in_batch
 
-        if batch:
+        if batch and (batches_yielded < self.num_samples):
             yield batch
 
     def __len__(self):
