@@ -1462,10 +1462,18 @@ class LlamaWithRetrievalHeadForCausalLM(LlamaPreTrainedModel):
         t = t.contiguous()
         self.world_size = torch.distributed.get_world_size()
         self.process_rank = torch.distributed.get_rank()
-        all_tensors = [torch.empty_like(t) for _ in range(self.world_size)]
-        torch.distributed.all_gather(all_tensors, t)
+        local_size = torch.tensor([t.size(0)], device=t.device, dtype=torch.int64)
+        all_sizes = [torch.zeros(1, device=t.device, dtype=torch.int64) for _ in range(self.world_size)]
+        torch.distributed.all_gather(all_sizes, local_size)
+        max_size = max([s.item() for s in all_sizes])
+        padded_t = torch.zeros(max_size, *t.size()[1:], device=t.device, dtype=t.dtype)
+        padded_t[: t.size(0)] = t
+        
+        all_tensors = [torch.empty_like(padded_t) for _ in range(self.world_size)]
+        torch.distributed.all_gather(all_tensors, padded_t)
 
-        all_tensors[self.process_rank] = t
+        for i in range(self.world_size):
+            all_tensors[i] = all_tensors[i][: all_sizes[i].item()]
         all_tensors = torch.cat(all_tensors, dim=0)
 
         return all_tensors
