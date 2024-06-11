@@ -306,49 +306,48 @@ class LanguageModelTrainer:
         with open(f"output/process_{local_rank}_steps.txt", 'w') as f:
             for step, batch in enumerate(train_dataloader):
                 f.write(str(step)+'\t'+str(batch['input_ids'].size(0))+'\n')
-            
-        #     if epoch==0 and step<self.train_config['skip_steps']:
-        #         if accelerator.is_main_process:
-        #             pbar.update(1)
-        #             pbar.set_description(f"Epoch {epoch} | Skiping {step}/{self.train_config['skip_steps']}")
-        #         continue
-        #     self.iter_count += 1
-        #     total_time = time()
-        #     seq_len = batch['input_ids'].size(1)
-        #     batch_size = batch.input_ids.shape[0]
-        #     batch = self._prepare_inputs(batch)
-        #     batch = accelerator.prepare(batch)
-        #     forward_time = time()
-        #     outputs = model(**batch)
-        #     forward_time = time() - forward_time
-        #     loss, stats = self.compute_loss(outputs)
-        #     stats["training/seq_len"] = seq_len
-        #     stats["training/batch_size"] = batch_size
-        #     stats = self.task_specific_stats(stats, model)
-        #     backward_time = time()
-        #     accelerator.backward(loss)
-        #     backward_time = time() - backward_time
-        #     stats["time/forward"] = forward_time
-        #     stats["time/backward"] = backward_time
-        #     opt_time = time()
-        #     for group_number, lr in enumerate(scheduler.get_last_lr()):
-        #         stats[f"training/learning_rate"] = lr
-        #     optimizer.step()
-        #     scheduler.step()
-        #     optimizer.zero_grad()
-        #     if accelerator.is_main_process:
-        #         pbar.update(1)
-        #         pbar.set_description(f"Epoch {epoch} | Step {step} | Loss: {loss.cpu().detach().float().numpy():.4f}")
-        #     if self.iter_count%self.train_config['eval_step']==0:
-        #         self.test()
-        #     opt_time = time() - opt_time
-        #     stats["time/optimization"] = opt_time
-        #     total_time = time() - total_time
-        #     stats["time/total"] = total_time
-        #     data_loading_time = total_time - forward_time - backward_time - opt_time
-        #     stats["time/data_loading"] = data_loading_time
-        #     accelerator.log(stats, step=self.iter_count)
-        # pbar.close()
+                if epoch==0 and step<self.train_config['skip_steps']:
+                    if accelerator.is_main_process:
+                        pbar.update(1)
+                        pbar.set_description(f"Epoch {epoch} | Skiping {step}/{self.train_config['skip_steps']}")
+                    continue
+                self.iter_count += 1
+                total_time = time()
+                seq_len = batch['input_ids'].size(1)
+                batch_size = batch.input_ids.shape[0]
+                batch = self._prepare_inputs(batch)
+                batch = accelerator.prepare(batch)
+                forward_time = time()
+                outputs = model(**batch)
+                forward_time = time() - forward_time
+                loss, stats = self.compute_loss(outputs)
+                stats["training/seq_len"] = seq_len
+                stats["training/batch_size"] = batch_size
+                stats = self.task_specific_stats(stats, model)
+                backward_time = time()
+                accelerator.backward(loss)
+                backward_time = time() - backward_time
+                stats["time/forward"] = forward_time
+                stats["time/backward"] = backward_time
+                opt_time = time()
+                for group_number, lr in enumerate(scheduler.get_last_lr()):
+                    stats[f"training/learning_rate"] = lr
+                optimizer.step()
+                scheduler.step()
+                optimizer.zero_grad()
+                if accelerator.is_main_process:
+                    pbar.update(1)
+                    pbar.set_description(f"Epoch {epoch} | Step {step} | Loss: {loss.cpu().detach().float().numpy():.4f}")
+                if self.iter_count%self.train_config['eval_step']==0:
+                    self.test()
+                opt_time = time() - opt_time
+                stats["time/optimization"] = opt_time
+                total_time = time() - total_time
+                stats["time/total"] = total_time
+                data_loading_time = total_time - forward_time - backward_time - opt_time
+                stats["time/data_loading"] = data_loading_time
+                accelerator.log(stats, step=self.iter_count)
+            pbar.close()
 
     def test(self):
         model, tokenizer, optimizer, scheduler, test_dataloader, accelerator, iter_count = self.model, self.tokenizer, self.optimizer, self.scheduler, self.test_dataloader, self.accelerator, self.iter_count
