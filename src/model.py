@@ -421,6 +421,7 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
         self.config['dataset']['test'].update(RAG_kwargs)
         self.setup()
         self.best_perplexity = 1e10
+        self.sampler = None
 
     def setup_model(self, train_config):
         self.model = RAGForCausalLM(train_config)
