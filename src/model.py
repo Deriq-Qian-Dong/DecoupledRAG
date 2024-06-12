@@ -198,7 +198,7 @@ class LanguageModelTrainer:
             self.epoch = epoch
             self.set_epoch_to_dataset()
             self.train()
-            self.test()
+            # self.test()
         
     def set_epoch_to_dataset(self):
         self.train_dataset.set_epoch(self.epoch)
