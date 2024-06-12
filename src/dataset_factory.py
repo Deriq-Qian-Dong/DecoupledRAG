@@ -346,6 +346,7 @@ class QASFTDataset(QADataset):
             if retrieval_position <= 0:
                 retrieval_position = seq_len//2
             retrieval_positions.append(retrieval_position)
+            batch['labels'][i, :-ans_len] = -100
         batch['retrieval_position'] = torch.tensor(retrieval_positions).reshape(-1, 1)
         batch['neighbor_embeddings'] = torch.tensor(neighbor_embeddings)
         return batch
