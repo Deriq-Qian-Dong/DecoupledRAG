@@ -581,7 +581,7 @@ class RAGQATester(RAGLanguageModelTester):
         accelerator.print(f"Perplexity: {perplexity:.4f} | Loss: {total_loss:.4f}")
         return perplexity
 
-    def test_wo_teacher_forcing(self, log_name, inject_external_knowledge=False):
+    def test_wo_teacher_forcing(self):
         model, tokenizer, test_dataloader, accelerator = self.model, self.tokenizer, self.test_dataloader, self.accelerator
         model.eval()
         pbar = tqdm(test_dataloader, desc=f"Generation", disable=not accelerator.is_main_process)
@@ -614,18 +614,27 @@ class RAGQATester(RAGLanguageModelTester):
                 save_to_json(merged_data, f"output/{self.config['training']['project_name']}.json")
 
     def run(self):
-        self.accelerator.print("\033[31mdon't inject external knowledge\033[0m")
-        ppl2 = self.test(f'vanilla', inject_external_knowledge=False)
-        stats = {"ppl_of_vanilla": ppl2}
-        self.accelerator.log(stats, step=0)
-        for i in range(10, 11):
-            self.accelerator.print(f"\033[31mretrieval_step: {i}\033[0m")
-            self.config['training']['retrieval_step'] = i
-            self.accelerator.print("\033[31minject self-retrieved external knowledge\033[0m")
-            ppl1 = self.test(f'retrieval_step_{i}/inject', inject_external_knowledge=True)
-            # print the ratio of perplexity improvement
-            imp = (ppl2-ppl1)/ppl2
-            self.accelerator.print(f"\033[31mPerplexity Improvement: {imp:.4f}\033[0m")
-            stats = {f"Improvement": imp}
-            stats['ppl_of_inject'] = ppl1
-            self.accelerator.log(stats, step=i)
+        # self.accelerator.print("\033[31mdon't inject external knowledge\033[0m")
+        # ppl2 = self.test(f'vanilla', inject_external_knowledge=False)
+        # stats = {"ppl_of_vanilla": ppl2}
+        # self.accelerator.log(stats, step=0)
+        # for i in range(10, 11):
+        #     self.accelerator.print(f"\033[31mretrieval_step: {i}\033[0m")
+        #     self.config['training']['retrieval_step'] = i
+        #     self.accelerator.print("\033[31minject self-retrieved external knowledge\033[0m")
+        #     ppl1 = self.test(f'retrieval_step_{i}/inject', inject_external_knowledge=True)
+        #     # print the ratio of perplexity improvement
+        #     imp = (ppl2-ppl1)/ppl2
+        #     self.accelerator.print(f"\033[31mPerplexity Improvement: {imp:.4f}\033[0m")
+        #     stats = {f"Improvement": imp}
+        #     stats['ppl_of_inject'] = ppl1
+        #     self.accelerator.log(stats, step=i)
+        self.run_wo_teacher_forcing(1000000)
+        self.run_wo_teacher_forcing(10)
+    
+    def run_wo_teacher_forcing(self, retrieval_step):
+        self.config['training']['retrieval_step'] = retrieval_step
+        self.accelerator.print(f"\033[31minject self-retrieved external knowledge with retrieval step {retrieval_step}\033[0m")
+        self.config['training']['project_name'] = f"qa_eval_retrieval_step_{retrieval_step}"
+        self.test_wo_teacher_forcing()
+        self.accelerator.wait_for_everyone()
