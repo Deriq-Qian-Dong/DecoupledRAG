@@ -8,7 +8,16 @@ import faiss
 import joblib
 import torch.nn.functional as F
 import numpy as np
+import json
+def save_to_json(data, path):
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=4, ensure_ascii=False)
 
+def load_from_json(path):
+    import json
+    with open(path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    return data
 def get_all_reduce_mean(tensor):
     torch.distributed.all_reduce(tensor, op=torch.distributed.ReduceOp.SUM)
     tensor = tensor / torch.distributed.get_world_size()

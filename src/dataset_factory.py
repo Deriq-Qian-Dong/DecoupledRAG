@@ -350,6 +350,26 @@ class QASFTDataset(QADataset):
         batch['neighbor_embeddings'] = torch.tensor(neighbor_embeddings)
         return batch
     
+class QAEvalDataset(QADataset):
+    def __init__(self, tokenizer, args):
+        super().__init__(tokenizer, args)
+    
+    def _collate_fn(self, elems):
+        qrys, anss, _, _ = zip(*elems)
+        self.tokenizer.padding_side = 'left'
+        self.tokenizer.truncation_side = 'left'
+        batch = self.tokenizer(qrys,
+                                max_length=self.args['max_seq_len'],
+                                padding=True,
+                                truncation=True,
+                                return_tensors="pt")
+        batch['answers'] = self.tokenizer(anss,
+                                max_length=self.args['max_seq_len'],
+                                padding=True,
+                                truncation=True,
+                                return_tensors="pt")['input_ids']
+        return batch
+    
 class QueryDataset(Dataset):
     def __init__(self, args):
         self.tokenizer = AutoTokenizer.from_pretrained(args.retriever_model_name_or_path)

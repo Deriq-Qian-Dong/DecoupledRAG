@@ -581,6 +581,38 @@ class RAGQATester(RAGLanguageModelTester):
         accelerator.print(f"Perplexity: {perplexity:.4f} | Loss: {total_loss:.4f}")
         return perplexity
 
+    def test_wo_teacher_forcing(self, log_name, inject_external_knowledge=False):
+        model, tokenizer, test_dataloader, accelerator = self.model, self.tokenizer, self.test_dataloader, self.accelerator
+        model.eval()
+        pbar = tqdm(test_dataloader, desc=f"Generation", disable=not accelerator.is_main_process)
+        retrieval_step = self.config['training']['retrieval_step']
+        model.config.retrieval_step = retrieval_step
+        generation_kwargs = self.config['generation_kwargs']
+        local_rank = accelerator.process_index
+        world_size = accelerator.num_processes
+        data = []
+        with torch.no_grad():
+            for step, batch in enumerate(test_dataloader):
+                answers = batch.pop('answers')
+                outputs = model.generate(**batch)
+                responses = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+                answers = tokenizer.batch_decode(answers, skip_special_tokens=True)
+                input_ids = batch['input_ids']
+                for input_id, response, answer in zip(input_ids, responses, answers):
+                    input_text = tokenizer.decode(input_id, skip_special_tokens=True)
+                    input_len = len(input_text)
+                    response = response[input_len:]
+                    data.append({"question": input_text, "response": response, "answer": answer})
+                if accelerator.is_main_process:
+                    pbar.update(1)
+            save_to_json(data, f"output/{self.config['training']['project_name']}_process_{local_rank}.json")
+            accelerator.wait_for_everyone()
+            if accelerator.is_main_process:
+                merged_data = []
+                for rank in range(world_size):
+                    merged_data.extend(load_from_json(f"output/{self.config['training']['project_name']}_process_{rank}.json"))
+                save_to_json(merged_data, f"output/{self.config['training']['project_name']}.json")
+
     def run(self):
         self.accelerator.print("\033[31mdon't inject external knowledge\033[0m")
         ppl2 = self.test(f'vanilla', inject_external_knowledge=False)

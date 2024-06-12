@@ -53,8 +53,8 @@ dataset:
 
 generation_kwargs:
   min_length: 0
-  max_length: 512
-  do_sample: true
+  max_new_tokens: 20
+  do_sample: false
   top_k: 5
   top_p: 0.95
 
