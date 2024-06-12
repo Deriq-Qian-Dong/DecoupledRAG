@@ -276,7 +276,7 @@ class QADataset(Dataset):
     
     def __getitem__(self, idx):
         sample = self.datasets[idx]
-        query = sample['query']+"\n\nThe answer is:"
+        query = sample['query']+"\n\nThe answer is:\n\n"
         answer = sample['answers'][0]
         neighbor_embeddings = sample.get('neighbor_embeddings')
         return query, answer, neighbor_embeddings, sample['input_ids_length']
