@@ -65,6 +65,6 @@ RAG_kwargs:
   topk: 6
 
 metrics:
-  rouge
-  bleu
-  exact_match
+  rouge: 1
+  bleu: 1
+  exact_match: 1
