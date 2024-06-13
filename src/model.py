@@ -647,7 +647,7 @@ class RAGQATester(RAGLanguageModelTester):
 
     def compute_metrics(self, predictions, references):
         import evaluate
-        metrics = self.config['metrics']
+        metrics = list(self.config['metrics'].keys())
         for m in metrics:
             met = evaluate.load(m)
             scores = met.compute(predictions=predictions, references=references)
