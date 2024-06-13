@@ -631,6 +631,7 @@ class RAGQATester(RAGLanguageModelTester):
         #     self.accelerator.log(stats, step=i)
         # self.run_wo_teacher_forcing(1000000)
         self.run_wo_teacher_forcing(10)
+        self.run_wo_teacher_forcing(1)
     
     def run_wo_teacher_forcing(self, retrieval_step):
         self.config['training']['retrieval_step'] = retrieval_step
