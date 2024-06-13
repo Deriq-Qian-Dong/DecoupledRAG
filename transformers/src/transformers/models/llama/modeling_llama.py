@@ -1838,7 +1838,7 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
         q_reps = self.q_reps_cache.update(q_reps)
         # current sequence length
         curr_seq_len = self.q_reps_cache.count
-        if curr_seq_len%self.config.retrieval_step==0 and curr_seq_len>=10:
+        if curr_seq_len%self.config.retrieval_step==0:
             # Get the top-k similar vectors from knowledge base
             scores = torch.matmul(q_reps, self.kb.t())
             topk_scores, topk_indices = torch.topk(scores, self.config.topk, dim=1)

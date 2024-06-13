@@ -605,7 +605,7 @@ class RAGQATester(RAGLanguageModelTester):
                     data.append({"question": input_text, "response": response, "answer": answer})
                 if accelerator.is_main_process:
                     pbar.update(1)
-            save_to_json(data, f"output/{self.config['training']['project_name']}_process_{local_rank}.json")
+                save_to_json(data, f"output/{self.config['training']['project_name']}_process_{local_rank}.json")
             accelerator.wait_for_everyone()
             if accelerator.is_main_process:
                 merged_data = []
