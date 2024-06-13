@@ -651,11 +651,10 @@ class RAGQATester(RAGLanguageModelTester):
         self.config['training']['project_name'] = f"qa_eval_retrieval_step_{retrieval_step}"
         self.test_wo_teacher_forcing()
         self.accelerator.wait_for_everyone()
-        if self.accelerator.is_main_process:
-            data = load_from_json(f"output/{self.config['training']['project_name']}.json")
-            predictions = [d['response'] for d in data]
-            references = [d['answer'] for d in data]
-            self.compute_metrics(predictions, references)
+        data = load_from_json(f"output/{self.config['training']['project_name']}.json")
+        predictions = [d['response'] for d in data]
+        references = [d['answer'] for d in data]
+        return self.compute_metrics(predictions, references)
 
 
     def compute_metrics(self, predictions, references):
