@@ -629,7 +629,7 @@ class RAGQATester(RAGLanguageModelTester):
         #     stats = {f"Improvement": imp}
         #     stats['ppl_of_inject'] = ppl1
         #     self.accelerator.log(stats, step=i)
-        # self.run_wo_teacher_forcing(1000000)
+        self.run_wo_teacher_forcing(1000000)
         self.run_wo_teacher_forcing(10)
         self.run_wo_teacher_forcing(1)
     
@@ -639,3 +639,17 @@ class RAGQATester(RAGLanguageModelTester):
         self.config['training']['project_name'] = f"qa_eval_retrieval_step_{retrieval_step}"
         self.test_wo_teacher_forcing()
         self.accelerator.wait_for_everyone()
+        data = load_from_json(f"output/{self.config['training']['project_name']}.json")
+        predictions = [d['response'] for d in data]
+        references = [d['answer'] for d in data]
+        self.compute_metrics(predictions, references)
+
+
+    def compute_metrics(self, predictions, references):
+        import evaluate
+        metrics = self.config['metrics']
+        for m in metrics:
+            met = evaluate.load(m)
+            scores = met.compute(predictions=predictions, references=references)
+            for key in scores:
+                self.accelerator.print(f"{m}: {key}: {scores[key]}")

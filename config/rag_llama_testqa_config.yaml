@@ -63,3 +63,8 @@ RAG_kwargs:
     dimension: 768
   retrieval_step: 100
   topk: 6
+
+metrics:
+  rouge
+  bleu
+  exact_match
