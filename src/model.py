@@ -629,7 +629,7 @@ class RAGQATester(RAGLanguageModelTester):
         #     stats = {f"Improvement": imp}
         #     stats['ppl_of_inject'] = ppl1
         #     self.accelerator.log(stats, step=i)
-        self.run_wo_teacher_forcing(1000000)
+        # self.run_wo_teacher_forcing(1000000)
         self.run_wo_teacher_forcing(10)
     
     def run_wo_teacher_forcing(self, retrieval_step):
