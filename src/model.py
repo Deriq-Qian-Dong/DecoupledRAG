@@ -588,6 +588,8 @@ class RAGQATester(RAGLanguageModelTester):
         retrieval_step = self.config['training']['retrieval_step']
         model.config.retrieval_step = retrieval_step
         generation_kwargs = self.config['generation_kwargs']
+        if accelerator.is_main_process:
+            accelerator.print(f"Generation kwargs: {generation_kwargs}")
         local_rank = accelerator.process_index
         world_size = accelerator.num_processes
         data = []
@@ -629,9 +631,19 @@ class RAGQATester(RAGLanguageModelTester):
         #     stats = {f"Improvement": imp}
         #     stats['ppl_of_inject'] = ppl1
         #     self.accelerator.log(stats, step=i)
-        self.run_wo_teacher_forcing(1000000)
-        self.run_wo_teacher_forcing(10)
-        self.run_wo_teacher_forcing(1)
+        for i in range(10, 200, 2):
+            self.config['generation_kwargs']['max_new_tokens'] = i
+            rouge1 = self.run_wo_teacher_forcing(1000000)
+            rouge2 = self.run_wo_teacher_forcing(10)
+            imp = (rouge2-rouge1)/rouge1
+            self.accelerator.print(f"\033[31mImprovement10vs1000000: {imp:.4f}\033[0m")
+            stats = {"Improvement10vs1000000": imp}
+            rouge3 = self.run_wo_teacher_forcing(1)
+            imp = (rouge3-rouge1)/rouge1
+            stats["Improvement1vs1000000"] = imp
+            self.accelerator.print(f"\033[31mImprovement1vs1000000: {imp:.4f}\033[0m")
+            self.accelerator.log(stats, step=i)
+
     
     def run_wo_teacher_forcing(self, retrieval_step):
         self.config['training']['retrieval_step'] = retrieval_step
@@ -649,8 +661,10 @@ class RAGQATester(RAGLanguageModelTester):
     def compute_metrics(self, predictions, references):
         import evaluate
         metrics = list(self.config['metrics'].keys())
+        scores_dict = {}
         for m in metrics:
             met = evaluate.load(m)
             scores = met.compute(predictions=predictions, references=references)
-            for key in scores:
-                self.accelerator.print(f"{m}: {key}: {scores[key]}")
+            scores_dict[m] = scores
+            self.accelerator.print(scores)
+        return scores_dict['rouge']['rougeL']
