@@ -1837,7 +1837,6 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
                 # reshape the loss_per_sample to (batch_size, sequence_length)
                 loss_per_sample = loss_per_sample.view(labels.shape[0], -1)
                 loss_per_sample = loss_per_sample.mean(dim=1)
-                print(loss_per_sample, loss_per_sample.shape)
                 ppl_per_sample = torch.exp(loss_per_sample)
                 self.logits_cache.reset()
 
