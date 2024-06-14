@@ -415,12 +415,16 @@ class TrufulQADataset(Dataset):
         ans_lens = []
         pairs = []
         targets = []
+        idxs = []
+        idx = 0
         for qry, ans, target in zip(qrys, anss, labels):
             targets+=target
+            idx+=1
             for i in range(len(ans)):
                 qa_pair = qry + '\n\nThe answer is:\n\n' + ans[i]
                 pairs.append(qa_pair)
                 ans_lens.append(len(self.tokenizer(ans[i])['input_ids']))
+                idxs.append(idx)
         batch = self.tokenizer(pairs,
                                 max_length=self.args['max_seq_len'],
                                 padding=True,
@@ -430,6 +434,7 @@ class TrufulQADataset(Dataset):
         for i in range(len(batch['labels'])):
             batch['labels'][i, :-ans_lens[i]] = -100
         batch['targets'] = torch.tensor(targets)
+        batch['idxs'] = torch.tensor(idxs)
         return batch
 
 @register_class
