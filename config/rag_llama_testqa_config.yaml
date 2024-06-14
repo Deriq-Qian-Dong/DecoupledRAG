@@ -47,7 +47,7 @@ dataset:
   test:
     # dataset_name: QAEvalDataset
     dataset_name: TrufulQADataset
-    batch_size: 4
+    batch_size: 1
     # data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_test_gpt2_embeddings/
     data_name_or_path: ../data_of_ReGPT/truthful_qa/
     max_seq_len: 256
