@@ -1818,6 +1818,7 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
         logits = logits.float()
 
         loss = None
+        ppl_per_sample = None
         if labels is not None:
             self.logits_cache.update(logits)
             if self.logits_cache.logits.shape[1]==labels.shape[1]:
