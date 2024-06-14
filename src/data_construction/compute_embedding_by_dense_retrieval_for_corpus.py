@@ -24,8 +24,9 @@ torch.distributed.init_process_group(backend="nccl", init_method='env://')
 local_rank = torch.distributed.get_rank()
 world_size = torch.distributed.get_world_size()
 data = data.shard(num_shards=world_size, index=local_rank, contiguous=True)
-for item in data:
-    phrases.extend(item['text'])
+print('local_rank', local_rank, 'world_size', world_size, 'data size', len(data))
+for item in tqdm(data):
+    phrases.append(item['text'])
 # with open("../data_of_ReGPT/marco/collection.tsv") as f:
     # lines = f.readlines()
 # for line in lines:
