@@ -404,7 +404,7 @@ class TrufulQADataset(Dataset):
         sample = self.datasets[idx]
         query = sample['question']
         answers = sample['mc1_targets']['choices']
-        labels = sample['mc1_labels']['labels']
+        labels = sample['mc1_targets']['labels']
         return query, answers, labels
     
     def __len__(self):
