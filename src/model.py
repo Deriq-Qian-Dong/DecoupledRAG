@@ -631,13 +631,14 @@ class RAGQATester(RAGLanguageModelTester):
         #     stats = {f"Improvement": imp}
         #     stats['ppl_of_inject'] = ppl1
         #     self.accelerator.log(stats, step=i)
-        for i in range(10, 100, 10):
+        for i in range(30, 100, 10):
             self.config['generation_kwargs']['max_new_tokens'] = i
             rouge1 = self.run_wo_teacher_forcing(1000000)
-            rouge2 = self.run_wo_teacher_forcing(10)
-            imp = (rouge2-rouge1)/rouge1
-            self.accelerator.print(f"\033[31mImprovement10vs1000000: {imp:.4f}\033[0m")
-            stats = {"Improvement10vs1000000": imp}
+            stats = {}
+            # rouge2 = self.run_wo_teacher_forcing(10)
+            # imp = (rouge2-rouge1)/rouge1
+            # self.accelerator.print(f"\033[31mImprovement10vs1000000: {imp:.4f}\033[0m")
+            stats["Improvement10vs1000000"] = imp
             rouge3 = self.run_wo_teacher_forcing(1)
             imp = (rouge3-rouge1)/rouge1
             stats["Improvement1vs1000000"] = imp
