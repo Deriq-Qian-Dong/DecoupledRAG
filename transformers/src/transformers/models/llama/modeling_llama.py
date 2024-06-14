@@ -1833,7 +1833,7 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
                 shift_labels = shift_labels.to(shift_logits.device)
                 loss = loss_fct(shift_logits, shift_labels)
                 loss_fct = CrossEntropyLoss(ignore_index=-100, reduction='none')
-                loss_per_sample = loss_fct(shift_logits, shift_labels)
+                loss_per_sample = loss_fct(shift_logits, shift_labels).mean(dim=1)
                 ppl_per_sample = torch.exp(loss_per_sample)
                 self.logits_cache.reset()
 
