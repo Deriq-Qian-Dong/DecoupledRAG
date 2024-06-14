@@ -276,8 +276,14 @@ class QADataset(Dataset):
     
     def __getitem__(self, idx):
         sample = self.datasets[idx]
-        query = sample['query']+"\n\nThe answer is:\n\n"
-        answer = sample['answers'][0]
+        if 'query' in sample:
+            query = sample['query']+"\n\nThe answer is:\n\n"
+        else:
+            query = sample['question']+"\n\nThe answer is:\n\n"
+        if type(sample['answers']) == list:
+            answer = sample['answers'][0]
+        else:
+            answer = sample['answers']
         neighbor_embeddings = sample.get('neighbor_embeddings')
         return query, answer, neighbor_embeddings, sample['input_ids_length']
     
