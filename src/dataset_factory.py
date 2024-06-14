@@ -413,9 +413,22 @@ class TrufulQADataset(Dataset):
     def _collate_fn(self, elems):
         qrys, anss, labels = zip(*elems)
         ans_lens = []
+        pairs = []
         for qry, ans in zip(qrys, anss):
             for i in range(len(ans)):
-                ans[i] = qry + '\n\nThe answer is:\n\n' + ans[i]
+                qa_pair = qry + '\n\nThe answer is:\n\n' + ans[i]
+                pairs.append(qa_pair)
+                ans_lens.append(len(self.tokenizer(ans[i])['input_ids']))
+        batch = self.tokenizer(pairs,
+                                max_length=self.args['max_seq_len'],
+                                padding=True,
+                                truncation=True,
+                                return_tensors="pt")
+        batch["labels"] = batch['input_ids'].clone()
+        for i in range(len(batch['labels'])):
+            batch['labels'][i, :-ans_lens[i]] = -100
+        batch['targets'] = torch.tensor(labels)
+        return batch
 
 @register_class
 class QueryDataset(Dataset):
