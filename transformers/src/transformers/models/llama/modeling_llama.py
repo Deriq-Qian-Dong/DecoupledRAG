@@ -1835,7 +1835,7 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
                 loss_fct = CrossEntropyLoss(ignore_index=-100, reduction='none')
                 loss_per_sample = loss_fct(shift_logits, shift_labels)
                 # reshape the loss_per_sample to (batch_size, sequence_length)
-                loss_per_sample = loss_per_sample.view(-1, labels.shape[1])
+                loss_per_sample = loss_per_sample.view(labels.shape[0], -1)
                 loss_per_sample = loss_per_sample.mean(dim=1)
                 print(loss_per_sample, loss_per_sample.shape)
                 ppl_per_sample = torch.exp(loss_per_sample)
