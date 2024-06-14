@@ -16,7 +16,7 @@ base_dir = f'../data_of_ReGPT/En-Wiki'
 os.makedirs(base_dir, exist_ok=True)
 
 phrase_embeddings = []
-batch_size = 20480
+batch_size = 10240
 
 phrases = []
 data = load_from_disk("../data_of_ReGPT/En-Wiki/sorted_datasets_train")
