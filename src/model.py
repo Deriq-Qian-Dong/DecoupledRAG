@@ -550,6 +550,8 @@ class RAGQATester(RAGLanguageModelTester):
         model.eval()
         total_loss = 0
         pbar = tqdm(test_dataloader, desc=f"Evaluation", disable=not accelerator.is_main_process)
+        accuracy = 0
+        global_batch_size = 0
         with torch.no_grad():
             for step,batch in enumerate(test_dataloader):
                 batch.pop('attention_mask')
@@ -560,6 +562,8 @@ class RAGQATester(RAGLanguageModelTester):
                 input_ids = batch.pop('input_ids')
                 seq_len = input_ids.size(1)
                 labels = batch.pop('labels')
+                batch_size = input_ids.size(0)
+                global_batch_size += batch_size
                 model.config.retrieval_step = retrieval_step
                 # generate with teacher forcing and retrieval for each retrieval_step
                 neighbor_embeddings = None
@@ -577,6 +581,13 @@ class RAGQATester(RAGLanguageModelTester):
                     loss = outputs.loss
                     if loss is not None:
                         ppl_per_sample = outputs.ppl_per_sample
+                        if idxs is not None:
+                            for idx in range(batch_size):
+                                ppl_per_question = ppl_per_sample[idxs==idx]
+                                targets_per_question = targets[idxs==idx]
+                                min_ppl_idx = ppl_per_question.argmin()
+                                correct_idx = targets_per_question.argmax()
+                                accuracy += int(min_ppl_idx==correct_idx)
                         stats = {f"{log_name}/loss": float(loss.cpu().detach().float().numpy())}
                         loss = accelerator.gather_for_metrics(loss)
                         total_loss += loss.cpu().detach().float().numpy().mean()
@@ -587,10 +598,14 @@ class RAGQATester(RAGLanguageModelTester):
                 model._reset_q_reps_cache()
                 if accelerator.is_main_process:
                     pbar.update(1)
-                    pbar.set_description(f"Step {step} | Loss: {total_loss/(step+1):.4f} | Perplexity: {np.exp(total_loss/(step+1)):.4f} | Retrieval step: {retrieval_step}")
+                    pbar.set_description(f"Step {step} | Loss: {total_loss/(step+1):.4f} | Perplexity: {np.exp(total_loss/(step+1)):.4f} | Retrieval step: {retrieval_step} | Accuracy: {accuracy/global_batch_size:.4f}")
         total_loss /= len(test_dataloader)
         perplexity = np.exp(total_loss)
-        accelerator.print(f"Perplexity: {perplexity:.4f} | Loss: {total_loss:.4f}")
+        accuracy /= global_batch_size
+        accuracy = torch.tensor(accuracy).to(accelerator.device)
+        gathered_accuracy = accelerator.gather(accuracy)
+        accuracy = gathered_accuracy.mean().item()
+        accelerator.print(f"Perplexity: {perplexity:.4f} | Loss: {total_loss:.4f} | Accuracy: {accuracy:.4f}")
         return perplexity
 
     def test_wo_teacher_forcing(self):
