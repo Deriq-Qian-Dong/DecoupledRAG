@@ -631,7 +631,7 @@ class RAGQATester(RAGLanguageModelTester):
         #     stats = {f"Improvement": imp}
         #     stats['ppl_of_inject'] = ppl1
         #     self.accelerator.log(stats, step=i)
-        for i in range(50, 100, 10):
+        for i in range(30, 50):
             self.config['generation_kwargs']['max_new_tokens'] = i
             rouge1 = self.run_wo_teacher_forcing(1000000)
             stats = {}

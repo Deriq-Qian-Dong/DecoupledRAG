@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader, Dataset, BatchSampler, DistributedSampl
 from transformers import DataCollatorWithPadding, AutoTokenizer
 from datasets import load_dataset, load_from_disk
 import math
+from registry import register_class
 
 class DynamicBatchSampler(Sampler):
     def __init__(self, dataset, max_tokens, num_replicas, rank):
@@ -43,6 +44,8 @@ class DynamicBatchSampler(Sampler):
 
     def __len__(self):
         return self.num_samples
+    
+@register_class
 class RAGPretrainDataset(Dataset):
     def __init__(self, tokenizer, args):
         self.args = args
@@ -106,6 +109,7 @@ class RAGPretrainDataset(Dataset):
         batch['neighbor_embeddings'] = torch.tensor(neighbor_embeddings)
         return batch
 
+@register_class
 class DialogSFTDataset(Dataset):
     def __init__(self, tokenizer, args):
         self.args = args
@@ -138,7 +142,8 @@ class DialogSFTDataset(Dataset):
                                 return_tensors="pt")
         batch["labels"] = batch['input_ids']
         return batch
-    
+
+@register_class
 class CorpusPretrainDataset(DialogSFTDataset):
     def __init__(self, tokenizer, args):
         super().__init__(tokenizer, args)        
@@ -161,6 +166,7 @@ class CorpusPretrainDataset(DialogSFTDataset):
         text = text.strip()  # remove leading and trailing spaces
         return text
 
+@register_class
 class CorpusPretrainFromAfsDataset(CorpusPretrainDataset):
     def __init__(self, tokenizer, args):
         super().__init__(tokenizer, args)        
@@ -177,6 +183,7 @@ class CorpusPretrainFromAfsDataset(CorpusPretrainDataset):
         super().set_epoch(epoch)
         self.setup_datasets()
 
+@register_class
 class LongDocumentSummarizationSFTDataset(DialogSFTDataset):
     def __init__(self, tokenizer, args):
         super().__init__(tokenizer, args)        
@@ -185,7 +192,8 @@ class LongDocumentSummarizationSFTDataset(DialogSFTDataset):
         sample = self.datasets[idx]
         text = "Please write an abstract for this article:\n"+sample['article']+"\nAbstract:\n"+sample['abstract']
         return text
-    
+
+@register_class
 class DocumentSummarizationSFTDataset(DialogSFTDataset):
     def __init__(self, tokenizer, args):
         super().__init__(tokenizer, args)        
@@ -203,6 +211,7 @@ class DocumentSummarizationSFTDataset(DialogSFTDataset):
             self.datasets = load_dataset(self.args['data_name_or_path'], '3.0.0',  split=self.split)
         self.num_samples = len(self.datasets)
 
+@register_class
 class ReGPTDialogSFTDataset(DialogSFTDataset):
     def __init__(self, tokenizer, args):
         super().__init__(tokenizer, args)
@@ -223,7 +232,8 @@ class ReGPTDialogSFTDataset(DialogSFTDataset):
         # 使用negs_of_eos填充
         batch['negative_ids'] = torch.from_numpy(negative_ids).long()
         return batch
-    
+
+@register_class
 class ReGPTCorpusPretrainDataset(ReGPTDialogSFTDataset, CorpusPretrainDataset):
     def __init__(self, tokenizer, args):
         super().__init__(tokenizer, args)
@@ -234,6 +244,7 @@ class ReGPTCorpusPretrainDataset(ReGPTDialogSFTDataset, CorpusPretrainDataset):
     def setup_datasets(self):
         CorpusPretrainDataset.setup_datasets(self)
 
+@register_class
 class ReGPTCorpusPretrainFromAfsDataset(ReGPTDialogSFTDataset, CorpusPretrainFromAfsDataset):
     def __init__(self, tokenizer, args):
         super().__init__(tokenizer, args)
@@ -244,13 +255,15 @@ class ReGPTCorpusPretrainFromAfsDataset(ReGPTDialogSFTDataset, CorpusPretrainFro
     def setup_datasets(self):
         CorpusPretrainFromAfsDataset.setup_datasets(self)
 
+@register_class
 class ReGPTLongDocumentSummarizationSFTDataset(ReGPTDialogSFTDataset, LongDocumentSummarizationSFTDataset):
     def __init__(self, tokenizer, args):
         super().__init__(tokenizer, args)
     
     def __getitem__(self, idx):
         return LongDocumentSummarizationSFTDataset.__getitem__(self, idx)
-    
+
+@register_class
 class ReGPTDocumentSummarizationSFTDataset(ReGPTDialogSFTDataset, DocumentSummarizationSFTDataset):
     def __init__(self, tokenizer, args):
         super().__init__(tokenizer, args)
@@ -261,6 +274,7 @@ class ReGPTDocumentSummarizationSFTDataset(ReGPTDialogSFTDataset, DocumentSummar
     def setup_datasets(self):
         DocumentSummarizationSFTDataset.setup_datasets(self)
 
+@register_class
 class QADataset(Dataset):
     def __init__(self, tokenizer, args):
         self.args = args
@@ -328,7 +342,7 @@ class QADataset(Dataset):
         self.total_tokens = sum(input_ids_lengths)
         self.num_samples = len(self.datasets)
     
-
+@register_class
 class QASFTDataset(QADataset):
     def __init__(self, tokenizer, args):
         super().__init__(tokenizer, args)
@@ -356,7 +370,8 @@ class QASFTDataset(QADataset):
         batch['retrieval_position'] = torch.tensor(retrieval_positions).reshape(-1, 1)
         batch['neighbor_embeddings'] = torch.tensor(neighbor_embeddings)
         return batch
-    
+
+@register_class
 class QAEvalDataset(QADataset):
     def __init__(self, tokenizer, args):
         super().__init__(tokenizer, args)
@@ -376,7 +391,33 @@ class QAEvalDataset(QADataset):
                                 truncation=True,
                                 return_tensors="pt")['input_ids']
         return batch
+
+@register_class
+class TrufulQADataset(Dataset):
+    def __init__(self, tokenizer, args):
+        self.args = args
+        self.datasets = load_from_disk(args['data_name_or_path'])
+        self.num_samples = len(self.datasets)
+        self.tokenizer = tokenizer
+
+    def __getitem__(self, idx):
+        sample = self.datasets[idx]
+        query = sample['question']
+        answers = sample['mc1_targets']['choices']
+        labels = sample['mc1_labels']['labels']
+        return query, answers, labels
     
+    def __len__(self):
+        return self.num_samples
+    
+    def _collate_fn(self, elems):
+        qrys, anss, labels = zip(*elems)
+        ans_lens = []
+        for qry, ans in zip(qrys, anss):
+            for i in range(len(ans)):
+                ans[i] = qry + '\n\nThe answer is:\n\n' + ans[i]
+
+@register_class
 class QueryDataset(Dataset):
     def __init__(self, args):
         self.tokenizer = AutoTokenizer.from_pretrained(args.retriever_model_name_or_path)
@@ -392,7 +433,8 @@ class QueryDataset(Dataset):
 
     def __len__(self):
         return self.num_samples
-    
+
+@register_class
 class PassageDataset(Dataset):
     def __init__(self, args):
         self.tokenizer = AutoTokenizer.from_pretrained(args.retriever_model_name_or_path)
