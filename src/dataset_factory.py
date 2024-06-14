@@ -414,7 +414,9 @@ class TrufulQADataset(Dataset):
         qrys, anss, labels = zip(*elems)
         ans_lens = []
         pairs = []
-        for qry, ans in zip(qrys, anss):
+        targets = []
+        for qry, ans, target in zip(qrys, anss, labels):
+            targets+=target
             for i in range(len(ans)):
                 qa_pair = qry + '\n\nThe answer is:\n\n' + ans[i]
                 pairs.append(qa_pair)
@@ -427,7 +429,7 @@ class TrufulQADataset(Dataset):
         batch["labels"] = batch['input_ids'].clone()
         for i in range(len(batch['labels'])):
             batch['labels'][i, :-ans_lens[i]] = -100
-        batch['targets'] = torch.tensor(labels)
+        batch['targets'] = torch.tensor(targets)
         return batch
 
 @register_class
