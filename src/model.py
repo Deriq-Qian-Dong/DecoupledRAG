@@ -563,6 +563,8 @@ class RAGQATester(RAGLanguageModelTester):
                 seq_len = input_ids.size(1)
                 labels = batch.pop('labels')
                 batch_size = input_ids.size(0)
+                if idxs is not None:
+                    batch_size = idxs.max().item()+1
                 global_batch_size += batch_size
                 model.config.retrieval_step = retrieval_step
                 # generate with teacher forcing and retrieval for each retrieval_step
