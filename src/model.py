@@ -587,11 +587,7 @@ class RAGQATester(RAGLanguageModelTester):
                             for idx in range(batch_size):
                                 ppl_per_question = ppl_per_sample[idxs==idx]
                                 targets_per_question = targets[idxs==idx]
-                                try:
-                                    min_ppl_idx = ppl_per_question.argmin()
-                                except:
-                                    print(idxs, idx, targets_per_question)
-                                    exit()
+                                min_ppl_idx = ppl_per_question.argmin()
                                 correct_idx = targets_per_question.argmax()
                                 accuracy += int(min_ppl_idx==correct_idx)
                         stats = {f"{log_name}/loss": float(loss.cpu().detach().float().numpy())}
