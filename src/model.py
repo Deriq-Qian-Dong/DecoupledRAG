@@ -553,7 +553,9 @@ class RAGQATester(RAGLanguageModelTester):
         with torch.no_grad():
             for step,batch in enumerate(test_dataloader):
                 batch.pop('attention_mask')
-                batch.pop('retrieval_position')
+                batch.pop('retrieval_position', None)
+                idxs = batch.pop('idxs', None)
+                targets = batch.pop('targets', None)
                 retrieval_step = self.config['training']['retrieval_step']
                 input_ids = batch.pop('input_ids')
                 seq_len = input_ids.size(1)
@@ -574,6 +576,7 @@ class RAGQATester(RAGLanguageModelTester):
                     outputs = model(**batch)
                     loss = outputs.loss
                     if loss is not None:
+                        ppl_per_sample = outputs.ppl_per_sample
                         stats = {f"{log_name}/loss": float(loss.cpu().detach().float().numpy())}
                         loss = accelerator.gather_for_metrics(loss)
                         total_loss += loss.cpu().detach().float().numpy().mean()
@@ -624,34 +627,36 @@ class RAGQATester(RAGLanguageModelTester):
                     merged_data.extend(load_from_json(f"output/{self.config['training']['project_name']}_process_{rank}.json"))
                 save_to_json(merged_data, f"output/{self.config['training']['project_name']}.json")
 
+    # def run(self):
+    #     for i in range(30, 50):
+    #         self.config['generation_kwargs']['max_new_tokens'] = i
+    #         rouge1 = self.run_wo_teacher_forcing(1000000)
+    #         stats = {}
+    #         # rouge2 = self.run_wo_teacher_forcing(10)
+    #         # imp = (rouge2-rouge1)/rouge1
+    #         # self.accelerator.print(f"\033[31mImprovement10vs1000000: {imp:.4f}\033[0m")
+    #         # stats["Improvement10vs1000000"] = imp
+    #         rouge3 = self.run_wo_teacher_forcing(1)
+    #         imp = (rouge3-rouge1)/rouge1
+    #         stats["Improvement1vs1000000"] = imp
+    #         self.accelerator.print(f"\033[31mImprovement1vs1000000: {imp:.4f}\033[0m")
+    #         self.accelerator.log(stats, step=i)
+
     def run(self):
-        # self.accelerator.print("\033[31mdon't inject external knowledge\033[0m")
-        # ppl2 = self.test(f'vanilla', inject_external_knowledge=False)
-        # stats = {"ppl_of_vanilla": ppl2}
-        # self.accelerator.log(stats, step=0)
-        # for i in range(10, 11):
-        #     self.accelerator.print(f"\033[31mretrieval_step: {i}\033[0m")
-        #     self.config['training']['retrieval_step'] = i
-        #     self.accelerator.print("\033[31minject self-retrieved external knowledge\033[0m")
-        #     ppl1 = self.test(f'retrieval_step_{i}/inject', inject_external_knowledge=True)
-        #     # print the ratio of perplexity improvement
-        #     imp = (ppl2-ppl1)/ppl2
-        #     self.accelerator.print(f"\033[31mPerplexity Improvement: {imp:.4f}\033[0m")
-        #     stats = {f"Improvement": imp}
-        #     stats['ppl_of_inject'] = ppl1
-        #     self.accelerator.log(stats, step=i)
-        for i in range(30, 50):
-            self.config['generation_kwargs']['max_new_tokens'] = i
-            rouge1 = self.run_wo_teacher_forcing(1000000)
-            stats = {}
-            # rouge2 = self.run_wo_teacher_forcing(10)
-            # imp = (rouge2-rouge1)/rouge1
-            # self.accelerator.print(f"\033[31mImprovement10vs1000000: {imp:.4f}\033[0m")
-            # stats["Improvement10vs1000000"] = imp
-            rouge3 = self.run_wo_teacher_forcing(1)
-            imp = (rouge3-rouge1)/rouge1
-            stats["Improvement1vs1000000"] = imp
-            self.accelerator.print(f"\033[31mImprovement1vs1000000: {imp:.4f}\033[0m")
+        self.accelerator.print("\033[31mdon't inject external knowledge\033[0m")
+        ppl2 = self.test(f'vanilla', inject_external_knowledge=False)
+        stats = {"ppl_of_vanilla": ppl2}
+        self.accelerator.log(stats, step=0)
+        for i in range(1, 11):
+            self.accelerator.print(f"\033[31mretrieval_step: {i}\033[0m")
+            self.config['training']['retrieval_step'] = i
+            self.accelerator.print("\033[31minject self-retrieved external knowledge\033[0m")
+            ppl1 = self.test(f'retrieval_step_{i}/inject', inject_external_knowledge=True)
+            # print the ratio of perplexity improvement
+            imp = (ppl2-ppl1)/ppl2
+            self.accelerator.print(f"\033[31mPerplexity Improvement: {imp:.4f}\033[0m")
+            stats = {f"Improvement": imp}
+            stats['ppl_of_inject'] = ppl1
             self.accelerator.log(stats, step=i)
 
     

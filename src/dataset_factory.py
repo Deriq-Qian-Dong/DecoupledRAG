@@ -416,7 +416,7 @@ class TrufulQADataset(Dataset):
         pairs = []
         targets = []
         idxs = []
-        idx = 0
+        idx = -1
         for qry, ans, target in zip(qrys, anss, labels):
             targets+=target
             idx+=1

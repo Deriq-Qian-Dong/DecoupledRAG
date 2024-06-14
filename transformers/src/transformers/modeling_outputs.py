@@ -711,6 +711,7 @@ class CausalLMOutputWithPast(ModelOutput):
     attentions: Optional[Tuple[torch.FloatTensor, ...]] = None
     retrieval_loss: Optional[torch.FloatTensor] = None
     encoder_hidden_states: Optional[Tuple[torch.FloatTensor, ...]] = None
+    ppl_per_sample: Optional[torch.FloatTensor] = None
 
 
 @dataclass
