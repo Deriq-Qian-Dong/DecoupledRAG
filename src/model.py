@@ -35,7 +35,7 @@ scheduler_class = {"CosineAnnealingLR": CosineAnnealingLR, "LinearLR": LinearLR}
 def dataset_class(class_name):
     cls = registry.get_class(class_name)
     if cls:
-        return cls()
+        return cls
     else:
         raise ValueError(f"Class {class_name} not found")
 
