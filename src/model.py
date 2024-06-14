@@ -232,8 +232,8 @@ class LanguageModelTrainer:
         self.model = model
 
     def setup_dataloader(self, dataset_config, tokenizer):
-        self.train_dataset = dataset_class[dataset_config['train']['dataset_name']](tokenizer, dataset_config['train'])
-        self.test_dataset = dataset_class[dataset_config['test']['dataset_name']](tokenizer, dataset_config['test'])
+        self.train_dataset = dataset_class(dataset_config['train']['dataset_name'])(tokenizer, dataset_config['train'])
+        self.test_dataset = dataset_class(dataset_config['test']['dataset_name'])(tokenizer, dataset_config['test'])
         self.train_dataloader = DataLoader(self.train_dataset, batch_size=dataset_config['train']['batch_size'], shuffle=False, collate_fn=self.train_dataset._collate_fn)
         self.test_dataloader = DataLoader(self.test_dataset, batch_size=dataset_config['test']['batch_size'], shuffle=False, collate_fn=self.test_dataset._collate_fn)
     
@@ -466,7 +466,7 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
         self.model = LlamaWithRetrievalHeadForInference.from_pretrained(config['training']['model_name_or_path'], config=model_config)
         tokenizer = AutoTokenizer.from_pretrained(config['training']['tokenizer_name_or_path'])
         dataset_config = config['dataset']
-        self.test_dataset = dataset_class[dataset_config['test']['dataset_name']](tokenizer, dataset_config['test'])
+        self.test_dataset = dataset_class(dataset_config['test']['dataset_name'])(tokenizer, dataset_config['test'])
         self.test_dataloader = DataLoader(self.test_dataset, batch_size=dataset_config['test']['batch_size'], shuffle=False, collate_fn=self.test_dataset._collate_fn)
         self.tokenizer = tokenizer
         self.accelerator = Accelerator(log_with=config['training']['log_with'], project_dir=config['training']['project_dir'])
