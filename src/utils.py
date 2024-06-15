@@ -237,7 +237,7 @@ def search_torch(index, emb_file, qid_list, outfile, top_k):
                 q_idx += 1
 
 from tqdm import tqdm
-def read_embed(file_name, dim=768, bs=100):
+def read_embed(file_name, dim=768, bs=1000):
     if file_name.endswith('npy'):
         i = 0
         emb_np = np.load(file_name)
