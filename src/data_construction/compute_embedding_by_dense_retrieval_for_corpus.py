@@ -12,14 +12,14 @@ from datasets import load_from_disk
 encoder_model_name_or_path = "../data/RetroMAE_MSMARCO_distill/"
 # encoder_model_name_or_path = sys.argv[2]
 
-base_dir = f'../data_of_ReGPT/En-Wiki'
+base_dir = f'../data_of_ReGPT/En-Wiki-test'
 os.makedirs(base_dir, exist_ok=True)
 
 phrase_embeddings = []
 batch_size = 10240
 
 phrases = []
-data = load_from_disk("../data_of_ReGPT/En-Wiki/sorted_datasets_train")
+data = load_from_disk("../data_of_ReGPT/En-Wiki/sorted_datasets_test")
 torch.distributed.init_process_group(backend="nccl", init_method='env://')
 local_rank = torch.distributed.get_rank()
 world_size = torch.distributed.get_world_size()
