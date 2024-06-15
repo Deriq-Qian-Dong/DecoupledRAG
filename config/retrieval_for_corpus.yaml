@@ -1,3 +1,5 @@
+corpus_embeddings: ../data_of_ReGPT/En-Wiki-test/phrases_embeddings.npy
+corpus_name: wiki-test
 batch_size: 256
 dev_batch_size: 256
 q_max_seq_len: 512
@@ -10,7 +12,6 @@ num_epochs: 1000
 qrels: ''
 # collection: ../En-Wiki/corpus.tsv
 # collection: ../data_of_ReGPT/
-corpus_embeddings: ../data_of_ReGPT/En-Wiki/phrases_embeddings.npy
 query: ''
 dev_query: ../data_of_ReGPT/En-Wiki/sorted_datasets_test
 gradient_checkpoint: true
@@ -20,6 +21,5 @@ use_faiss: false
 project_dir: output/
 project_name: dense_retrieval_pretrain_with_query_generation
 dataset_class_name: CorpusPretrainDatasetByQueryGeneration
-corpus_name: wiki
 warm_start_from: ''
 top_k: 10
