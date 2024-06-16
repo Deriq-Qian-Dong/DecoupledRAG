@@ -116,8 +116,8 @@ class RAGPretrainFromAFSDataset(RAGPretrainDataset):
 
     def setup_datasets(self):
         data_name_or_path = self.args['data_name_or_path']
-        print_rank_0(f'[!] load dataset from {data_name_or_path}')
         data_name_or_path = data_name_or_path.format(self.epoch)
+        print_rank_0(f'[!] load dataset from {data_name_or_path}')
         self.datasets = load_dataset('arrow', data_files=data_name_or_path, split='train')
         self.num_samples = len(self.datasets)
         input_ids_lengths = self.datasets['input_ids_length']
