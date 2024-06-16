@@ -19,7 +19,7 @@ training:
     name: LinearLR
     kwargs:
       total_iters: 10
-  num_epochs: 2000
+  num_epochs: 706
   log_with: tensorboard
   project_dir: output/
   negatives_in_device: true
@@ -41,8 +41,9 @@ dataset:
     dataset_name: RAGPretrainFromAFSDataset
     batch_size: 32
     # data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train_gpt2_embeddings/
-    data_name_or_path: ../data/data_of_ReGPT/En-Wiki/sorted_datasets_train/
+    # data_name_or_path: ../data/data_of_ReGPT/En-Wiki/sorted_datasets_train/
     # data_name_or_path: ../data_of_ReGPT/msmarco_qa/sorted_datasets_train/
+    data_name_or_path: ../data/data_of_ReGPT/En-Wiki/sorted_datasets_train/data-{:05d}-of-00705.arrow
     max_seq_len: 256
   test:
     dataset_name: RAGPretrainDataset
