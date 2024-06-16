@@ -26,10 +26,10 @@ training:
   negatives_x_device: true
   predict_from_last: 10000
   eval_step: 100
-  start_from: 0
+  start_from: 3
   cross_attention_activation_function: silu
   add_cross_attention_layer_number: 24
-  skip_steps: 700
+  skip_steps: 0
   max_tokens: 16384
   # max_tokens: 512
   kb_path: ../data_of_ReGPT/En-Wiki/phrases_embeddings.npy
@@ -38,10 +38,10 @@ training:
 
 dataset:
   train:
-    dataset_name: RAGPretrainDataset
+    dataset_name: RAGPretrainFromAFSDataset
     batch_size: 32
     # data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train_gpt2_embeddings/
-    data_name_or_path: ../data_of_ReGPT/En-Wiki/sorted_datasets_train/
+    data_name_or_path: ../data/data_of_ReGPT/En-Wiki/sorted_datasets_train/
     # data_name_or_path: ../data_of_ReGPT/msmarco_qa/sorted_datasets_train/
     max_seq_len: 256
   test:

@@ -110,6 +110,25 @@ class RAGPretrainDataset(Dataset):
         return batch
 
 @register_class
+class RAGPretrainFromAFSDataset(RAGPretrainDataset):
+    def __init__(self, tokenizer, args):
+        super().__init__(tokenizer, args)
+
+    def setup_datasets(self):
+        data_name_or_path = self.args['data_name_or_path']
+        data_name_or_path = data_name_or_path.format(self.epoch)
+        self.datasets = load_dataset('arrow', data_files=data_name_or_path, split='train')
+        self.num_samples = len(self.datasets)
+        input_ids_lengths = self.datasets['input_ids_length']
+        input_ids_lengths = [min(self.args['max_seq_len'], length) for length in input_ids_lengths]
+        self.total_tokens = sum(input_ids_lengths)
+    
+    def set_epoch(self, epoch):
+        self.epoch = epoch
+        self.setup_datasets()
+        print_rank_0(f'[!] set epoch to {epoch}')
+
+@register_class
 class DialogSFTDataset(Dataset):
     def __init__(self, tokenizer, args):
         self.args = args
