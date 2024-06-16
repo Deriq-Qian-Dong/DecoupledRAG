@@ -174,7 +174,7 @@ class RAGForCausalLM(nn.Module):
             model.base_model.get_input_embeddings().weight.requires_grad = False
         else:
             model.base_model.embed_tokens.weight.requires_grad = False
-        print_trainable_params_stats(model)
+        # print_trainable_params_stats(model)
         self.model = model
         self.cross_entropy = nn.CrossEntropyLoss(reduction='mean', ignore_index=-1)
         self.train_config = train_config
@@ -225,7 +225,7 @@ class LanguageModelTrainer:
             # gpt2
             model.base_model.wte.weight.requires_grad = train_config['num_layers_unfrozen']<=0
             model.base_model.wpe.weight.requires_grad = train_config['num_layers_unfrozen']<=0
-        print_trainable_params_stats(model)
+        # print_trainable_params_stats(model)
         if train_config['gradient_checkpointing']:
             model.gradient_checkpointing_enable()
         self.model = model
@@ -286,7 +286,8 @@ class LanguageModelTrainer:
         current_time = datetime.datetime.now()
         timestamp = current_time.strftime("%Y-%m-%d-%H-%M-%S")
         accelerator.init_trackers(project_name=f'{train_config["project_name"]}_{timestamp}')
-        print_trainable_params_stats(model)
+        if accelerator.is_main_process:
+            print_trainable_params_stats(model)
         (model, optimizer, self.train_dataloader, self.test_dataloader) = accelerator.prepare(model, optimizer, self.train_dataloader, self.test_dataloader)
         self.model = model
         self.tokenizer = tokenizer
