@@ -458,6 +458,18 @@ class TrufulQADataset(Dataset):
         return batch
 
 @register_class
+class OpenBookQADataset(TrufulQADataset):
+    def __init__(self, tokenizer, args):
+        super().__init__(tokenizer, args)
+
+    def __getitem__(self, idx):
+        sample = self.datasets[idx]
+        query = sample['question_stem']
+        answers = sample['choices']['text']
+        labels = [int(l==sample['answerKey']) for l in sample['choices']['label']]
+        return query, answers, labels
+
+@register_class
 class QueryDataset(Dataset):
     def __init__(self, args):
         self.tokenizer = AutoTokenizer.from_pretrained(args.retriever_model_name_or_path)
