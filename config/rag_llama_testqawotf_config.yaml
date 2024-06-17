@@ -1,0 +1,70 @@
+trainer: RAGQAWoTFTester
+training:
+  model_type: llama
+  project_name: RAG_llama2-qa_eval
+  # model_name_or_path: ../Llama-2-7b-chat-hf/
+  # tokenizer_name_or_path: ../Llama-2-7b-chat-hf/
+  model_name_or_path: ./output/SFT-best/
+  tokenizer_name_or_path: ./output/SFT-best/
+  num_layers_unfrozen: -1
+  gradient_checkpointing: true
+  optimizer: 
+    name: Lamb
+    kwargs:
+      lr: 1e-3
+      weight_decay: 0.0
+      betas: [0.9, 0.999]
+      eps: 1e-08
+  scheduler:
+    name: LinearLR
+    kwargs:
+      total_iters: 10
+  num_epochs: 2000
+  log_with: tensorboard
+  project_dir: output/
+  negatives_in_device: true
+  negatives_x_device: true
+  predict_from_last: 10000
+  eval_step: 100
+  start_from: 0
+  cross_attention_activation_function: silu
+  add_cross_attention_layer_number: 24
+  skip_steps: 0
+  max_tokens: 16384
+  kb_path: ../data_of_ReGPT/marco/phrases_embeddings.npy
+  freeze_retrieval_head: false
+  freeze_lm_head: true
+  q_reps_cache_type: QRepsCache
+  q_reps_cache_window_size: 10
+
+dataset:
+  train:
+    dataset_name: RAGPretrainDataset
+    batch_size: 32
+    # data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train_gpt2_embeddings/
+    data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train_llama2/
+    max_seq_len: 256
+  test:
+    dataset_name: QAEvalDataset
+    batch_size: 1
+    # data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_test_gpt2_embeddings/
+    data_name_or_path: ../data_of_ReGPT/truthful_qa/
+    max_seq_len: 256
+
+generation_kwargs:
+  min_length: 0
+  max_new_tokens: 200
+  do_sample: false
+  top_k: 5
+  top_p: 0.95
+
+RAG_kwargs:
+  faiss:
+    dimension: 768
+  retrieval_step: 100
+  topk: 6
+
+metrics:
+  rouge: 1
+  bleu: 1
+  exact_match: 1
