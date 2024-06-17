@@ -1728,6 +1728,7 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
         self.post_init()
 
     def move_kb_to_device(self, split=False):
+        self.split = split
         if split:
             local_rank = torch.distributed.get_rank()
             world_size = torch.distributed.get_world_size()
@@ -1859,16 +1860,21 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
         curr_seq_len = self.q_reps_cache.count
         if curr_seq_len%self.config.retrieval_step==0:
             # Get the top-k similar vectors from knowledge base
-            all_q_reps = self._dist_gather_tensor(q_reps)
-            scores = torch.matmul(all_q_reps, self.kb.t())
-            topk_scores, topk_indices = torch.topk(scores, self.config.topk, dim=1)
-            # Get the vectors from the knowledge base
-            encoder_hidden_states = self.kb[topk_indices]
-            all_encoder_hidden_states = self._dist_gather_tensor(encoder_hidden_states)
-            all_encoder_hidden_states = all_encoder_hidden_states.view(-1, all_encoder_hidden_states.size(-1))
-            scores = torch.matmul(q_reps, all_encoder_hidden_states.t())
-            topk_scores, topk_indices = torch.topk(scores, self.config.topk, dim=1)
-            encoder_hidden_states = all_encoder_hidden_states[topk_indices]
+            if self.split:
+                all_q_reps = self._dist_gather_tensor(q_reps)
+                scores = torch.matmul(all_q_reps, self.kb.t())
+                topk_scores, topk_indices = torch.topk(scores, self.config.topk, dim=1)
+                # Get the vectors from the knowledge base
+                encoder_hidden_states = self.kb[topk_indices]
+                all_encoder_hidden_states = self._dist_gather_tensor(encoder_hidden_states)
+                all_encoder_hidden_states = all_encoder_hidden_states.view(-1, all_encoder_hidden_states.size(-1))
+                scores = torch.matmul(q_reps, all_encoder_hidden_states.t())
+                topk_scores, topk_indices = torch.topk(scores, self.config.topk, dim=1)
+                encoder_hidden_states = all_encoder_hidden_states[topk_indices]
+            else:
+                scores = torch.matmul(q_reps, self.kb.t())
+                topk_scores, topk_indices = torch.topk(scores, self.config.topk, dim=1)
+                encoder_hidden_states = self.kb[topk_indices]
 
             # print(self.q_reps_cache.count)
             # print("Retrieval at step: %d\ntopk_indices: %s" % (curr_seq_len, topk_indices))
