@@ -1719,13 +1719,24 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
         self.retrieval_head = nn.Linear(config.hidden_size, config.faiss_dimension, bias=True)
         kb = np.load(config.kb_path)
-        kb = torch.from_numpy(kb)
+        self.kb = torch.from_numpy(kb)
         # Register the kb as a buffer
-        self.register_buffer("kb", kb)
+        # self.register_buffer("kb", kb)
         self.q_reps_cache = QRPESCACHEDICT[config.q_reps_cache_type](window_size=config.q_reps_cache_window_size)
         self.logits_cache = LogitsCache()
         # Initialize weights and apply final processing
         self.post_init()
+
+    def move_kb_to_device(self, split=False):
+        if split:
+            local_rank = torch.distributed.get_rank()
+            world_size = torch.distributed.get_world_size()
+            shard_size = self.kb.size(0) // world_size
+            if local_rank==world_size-1:
+                self.kb = self.kb[local_rank*shard_size:]
+            else:
+                self.kb = self.kb[local_rank*shard_size:(local_rank+1)*shard_size]
+        self.kb = self.kb.to(self.model.device)
 
     def get_input_embeddings(self):
         return self.model.embed_tokens
@@ -1847,10 +1858,17 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
         curr_seq_len = self.q_reps_cache.count
         if curr_seq_len%self.config.retrieval_step==0:
             # Get the top-k similar vectors from knowledge base
-            scores = torch.matmul(q_reps, self.kb.t())
+            all_q_reps = self._dist_gather_tensor(q_reps)
+            scores = torch.matmul(all_q_reps, self.kb.t())
             topk_scores, topk_indices = torch.topk(scores, self.config.topk, dim=1)
             # Get the vectors from the knowledge base
             encoder_hidden_states = self.kb[topk_indices]
+            all_encoder_hidden_states = self._dist_gather_tensor(encoder_hidden_states)
+            all_encoder_hidden_states = all_encoder_hidden_states.view(-1, all_encoder_hidden_states.size(-1))
+            scores = torch.matmul(q_reps, all_encoder_hidden_states.t())
+            topk_scores, topk_indices = torch.topk(scores, self.config.topk, dim=1)
+            encoder_hidden_states = all_encoder_hidden_states[topk_indices]
+
             # print(self.q_reps_cache.count)
             # print("Retrieval at step: %d\ntopk_indices: %s" % (curr_seq_len, topk_indices))
 
@@ -1956,6 +1974,36 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
             }
         )
         return model_inputs
+    
+    def _dist_gather_tensor(self, t: Optional[torch.Tensor]):
+        if t is not None:
+            t = t.contiguous()
+        self.world_size = torch.distributed.get_world_size()
+        self.process_rank = torch.distributed.get_rank()
+        has_t = torch.tensor([t is not None], device=self.model.device, dtype=torch.int64)
+        all_has_t = [torch.zeros(1, device=self.model.device, dtype=torch.int64) for _ in range(self.world_size)]
+        torch.distributed.all_gather(all_has_t, has_t)
+        if has_t.item() == 0:
+            local_size = torch.tensor([0], device=self.model.device, dtype=torch.int64)
+        else:
+            local_size = torch.tensor([t.size(0)], device=t.device, dtype=torch.int64)
+        all_sizes = [torch.zeros(1, device=self.model.device, dtype=torch.int64) for _ in range(self.world_size)]
+        torch.distributed.all_gather(all_sizes, local_size)
+        max_size = max([s.item() for s in all_sizes])
+        if t is not None:
+            padded_t = torch.zeros(max_size, *t.size()[1:], device=t.device, dtype=t.dtype)
+            padded_t[: t.size(0)] = t
+        else:
+            padded_t = torch.zeros(max_size, self.config.faiss_dimension, device=self.model.device, dtype=torch.int64)
+        
+        all_tensors = [torch.empty_like(padded_t) for _ in range(self.world_size)]
+        torch.distributed.all_gather(all_tensors, padded_t)
+
+        for i in range(self.world_size):
+            all_tensors[i] = all_tensors[i][: all_sizes[i].item()]
+        all_tensors = torch.cat(all_tensors, dim=0)
+
+        return all_tensors
 
     @staticmethod
     def _reorder_cache(past_key_values, beam_idx):
