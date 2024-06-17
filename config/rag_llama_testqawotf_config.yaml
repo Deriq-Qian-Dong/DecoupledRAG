@@ -31,14 +31,14 @@ training:
   add_cross_attention_layer_number: 24
   skip_steps: 0
   max_tokens: 16384
-  kb_path: ../data_of_ReGPT/En-Wiki/phrases_embeddings.npy
+  kb_path: ../data_of_ReGPT/marco/phrases_embeddings.npy
   freeze_retrieval_head: false
   freeze_lm_head: true
   q_reps_cache_type: QRepsCache
   q_reps_cache_window_size: 10
 
 testing:
- kb_split: true
+ kb_split: false
 
 dataset:
   train:
