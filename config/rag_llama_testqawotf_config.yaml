@@ -70,4 +70,4 @@ RAG_kwargs:
 metrics:
   rouge: 1
   bleu: 1
-  exact_match: 1
+  # exact_match: 1
