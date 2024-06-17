@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader, Dataset
 from typing import List, Optional, Tuple, Union, Dict
 from deepspeed.ops.adam import DeepSpeedCPUAdam, FusedAdam
 from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR
-from registry import registry
+from registry import registry, register_class
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModel, AutoConfig
 try:
     from transformers import GPT2LMandRetrievalHeadsModel, LlamaWithRetrievalHeadForCausalLM, LlamaWithRetrievalHeadForInference
@@ -45,6 +45,7 @@ def dataset_class(class_name):
 class ReGPTOutput(ModelOutput):
     loss: Optional[Tensor] = None
 
+@register_class
 class ReGPTForCausalLM(nn.Module):
     def __init__(self, train_config):
         super(ReGPTForCausalLM, self).__init__()
@@ -155,6 +156,7 @@ class ReGPTForCausalLM(nn.Module):
         return input_ids
 
 MODEL_CLASS = {'gpt2': GPT2LMandRetrievalHeadsModel, 'llama': LlamaWithRetrievalHeadForCausalLM}
+@register_class
 class RAGForCausalLM(nn.Module):
     def __init__(self, train_config):
         super(RAGForCausalLM, self).__init__()
@@ -193,6 +195,7 @@ class RAGForCausalLM(nn.Module):
 
 
 
+@register_class
 class LanguageModelTrainer:
     def __init__(self, config):
         self.config = config
@@ -397,6 +400,7 @@ class LanguageModelTrainer:
         accelerator.wait_for_everyone()
         model.train()
 
+@register_class
 class ReGPTLanguageModelTrainer(LanguageModelTrainer):
     def __init__(self, config):
         self.config = config
@@ -420,6 +424,7 @@ class ReGPTLanguageModelTrainer(LanguageModelTrainer):
         dataset_config['test']['train_or_test'] = 'test'
         return train_config, dataset_config
 
+@register_class
 class RAGLanguageModelTrainer(LanguageModelTrainer):
     def __init__(self, config):
         self.config = config
@@ -446,6 +451,7 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
             stats[f'gate_score/{i}'] = float(self.accelerator.unwrap_model(model).model.base_model.layers[-i-1].gate_crossattention.cpu().detach().float().numpy()[0])
         return stats
 
+@register_class
 class RAGLanguageModelTester(RAGLanguageModelTrainer):
     def __init__(self, config):
         self.config = config
@@ -542,6 +548,7 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
                 # print the ratio of perplexity improvement
                 self.accelerator.print(f"\033[31mPerplexity Improvement: {(ppl2-ppl1)/ppl2:.4f}\033[0m")
 
+@register_class
 class RAGQATester(RAGLanguageModelTester):
     def __init__(self, config):
         super().__init__(config)
@@ -701,6 +708,7 @@ class RAGQATester(RAGLanguageModelTester):
             self.accelerator.print(scores)
         return scores_dict['rouge']['rougeL']
 
+@register_class
 class RAGQAWoTFTester(RAGQATester):
     def __init__(self, config):
         super().__init__(config)
