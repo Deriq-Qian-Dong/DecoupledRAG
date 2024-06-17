@@ -1737,6 +1737,7 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
             else:
                 self.kb = self.kb[local_rank*shard_size:(local_rank+1)*shard_size]
         self.kb = self.kb.to(self.model.device)
+        print(f"kb size is {self.kb.size()} on device {self.model.device}")
 
     def get_input_embeddings(self):
         return self.model.embed_tokens

@@ -482,7 +482,6 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
         self.accelerator.init_trackers(project_name=f'{train_config["project_name"]}_{timestamp}')
         self.model = self.accelerator.prepare_model(self.model)
         self.model.move_kb_to_device(split=config['testing']['kb_split'])
-        print(f'The kb size is {self.model.kb.size()} on process {self.accelerator.process_index}')
         self.test_dataloader = self.accelerator.prepare_data_loader(self.test_dataloader)
 
     def test(self, inject_ground_truth=False, inject_external_knowledge=False):
