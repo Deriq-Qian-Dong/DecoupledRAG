@@ -38,7 +38,7 @@ training:
   q_reps_cache_window_size: 10
 
 testing:
- kb_split: false
+ kb_split: true
 
 dataset:
   train:
