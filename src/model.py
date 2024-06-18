@@ -635,7 +635,7 @@ class RAGQATester(RAGLanguageModelTester):
         with torch.no_grad():
             for step, batch in enumerate(test_dataloader):
                 answers = batch.pop('answers')
-                outputs = model.generate(**batch, **generation_kwargs)
+                outputs = model.generate(**batch, **generation_kwargs, stop_strings=['\n\n','Question'], tokenizer=tokenizer)
                 responses = tokenizer.batch_decode(outputs, skip_special_tokens=True)
                 answers = tokenizer.batch_decode(answers, skip_special_tokens=True)
                 input_ids = batch['input_ids']
