@@ -25,7 +25,7 @@ try:
 except:
     GPT2LMandRetrievalHeadsModel, LlamaWithRetrievalHeadForCausalLM, LlamaWithRetrievalHeadForInference = None, None, None
 from peft import LoraConfig, get_peft_model, PeftModel, TaskType
-
+from evaluation import Evaluator
 
 torch.manual_seed(random.randint(0, 1000000))
 
@@ -552,6 +552,7 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
 @register_class
 class RAGQATester(RAGLanguageModelTester):
     def __init__(self, config):
+        self.evaluator = Evaluator()
         super().__init__(config)
 
     def test(self, log_name, inject_external_knowledge=False):
@@ -700,14 +701,13 @@ class RAGQATester(RAGLanguageModelTester):
 
     def compute_metrics(self, predictions, references):
         import evaluate
-        metrics = list(self.config['metrics'].keys())
-        scores_dict = {}
-        for m in metrics:
-            met = evaluate.load(m)
-            scores = met.compute(predictions=predictions, references=references)
-            scores_dict[m] = scores
-            self.accelerator.print(scores)
-        return scores_dict['rouge']['rougeL']
+        met = evaluate.load('rouge')
+        scores = met.compute(predictions=predictions, references=references)
+        self.accelerator.print(scores)
+        rougel = scores['rougeL']
+        metrics = self.evaluator.evaluate_items(predictions, references)
+        self.accelerator.print(metrics)
+        return rougel
 
 @register_class
 class RAGQAWoTFTester(RAGQATester):
