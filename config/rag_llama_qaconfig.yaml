@@ -40,14 +40,14 @@ dataset:
     dataset_name: RAGPretrainDataset
     batch_size: 32
     # data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train_gpt2_embeddings/
-    data_name_or_path: ../data_of_ReGPT/msmarco_qa/sorted_datasets_train/
-    max_seq_len: 256
+    data_name_or_path: ../data_of_ReGPT/hotpotqa/sorted_datasets_train/
+    max_seq_len: 512
   test:
     dataset_name: QASFTDataset
     batch_size: 32
     # data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_test_gpt2_embeddings/
-    data_name_or_path: ../data_of_ReGPT/msmarco_qa/sorted_datasets_test/
-    max_seq_len: 256
+    data_name_or_path: ../data_of_ReGPT/hotpotqa/sorted_datasets_validation/
+    max_seq_len: 512
 
 generation_kwargs:
   min_length: 0
