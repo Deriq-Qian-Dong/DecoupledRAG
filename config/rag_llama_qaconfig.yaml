@@ -30,7 +30,7 @@ training:
   cross_attention_activation_function: silu
   add_cross_attention_layer_number: 24
   skip_steps: 0
-  max_tokens: 12800
+  max_tokens: 5120
   kb_path: ../data_of_ReGPT/marco/phrases_embeddings.npy
   freeze_retrieval_head: false
   freeze_lm_head: true
