@@ -50,8 +50,8 @@ dataset:
   test:
     dataset_name: QAEvalDataset
     batch_size: 4
-    # data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_test_gpt2_embeddings/
-    data_name_or_path: ../data_of_ReGPT/nq/sorted_datasets_test/
+    data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_test_llama2/
+    # data_name_or_path: ../data_of_ReGPT/nq/sorted_datasets_test/
     max_seq_len: 512
 
 generation_kwargs:
