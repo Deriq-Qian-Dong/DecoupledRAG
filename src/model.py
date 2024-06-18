@@ -715,7 +715,7 @@ class RAGQAWoTFTester(RAGQATester):
         super().__init__(config)
 
     def run(self):
-        for i in range(50, 100, 1):
+        for i in range(511, 512):
             self.config['generation_kwargs']['max_new_tokens'] = i
             rouge1 = self.run_wo_teacher_forcing(1000000)
             stats = {}

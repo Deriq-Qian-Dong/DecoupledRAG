@@ -52,7 +52,7 @@ dataset:
     batch_size: 32
     # data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_test_gpt2_embeddings/
     data_name_or_path: ../data_of_ReGPT/nq/sorted_datasets_test/
-    max_seq_len: 256
+    max_seq_len: 1024
 
 generation_kwargs:
   min_length: 0
