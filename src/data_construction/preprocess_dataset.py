@@ -62,3 +62,11 @@ def preprocess_qa_dataset(corpus_name, data_path, split='train'):
     # preprocess_dataset(corpus_name, f'../data_of_ReGPT/{corpus_name}/test.txt', split='test')
 
 preprocess_qa_dataset(corpus_name, f'../{corpus_name}/sorted_datasets_{split}', split=split)
+
+def preprocess_hotpotqa(split_name='validation'):
+    data = load_from_disk('hotpotqa')
+    split = data[split_name]
+    split = split.remove_columns(['id','type','level','supporting_facts','context'])
+    split = split.map(add_text_length)
+    split = split.sort("input_ids_length", reverse=True)
+    split.save_to_disk(f'data_of_ReGPT/hotpotqa/{split_name}')
