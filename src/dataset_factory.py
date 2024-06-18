@@ -484,7 +484,10 @@ class QueryDataset(Dataset):
     def __init__(self, args):
         self.tokenizer = AutoTokenizer.from_pretrained(args.retriever_model_name_or_path)
         self.args = args
-        self.collection = load_from_disk(args.dev_query)['query']
+        try:
+            self.collection = load_from_disk(args.dev_query)['query']
+        except:
+            self.collection = load_from_disk(args.dev_query)['question']
         self.num_samples = len(self.collection)
         
     def _collate_fn(self, qrys):
