@@ -70,3 +70,13 @@ def preprocess_hotpotqa(split_name='validation'):
     split = split.map(add_text_length)
     split = split.sort("input_ids_length", reverse=True)
     split.save_to_disk(f'data_of_ReGPT/hotpotqa/{split_name}')
+
+def preprocess_2WikiMultihopQA(split_name='dev'):
+    data = load_dataset('xanhho/2WikiMultihopQA')
+    split = data[split_name]
+    print(split)
+    split = split.remove_columns(['_id', 'type', 'context', 'supporting_facts', 'evidences'])
+    split = split.map(add_text_length)
+    split = split.sort("input_ids_length", reverse=True)
+    split.save_to_disk(f'data_of_ReGPT/2WikiMultihopQA/{split_name}')
+    
