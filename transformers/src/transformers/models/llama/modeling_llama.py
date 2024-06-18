@@ -1581,7 +1581,7 @@ class LlamaWithRetrievalHeadForCausalLM(LlamaPreTrainedModel):
         # The shape of encoder_hidden_states is (batch_size, num_of_psg_samples, faiss_dimension), the first one is positive sample
         q_reps = []
         for i in range(hidden_states.size(0)):
-            q_reps.append(self.retrieval_head(hidden_states[i, :retrieval_position[i], :]).mean(dim=0))
+            q_reps.append(self.retrieval_head(hidden_states[i, max(0, retrieval_position[i]-10):retrieval_position[i], :]).mean(dim=0))
         q_reps = torch.stack(q_reps)
         loss_fct = CrossEntropyLoss(reduction='mean')
         if p_reps is None:
