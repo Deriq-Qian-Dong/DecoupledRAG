@@ -72,6 +72,7 @@ def validate_multi_gpu(model, query_loader, passage_loader, epoch, args, writer,
         emb_matrix = np.concatenate(q_embs, axis=0)
         np.save(q_output_file_name, emb_matrix)
         print("predict q_embs cnt: %s" % len(emb_matrix))
+    torch.distributed.barrier()
     if corpus_embeddings is None:
         with torch.no_grad():
             model.eval()
