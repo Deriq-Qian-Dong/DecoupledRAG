@@ -374,7 +374,8 @@ class QASFTDataset(QADataset):
         qrys, anss, neighbor_embeddings, _ = zip(*elems)
         self.tokenizer.padding_side = 'left'
         self.tokenizer.truncation_side = 'left'
-        batch = self.tokenizer(qrys, anss,
+        qa_pairs = [f"{qry}+{ans}" for qry, ans in zip(qrys, anss)]
+        batch = self.tokenizer(qa_pairs,
                                     max_length=self.args['max_seq_len'],
                                     padding=True,
                                     truncation=True,
