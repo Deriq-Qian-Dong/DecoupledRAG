@@ -398,6 +398,8 @@ class QASFTDataset(QADataset):
 class QAEvalDataset(QADataset):
     def __init__(self, tokenizer, args):
         super().__init__(tokenizer, args)
+        self.datasets = self.datasets.select(range(1000))
+        self.update_total_tokens()
     
     def _collate_fn(self, elems):
         qrys, anss, _, _ = zip(*elems)
