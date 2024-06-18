@@ -24,4 +24,4 @@ cp -r ../data/data_of_ReGPT/En-Wiki/sorted_datasets_test/ ../data_of_ReGPT/En-Wi
 sh scripts/update_transformers.sh
 cp -r ../data/rag_llama2/24_wiki/ ../
 mkdir -p output
-mv ../24_ca_layer/* output/
+mv ../24_wiki/* output/
