@@ -12,8 +12,8 @@ qrels: ''
 # collection: ../data_of_ReGPT/
 query: ''
 gradient_checkpoint: true
-negatives_x_device: true
-negatives_in_device: true
+negatives_x_device: false
+negatives_in_device: false
 use_faiss: false
 project_dir: output/
 project_name: dense_retrieval_pretrain_with_query_generation
