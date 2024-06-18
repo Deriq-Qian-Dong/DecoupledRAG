@@ -50,8 +50,9 @@ dataset:
   test:
     dataset_name: QAEvalDataset
     batch_size: 4
-    data_name_or_path: ../data_of_ReGPT/msmarco_qa/sorted_datasets_test/
+    # data_name_or_path: ../data_of_ReGPT/msmarco_qa/sorted_datasets_test/
     # data_name_or_path: ../data_of_ReGPT/nq/sorted_datasets_test/
+    data_name_or_path: ../data_of_ReGPT/hotpotqa/
     max_seq_len: 512
 
 generation_kwargs:
