@@ -209,9 +209,10 @@ class LanguageModelTrainer:
             self.epoch = epoch
             self.set_epoch_to_dataset()
             self.train()
-            # self.test()
+            self.test()
         
     def set_epoch_to_dataset(self):
+        self.train_dataset = dataset_class(self.dataset_config['train']['dataset_name'])(self.tokenizer, self.dataset_config['train'])
         self.train_dataset.set_epoch(self.epoch)
         # if self.sampler is None:
         self.sampler = DynamicBatchSampler(self.train_dataset, self.config['training']['max_tokens'], num_replicas=self.accelerator.num_processes, rank=self.accelerator.process_index)            
