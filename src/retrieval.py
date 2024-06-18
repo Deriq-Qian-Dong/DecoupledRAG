@@ -89,6 +89,7 @@ def validate_multi_gpu(model, query_loader, passage_loader, epoch, args, writer,
         engine = torch.from_numpy(para_embs).cuda()
     qid_list = range(len(load_from_disk(args.dev_query)))
     qid_list = [str(qid) for qid in qid_list]
+    torch.distributed.barrier()
     search(engine, q_output_file_name, qid_list, f"{args.model_out_dir}/res.top%d.part%d.step%d.%s"%(top_k, local_rank, epoch, corpus_name), top_k=top_k, use_faiss=args.use_faiss)
     torch.distributed.barrier() 
     if local_rank==0:
