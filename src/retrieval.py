@@ -63,12 +63,12 @@ def validate_multi_gpu(model, query_loader, passage_loader, epoch, args, writer,
                 q_reps = output['q_reps']
             q_embs.append(q_reps.cpu().detach().numpy())
     emb_matrix = np.concatenate(q_embs, axis=0)
-    np.save(q_output_file_name+'.part%d'%local_rank, emb_matrix)
+    np.save(q_output_file_name+'.part%d.npy'%local_rank, emb_matrix)
     torch.distributed.barrier()
     if local_rank==0:
         q_embs = []
         for part in range(world_size):
-            q_embs.append(np.load(q_output_file_name+'.part%d'%part))
+            q_embs.append(np.load(q_output_file_name+'.part%d.npy'%part))
         emb_matrix = np.concatenate(q_embs, axis=0)
         np.save(q_output_file_name, emb_matrix)
     print("predict q_embs cnt: %s" % len(emb_matrix))
