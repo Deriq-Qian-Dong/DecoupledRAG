@@ -44,7 +44,7 @@ dataset:
     max_seq_len: 512
   test:
     dataset_name: QASFTDataset
-    batch_size: 32
+    batch_size: 4
     # data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_test_gpt2_embeddings/
     data_name_or_path: ../data_of_ReGPT/hotpotqa/sorted_datasets_validation/
     max_seq_len: 512
