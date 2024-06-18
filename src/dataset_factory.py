@@ -8,6 +8,7 @@ from transformers import DataCollatorWithPadding, AutoTokenizer
 from datasets import load_dataset, load_from_disk
 import math
 from registry import register_class
+from prompt_templates import QA_PROMPT
 
 class DynamicBatchSampler(Sampler):
     def __init__(self, dataset, max_tokens, num_replicas, rank):
@@ -300,6 +301,7 @@ class QADataset(Dataset):
         self.args = args
         self.tokenizer = tokenizer
         self.setup_datasets()
+        self.qa_prmt = QA_PROMPT
     
     def setup_datasets(self):
         self.datasets = load_from_disk(self.args['data_name_or_path'])
@@ -311,9 +313,10 @@ class QADataset(Dataset):
     def __getitem__(self, idx):
         sample = self.datasets[idx]
         if 'query' in sample:
-            query = sample['query']+"\n\nThe answer is:\n\n"
+            query = sample['query']
         else:
-            query = sample['question']+"\n\nThe answer is:\n\n"
+            query = sample['question']
+        query = self.qa_prmt.format(question=query)
         if 'answers' in sample:
             answer = sample['answers'][0]
         else:
@@ -419,10 +422,12 @@ class TrufulQADataset(Dataset):
         self.datasets = load_from_disk(args['data_name_or_path'])
         self.num_samples = len(self.datasets)
         self.tokenizer = tokenizer
+        self.qa_prmt = QA_PROMPT
 
     def __getitem__(self, idx):
         sample = self.datasets[idx]
         query = sample['question']
+        query = self.qa_prmt.format(question=query)
         answers = sample['mc1_targets']['choices']
         labels = sample['mc1_targets']['labels']
         return query, answers, labels
@@ -441,7 +446,7 @@ class TrufulQADataset(Dataset):
             targets+=target
             idx+=1
             for i in range(len(ans)):
-                qa_pair = qry + '\n\nThe answer is:\n\n' + ans[i]
+                qa_pair = qry + ans[i]
                 pairs.append(qa_pair)
                 ans_lens.append(len(self.tokenizer(ans[i])['input_ids']))
                 idxs.append(idx)
@@ -465,6 +470,7 @@ class OpenBookQADataset(TrufulQADataset):
     def __getitem__(self, idx):
         sample = self.datasets[idx]
         query = sample['question_stem']
+        query = self.qa_prmt.format(question=query)
         answers = sample['choices']['text']
         labels = [int(l==sample['answerKey']) for l in sample['choices']['label']]
         return query, answers, labels

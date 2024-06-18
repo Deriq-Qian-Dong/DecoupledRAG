@@ -1861,7 +1861,7 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
         if curr_seq_len%self.config.retrieval_step==0:
             # Get the top-k similar vectors from knowledge base
             if self.split:
-                print('q_rep size is', q_reps.size(), 'on device', self.model.device)
+                # print('q_rep size is', q_reps.size(), 'on device', self.model.device)
                 all_q_reps = self._dist_gather_tensor(q_reps)
                 scores = torch.matmul(all_q_reps, self.kb.t())
                 topk_scores, topk_indices = torch.topk(scores, self.config.topk, dim=1)
