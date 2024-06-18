@@ -21,5 +21,5 @@ dataset_class_name: CorpusPretrainDatasetByQueryGeneration
 warm_start_from: ''
 top_k: 10
 corpus_embeddings: ../data_of_ReGPT/marco/phrases_embeddings.npy
-dev_query: ../data_of_ReGPT/2WikiMultihopQA/train
-corpus_name: 2WikiMultihopQA
+dev_query: ../data_of_ReGPT/2WikiMultihopQA/dev
+corpus_name: 2WikiMultihopQA-dev
