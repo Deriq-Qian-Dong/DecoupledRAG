@@ -1,5 +1,4 @@
 QA_PROMPT = """Answer the question by thinking step by step.
-                       Question: {question}
                        Your output MUST follow the following format:
                        ```json 
                        {{"reason": "your reasoning steps","answer": "your final answer in ONE OR FEW WORDS"}}
@@ -34,4 +33,6 @@ QA_PROMPT = """Answer the question by thinking step by step.
                         {{"reason": "The track where the 2013 Liqui Moly Bathurst 12 Hour was staged is Mount Panorama Circuit. And the length of Mount Panorama Circuit is 6.213 km long. So the final answer is: 6.213 km long.",
                         "answer": "6.213 km long"}}
                         ```
+                        Question: {question}
+                        Expected Output:
 """
