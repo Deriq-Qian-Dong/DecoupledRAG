@@ -54,18 +54,24 @@ def validate_multi_gpu(model, query_loader, passage_loader, epoch, args, writer,
     world_size = torch.distributed.get_world_size()
     top_k = args.top_k
     q_output_file_name = f'{args.model_out_dir}/query.emb.step%d.npy'%epoch
+    q_embs = []
+    with torch.no_grad():
+        model.eval()
+        for records in tqdm(query_loader, disable=args.local_rank>0):
+            with autocast():
+                output = model(query_inputs=_prepare_inputs(records))
+                q_reps = output['q_reps']
+            q_embs.append(q_reps.cpu().detach().numpy())
+    emb_matrix = np.concatenate(q_embs, axis=0)
+    np.save(q_output_file_name+'.part%d'%local_rank, emb_matrix)
+    torch.distributed.barrier()
     if local_rank==0:
         q_embs = []
-        with torch.no_grad():
-            model.eval()
-            for records in query_loader:
-                with autocast():
-                    output = model(query_inputs=_prepare_inputs(records))
-                    q_reps = output['q_reps']
-                q_embs.append(q_reps.cpu().detach().numpy())
+        for part in range(world_size):
+            q_embs.append(np.load(q_output_file_name+'.part%d'%part))
         emb_matrix = np.concatenate(q_embs, axis=0)
         np.save(q_output_file_name, emb_matrix)
-        print("predict q_embs cnt: %s" % len(emb_matrix))
+    print("predict q_embs cnt: %s" % len(emb_matrix))
     if corpus_embeddings is None:
         with torch.no_grad():
             model.eval()
@@ -89,7 +95,6 @@ def validate_multi_gpu(model, query_loader, passage_loader, epoch, args, writer,
         engine = torch.from_numpy(para_embs).cuda()
     qid_list = range(len(load_from_disk(args.dev_query)))
     qid_list = [str(qid) for qid in qid_list]
-    torch.distributed.barrier()
     search(engine, q_output_file_name, qid_list, f"{args.model_out_dir}/res.top%d.part%d.step%d.%s"%(top_k, local_rank, epoch, corpus_name), top_k=top_k, use_faiss=args.use_faiss)
     torch.distributed.barrier() 
     if local_rank==0:

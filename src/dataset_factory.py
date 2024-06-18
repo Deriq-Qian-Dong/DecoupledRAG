@@ -485,9 +485,20 @@ class QueryDataset(Dataset):
         self.tokenizer = AutoTokenizer.from_pretrained(args.retriever_model_name_or_path)
         self.args = args
         try:
+            self.rank = torch.distributed.get_rank()
+            self.n_procs = torch.distributed.get_world_size() 
+        except:
+            self.rank = self.n_procs = 0
+        try:
             self.collection = load_from_disk(args.dev_query)['query']
         except:
             self.collection = load_from_disk(args.dev_query)['question']
+        total_cnt = len(self.collection)
+        shard_cnt = total_cnt//self.n_procs
+        if self.rank!=self.n_procs-1:
+            self.collection = self.collection[self.rank*shard_cnt:(self.rank+1)*shard_cnt]
+        else:
+            self.collection = self.collection[self.rank*shard_cnt:]
         self.num_samples = len(self.collection)
         
     def _collate_fn(self, qrys):
