@@ -407,7 +407,9 @@ class QAEvalDataset(QADataset):
         super().__init__(tokenizer, args)
         # 仅保留前1000个样本
         if len(self.datasets) > 1000:
-            self.datasets = self.datasets.select(range(1000))
+            # 随机选取1000个样本
+            shard_num = len(self.datasets) // 1000
+            self.datasets = self.datasets.shard(num_shards=shard_num, index=0)
         self.update_total_tokens()
     
     def _collate_fn(self, elems):
