@@ -238,3 +238,27 @@ with torch.no_grad():
         model._reset_q_reps_cache()
         pbar.update(1)
         pbar.set_description(f"Step {step} | Loss: {total_loss/(step+1):.4f} | Perplexity: {np.exp(total_loss/(step+1)):.4f} | Retrieval Position: {retrieval_position}")
+
+
+from evaluation import Evaluator
+import os
+from utils import *
+os.environ['http_proxy'] = 'http://agent.baidu.com:8891'
+os.environ['https_proxy'] = 'http://agent.baidu.com:8891'
+evaluator = Evaluator()
+import evaluate
+met = evaluate.load('rouge')
+def compute_metrics(predictions, references):
+    scores = met.compute(predictions=predictions, references=references)
+    print(scores)
+    rougel = scores['rougeL']
+    metrics = evaluator.evaluate_items(predictions, references)
+    print(metrics)
+    return rougel
+predictions = []
+references = []
+for i in range(8):
+    data = load_from_json(f'../output/qa_eval_retrieval_step_1_process_{i}.json')
+    predictions += [d['response'] for d in data]
+    references += [d['answer'] for d in data]
+compute_metrics(predictions, references)
