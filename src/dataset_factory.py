@@ -372,9 +372,10 @@ class QASFTDataset(QADataset):
     
     def _collate_fn(self, elems):
         qrys, anss, neighbor_embeddings, _ = zip(*elems)
-        self.tokenizer.padding_side = 'left'
+        self.tokenizer.padding_side = 'right'  # fix weired overflow bug
         self.tokenizer.truncation_side = 'left'
-        qa_pairs = [f"{qry}+{ans}" for qry, ans in zip(qrys, anss)]
+        self.tokenizer.pad_token = self.tokenizer.eos_token
+        qa_pairs = [f"{qry}{ans}{self.tokenizer.eos_token}" for qry, ans in zip(qrys, anss)]
         batch = self.tokenizer(qa_pairs,
                                     max_length=self.args['max_seq_len'],
                                     padding=True,
@@ -383,14 +384,19 @@ class QASFTDataset(QADataset):
         ans_lens = [len(self.tokenizer(ans)['input_ids']) for ans in anss]
         batch["labels"] = batch['input_ids'].clone()
         retrieval_positions = []
-        seq_len = batch['input_ids'].size(1)
+        if self.tokenizer.padding_side=='right':
+            seq_lens = batch['attention_mask'].sum(dim=1).tolist()
+        else:
+            seq_lens = [batch['input_ids'].size(1)] * len(batch['input_ids'])
         for i in range(len(batch['labels'])):
             ans_len = ans_lens[i]
+            seq_len = seq_lens[i]
             retrieval_position = seq_len - ans_len
             if retrieval_position <= 0:
                 retrieval_position = seq_len//2
             retrieval_positions.append(retrieval_position)
-            batch['labels'][i, :-ans_len] = -100
+            batch['labels'][i, :retrieval_position] = -100
+            batch['labels'][i, seq_len:] = -100
         batch['retrieval_position'] = torch.tensor(retrieval_positions).reshape(-1, 1)
         batch['neighbor_embeddings'] = torch.tensor(neighbor_embeddings)
         return batch

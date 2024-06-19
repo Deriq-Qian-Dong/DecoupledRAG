@@ -639,7 +639,7 @@ class RAGQATester(RAGLanguageModelTester):
         with torch.no_grad():
             for step, batch in enumerate(test_dataloader):
                 answers = batch.pop('answers')
-                outputs = model.generate(**batch, **generation_kwargs, stop_strings=['Question', 'Answer'], tokenizer=tokenizer, no_repeat_ngram_size=2, repetition_penalty=1.1)
+                outputs = model.generate(**batch, **generation_kwargs, tokenizer=tokenizer)
                 responses = tokenizer.batch_decode(outputs, skip_special_tokens=True)
                 answers = tokenizer.batch_decode(answers, skip_special_tokens=True)
                 input_ids = batch['input_ids']
@@ -721,8 +721,8 @@ class RAGQAWoTFTester(RAGQATester):
     def run(self):
         for i in range(512,513):
             self.config['generation_kwargs']['max_new_tokens'] = i
-            rouge3 = self.run_wo_teacher_forcing(10)
             rouge1 = self.run_wo_teacher_forcing(1000000)
+            rouge3 = self.run_wo_teacher_forcing(1)
             stats = {}
             # rouge2 = self.run_wo_teacher_forcing(10)
             # imp = (rouge2-rouge1)/rouge1
