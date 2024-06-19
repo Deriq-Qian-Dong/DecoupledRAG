@@ -80,3 +80,17 @@ def preprocess_2WikiMultihopQA(split_name='dev'):
     split = split.sort("input_ids_length", reverse=True)
     split.save_to_disk(f'data_of_ReGPT/2WikiMultihopQA/{split_name}')
     
+from datasets import concatenate_datasets, load_dataset
+train1 = load_from_disk('../data_of_ReGPT/hotpotqa/sorted_datasets_train/')
+train2 = load_from_disk('../data_of_ReGPT/2WikiMultihopQA/sorted_datasets_train/')
+merged = concatenate_datasets([train1, train2])
+merged.save_to_disk('../data_of_ReGPT/hotpotqaAnd2WikiMultihopQA/sorted_datasets_train')
+test1 = load_from_disk('../data_of_ReGPT/hotpotqa/sorted_datasets_validation/')
+test2 = load_from_disk('../data_of_ReGPT/2WikiMultihopQA/sorted_datasets_dev/')
+test1 = test1.select(range(1000))
+test2 = test2.select(range(1000))
+test1.save_to_disk('../data_of_ReGPT/hotpotqa/sorted_datasets_validation_sub')
+test2.save_to_disk('../data_of_ReGPT/2WikiMultihopQA/sorted_datasets_dev_sub')
+merged = concatenate_datasets([test1, test2])
+merged = merged.sort("input_ids_length", reverse=True)
+merged.save_to_disk('../data_of_ReGPT/hotpotqaAnd2WikiMultihopQA/sorted_datasets_test')
