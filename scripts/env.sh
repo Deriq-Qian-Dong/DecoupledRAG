@@ -21,6 +21,7 @@ mkdir -p ../data_of_ReGPT/En-Wiki
 # cp -r ../data/llama2-7b/ ../
 # cp -r ../data/data_of_ReGPT/c4_en/ ../data_of_ReGPT/
 cp -r ../data/data_of_ReGPT/En-Wiki/sorted_datasets_test/ ../data_of_ReGPT/En-Wiki/
+cp -r ../data_of_ReGPT/hotpotqaAnd2WikiMultihopQA/ ../data_of_ReGPT/
 sh scripts/update_transformers.sh
 cp -r ../data/rag_llama2/24_qa/ ../
 mkdir -p output
