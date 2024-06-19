@@ -11,7 +11,7 @@ training:
   optimizer: 
     name: Lamb
     kwargs:
-      lr: 1e-5
+      lr: 1e-3
       weight_decay: 0.0
       betas: [0.9, 0.999]
       eps: 1e-08
@@ -32,16 +32,17 @@ training:
   skip_steps: 0
   max_tokens: 640
   kb_path: ../data_of_ReGPT/marco/phrases_embeddings.npy
-  freeze_retrieval_head: true
+  freeze_retrieval_head: false
   freeze_lm_head: true
 
 dataset:
   train:
     dataset_name: QASFTDataset
-    batch_size: 32
+    batch_size: 16
     # data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train_gpt2_embeddings/
     data_name_or_path: ../data_of_ReGPT/hotpotqaAnd2WikiMultihopQA/sorted_datasets_train_reverse/
     max_seq_len: 512
+    dynamic_sampler: false
   test:
     dataset_name: QASFTDataset
     batch_size: 4
