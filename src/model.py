@@ -722,21 +722,22 @@ class RAGQAWoTFTester(RAGQATester):
     def run(self):
         dataset_config = self.config['dataset']
         for key in dataset_config['test']['data_name_or_paths']:
-            self.test_dataset = dataset_class(dataset_config['test']['data_name_or_paths'][key])(self.tokenizer, dataset_config['test'])
+            self.config['dataset']['test']['data_name_or_path'] = dataset_config['test']['data_name_or_paths'][key]
+            self.test_dataset = dataset_class(dataset_config['test']['dataset_name'])(self.tokenizer, dataset_config['test'])
             self.test_dataloader = DataLoader(self.test_dataset, batch_size=dataset_config['test']['batch_size'], shuffle=False, collate_fn=self.test_dataset._collate_fn)
             self.test_dataloader = self.accelerator.prepare_data_loader(self.test_dataloader)
-        for i in range(512,513):
-            self.config['generation_kwargs']['max_new_tokens'] = i
-            rouge3 = self.run_wo_teacher_forcing(1)
-            rouge1 = self.run_wo_teacher_forcing(1000000)
-            stats = {}
-            # rouge2 = self.run_wo_teacher_forcing(10)
-            # imp = (rouge2-rouge1)/rouge1
-            # self.accelerator.print(f"\033[31mImprovement10vs1000000: {imp:.4f}\033[0m")
-            # stats["Improvement10vs1000000"] = imp
-            # rouge3 = self.run_wo_teacher_forcing(1)
-            imp = (rouge3-rouge1)/rouge1
-            stats["Improvement1vs1000000"] = imp
-            self.accelerator.print(f"\033[31mImprovement1vs1000000: {imp:.4f}\033[0m")
-            self.accelerator.log(stats, step=i)
+            for i in range(512,513):
+                self.config['generation_kwargs']['max_new_tokens'] = i
+                rouge3 = self.run_wo_teacher_forcing(1)
+                rouge1 = self.run_wo_teacher_forcing(1000000)
+                stats = {}
+                # rouge2 = self.run_wo_teacher_forcing(10)
+                # imp = (rouge2-rouge1)/rouge1
+                # self.accelerator.print(f"\033[31mImprovement10vs1000000: {imp:.4f}\033[0m")
+                # stats["Improvement10vs1000000"] = imp
+                # rouge3 = self.run_wo_teacher_forcing(1)
+                imp = (rouge3-rouge1)/rouge1
+                stats["Improvement1vs1000000"] = imp
+                self.accelerator.print(f"\033[31mImprovement1vs1000000: {imp:.4f}\033[0m")
+                self.accelerator.log(stats, step=i)
 
