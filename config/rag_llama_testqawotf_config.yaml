@@ -36,7 +36,7 @@ training:
   kb_path: ../data_of_ReGPT/marco/phrases_embeddings.npy
   freeze_retrieval_head: false
   freeze_lm_head: true
-  q_reps_cache_type: RunningAverageQRepsCache
+  q_reps_cache_type: QRepsCache
   q_reps_cache_window_size: 10
 
 testing:
