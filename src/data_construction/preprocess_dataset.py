@@ -80,18 +80,27 @@ def preprocess_2WikiMultihopQA(split_name='dev'):
     split = split.sort("input_ids_length", reverse=True)
     split.save_to_disk(f'data_of_ReGPT/2WikiMultihopQA/{split_name}')
 
+
+def format_consistency(example):
+    example["answer"] = example['answers'][0]
+    example['question'] = example['query']
+    example.pop('answers')
+    example.pop('query')
+    return example
 def preprocess_nq(split_name='dev'):
     data = load_from_disk('wikipedia-nq')
     split = data[split_name]
     split = split.remove_columns(['query_id','positive_passages','negative_passages'])
     split = split.map(add_text_length)
     split = split.sort("input_ids_length", reverse=True)
+    split = split.map(format_consistency)
     split.save_to_disk(f'data_of_ReGPT/nq/{split_name}')
 
 from datasets import concatenate_datasets, load_dataset
 train1 = load_from_disk('../data_of_ReGPT/hotpotqa/sorted_datasets_train/')
 train2 = load_from_disk('../data_of_ReGPT/2WikiMultihopQA/sorted_datasets_train/')
 merged = concatenate_datasets([train1, train2])
+merged = merged.sort("input_ids_length", reverse=True)
 merged.save_to_disk('../data_of_ReGPT/hotpotqaAnd2WikiMultihopQA/sorted_datasets_train')
 test1 = load_from_disk('../data_of_ReGPT/hotpotqa/sorted_datasets_validation/')
 test2 = load_from_disk('../data_of_ReGPT/2WikiMultihopQA/sorted_datasets_dev/')
