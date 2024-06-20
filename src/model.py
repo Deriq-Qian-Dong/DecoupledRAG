@@ -720,6 +720,11 @@ class RAGQAWoTFTester(RAGQATester):
         super().__init__(config)
 
     def run(self):
+        dataset_config = self.config['dataset']
+        for key in dataset_config['test']['data_name_or_paths']:
+            self.test_dataset = dataset_class(dataset_config['test']['data_name_or_paths'][key])(self.tokenizer, dataset_config['test'])
+            self.test_dataloader = DataLoader(self.test_dataset, batch_size=dataset_config['test']['batch_size'], shuffle=False, collate_fn=self.test_dataset._collate_fn)
+            self.test_dataloader = self.accelerator.prepare_data_loader(self.test_dataloader)
         for i in range(512,513):
             self.config['generation_kwargs']['max_new_tokens'] = i
             rouge3 = self.run_wo_teacher_forcing(1)
