@@ -30,7 +30,7 @@ training:
   cross_attention_activation_function: silu
   add_cross_attention_layer_number: 24
   skip_steps: 0
-  max_tokens: 2560
+  max_tokens: 4096
   kb_path: ../data_of_ReGPT/marco/phrases_embeddings.npy
   freeze_retrieval_head: false
   freeze_lm_head: true
@@ -41,7 +41,7 @@ dataset:
     batch_size: 20
     # data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train_gpt2_embeddings/
     # data_name_or_path: ../data_of_ReGPT/hotpotqaAnd2WikiMultihopQA/sorted_datasets_train_reversed/
-    data_name_or_path: ../data_of_ReGPT/hotpotqa/sorted_datasets_train
+    data_name_or_path: ../data_of_ReGPT/hotpotqaAnd2WikiMultihopQA/sorted_datasets_train_sub_reversed
     max_seq_len: 512
     dynamic_sampler: true
   test:
