@@ -4,8 +4,10 @@ training:
   project_name: RAG_llama2-qa_eval
   # model_name_or_path: ../Llama-2-7b-chat-hf/
   # tokenizer_name_or_path: ../Llama-2-7b-chat-hf/
-  model_name_or_path: ./output/SFT-best/
-  tokenizer_name_or_path: ./output/SFT-best/
+  # model_name_or_path: ./output/SFT-best/
+  # tokenizer_name_or_path: ./output/SFT-best/
+  model_name_or_path: ./output/SFT-new/
+  tokenizer_name_or_path: ./output/SFT-new/
   num_layers_unfrozen: -1
   gradient_checkpointing: true
   optimizer: 
