@@ -4,10 +4,10 @@ training:
   project_name: RAG_llama2-qa_eval
   # model_name_or_path: ../Llama-2-7b-chat-hf/
   # tokenizer_name_or_path: ../Llama-2-7b-chat-hf/
-  # model_name_or_path: ./output/SFT-best/
-  # tokenizer_name_or_path: ./output/SFT-best/
-  model_name_or_path: ./output/SFT-new/
-  tokenizer_name_or_path: ./output/SFT-new/
+  model_name_or_path: ./output/SFT-best/
+  tokenizer_name_or_path: ./output/SFT-best/
+  # model_name_or_path: ./output/SFT-new/
+  # tokenizer_name_or_path: ./output/SFT-new/
   num_layers_unfrozen: -1
   gradient_checkpointing: true
   optimizer: 
@@ -54,7 +54,8 @@ dataset:
     batch_size: 4
     # data_name_or_path: ../data_of_ReGPT/msmarco_qa/sorted_datasets_test/
     # data_name_or_path: ../data_of_ReGPT/nq/sorted_datasets_test/
-    data_name_or_path: ../data_of_ReGPT/hotpotqa/sorted_datasets_validation/
+    # data_name_or_path: ../data_of_ReGPT/hotpotqa/sorted_datasets_validation/
+    data_name_or_path: ../data_of_ReGPT/2WikiMultihopQA/sorted_datasets_dev/
     max_seq_len: 512
 
 generation_kwargs:
