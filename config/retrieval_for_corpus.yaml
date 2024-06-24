@@ -1,5 +1,5 @@
-corpus_embeddings: ../data_of_ReGPT/En-Wiki-test/phrases_embeddings.npy
-corpus_name: wiki-test
+corpus_embeddings: ../data_of_ReGPT/Wiki-corpus/phrases_embeddings.npy
+corpus_name: Wiki-corpus
 batch_size: 256
 dev_batch_size: 256
 q_max_seq_len: 512
