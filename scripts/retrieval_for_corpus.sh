@@ -10,7 +10,7 @@ if [ ! -n "$yaml_file" ];then
 fi
 echo 'yaml_file: '$yaml_file
 CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 accelerate launch --main_process_port=29511 --config_file config/default_config.yaml\
-    src/retrieval_for_corpus.py ${yaml_file}\
+    src/retrieval_for_corpus_all_in_one.py ${yaml_file}\
     | tee ${log_dir}/train.log  
 
 echo "=================done train=================="
