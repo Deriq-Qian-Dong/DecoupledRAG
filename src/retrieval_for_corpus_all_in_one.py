@@ -51,7 +51,7 @@ def validate_multi_gpu(model, query_loader, passage_loader, epoch, args, writer,
         para_embs = corpus_embeddings[local_rank*shard_cnt:]
     else:
         para_embs = corpus_embeddings[local_rank*shard_cnt:(local_rank+1)*shard_cnt]
-    q_output_file_name = f'{args.model_out_dir}/para_embs.part{local_rank}.{corpus_name}'
+    q_output_file_name = f'{args.model_out_dir}/para_embs.part{local_rank}.{corpus_name}.npy'
     np.save(q_output_file_name, para_embs)
     engine = torch.from_numpy(corpus_embeddings).cuda()
     qid_list = list(range(0, corpus_embeddings.shape[0]))
