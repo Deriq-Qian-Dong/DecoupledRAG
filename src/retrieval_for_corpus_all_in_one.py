@@ -67,8 +67,12 @@ def validate_multi_gpu(model, query_loader, passage_loader, epoch, args, writer,
         f_list = []
         for part in range(world_size):
             f_list.append(f'{args.model_out_dir}/res.top%d.part%d.step%d.%s' % (top_k, part, epoch, corpus_name))
-        shift = 0
-        merge(world_size, shift, top_k, epoch, corpus_name, args.model_out_dir)
+        res = []
+        for f in f_list:
+            with open(f, 'r') as f:
+                res += f.readlines()
+        with open(f'{args.model_out_dir}/res.top%d.step%d.%s'%(top_k, epoch, corpus_name), 'w') as f:
+            f.writelines(res)
 
         
 def reduce_tensor(tensor: torch.Tensor) -> torch.Tensor:
