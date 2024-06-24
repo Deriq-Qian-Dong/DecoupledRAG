@@ -30,7 +30,7 @@ training:
   cross_attention_activation_function: silu
   add_cross_attention_layer_number: 24
   skip_steps: 0
-  max_tokens: 16384
+  max_tokens: 20480
   # max_tokens: 512
   kb_path: ../data_of_ReGPT/En-Wiki/phrases_embeddings.npy
   freeze_retrieval_head: false
@@ -38,13 +38,15 @@ training:
 
 dataset:
   train:
-    dataset_name: RAGPretrainFromAFSDataset
+    # dataset_name: RAGPretrainFromAFSDataset
+    dataset_name: RAGPretrainDataset
     batch_size: 32
     # data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train_gpt2_embeddings/
     # data_name_or_path: ../data/data_of_ReGPT/En-Wiki/sorted_datasets_train/
     # data_name_or_path: ../data_of_ReGPT/msmarco_qa/sorted_datasets_train/
     # data_name_or_path: ../data/data_of_ReGPT/En-Wiki/sorted_datasets_train/data-{:05d}-of-00705.arrow
-    data_name_or_path: ../data_of_ReGPT/Wiki-corpus/sorted_datasets_train/data-{:05d}-of-00805.arrow
+    # data_name_or_path: ../data_of_ReGPT/Wiki-corpus/sorted_datasets_train/data-{:05d}-of-00805.arrow
+    data_name_or_path: ../data_of_ReGPT/Wiki-corpus/sorted_datasets_train/
     max_seq_len: 256
     dynamic_sampler: true
   test:
