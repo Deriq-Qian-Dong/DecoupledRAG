@@ -12,21 +12,19 @@ from datasets import load_from_disk
 encoder_model_name_or_path = "../data/RetroMAE_MSMARCO_distill/"
 # encoder_model_name_or_path = sys.argv[2]
 
-base_dir = f'../data_of_ReGPT/En-Wiki-test'
+base_dir = f'../data_of_ReGPT/Wiki-corpus'
 os.makedirs(base_dir, exist_ok=True)
 
 phrase_embeddings = []
-batch_size = 10240
+batch_size = 1024
 
 phrases = []
-data = load_from_disk("../data_of_ReGPT/En-Wiki/sorted_datasets_test")
+data = load_from_disk(f"{base_dir}/train")
 torch.distributed.init_process_group(backend="nccl", init_method='env://')
 local_rank = torch.distributed.get_rank()
 world_size = torch.distributed.get_world_size()
 data = data.shard(num_shards=world_size, index=local_rank, contiguous=True)
 print('local_rank', local_rank, 'world_size', world_size, 'data size', len(data))
-for item in tqdm(data):
-    phrases.append(item['text'])
 # with open("../data_of_ReGPT/marco/collection.tsv") as f:
     # lines = f.readlines()
 # for line in lines:
@@ -38,10 +36,14 @@ model = AutoModel.from_pretrained(encoder_model_name_or_path)
 model.to(device)
 model.eval()
 tokenizer = AutoTokenizer.from_pretrained(encoder_model_name_or_path)
+for item in tqdm(data):
+    title = item['title']
+    text = item['text']
+    phrases.append(title + tokenizer.sep_token + text)
 
 for i in tqdm(range(0, len(phrases), batch_size)):
     texts = phrases[i:i+batch_size]
-    inputs = tokenizer(texts, padding=True, truncation=True, return_tensors='pt', max_length=512)
+    inputs = tokenizer(texts, padding=True, truncation=True, return_tensors='pt', max_length=256)
     inputs.to(device)
     with torch.no_grad():
         outputs = model(**inputs)
