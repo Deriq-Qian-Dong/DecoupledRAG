@@ -20,6 +20,7 @@ batch_size = 1024
 
 phrases = []
 data = load_from_disk(f"{base_dir}/train")
+data = data.shard(num_shards=8, index=0, contiguous=True)
 torch.distributed.init_process_group(backend="nccl", init_method='env://')
 local_rank = torch.distributed.get_rank()
 world_size = torch.distributed.get_world_size()
