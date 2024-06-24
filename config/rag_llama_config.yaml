@@ -26,7 +26,7 @@ training:
   negatives_x_device: true
   predict_from_last: 10000
   eval_step: 100
-  start_from: 72
+  start_from: 0
   cross_attention_activation_function: silu
   add_cross_attention_layer_number: 24
   skip_steps: 0
@@ -43,14 +43,16 @@ dataset:
     # data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train_gpt2_embeddings/
     # data_name_or_path: ../data/data_of_ReGPT/En-Wiki/sorted_datasets_train/
     # data_name_or_path: ../data_of_ReGPT/msmarco_qa/sorted_datasets_train/
-    data_name_or_path: ../data/data_of_ReGPT/En-Wiki/sorted_datasets_train/data-{:05d}-of-00705.arrow
+    # data_name_or_path: ../data/data_of_ReGPT/En-Wiki/sorted_datasets_train/data-{:05d}-of-00705.arrow
+    data_name_or_path: ../data/data_of_ReGPT/Wiki-corpus/sorted_datasets_train/data-{:05d}-of-00805.arrow
     max_seq_len: 256
     dynamic_sampler: true
   test:
     dataset_name: RAGPretrainDataset
     batch_size: 32
     # data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_test_gpt2_embeddings/
-    data_name_or_path: ../data_of_ReGPT/En-Wiki/sorted_datasets_test/
+    # data_name_or_path: ../data_of_ReGPT/En-Wiki/sorted_datasets_test/
+    data_name_or_path: ../data_of_ReGPT/Wiki-corpus/sorted_datasets_test/
     max_seq_len: 256
 
 generation_kwargs:

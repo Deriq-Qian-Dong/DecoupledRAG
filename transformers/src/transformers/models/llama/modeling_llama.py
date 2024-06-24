@@ -1433,7 +1433,8 @@ class LlamaWithRetrievalHeadForCausalLM(LlamaPreTrainedModel):
         self.model = LlamaModel(config)
         self.vocab_size = config.vocab_size
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
-        self.retrieval_head = nn.Linear(config.hidden_size, config.faiss_dimension, bias=True)
+        # self.retrieval_head = nn.Linear(config.hidden_size, config.faiss_dimension, bias=True)
+        self.retrieval_heads = nn.ModuleList([nn.Linear(config.hidden_size, config.faiss_dimension, bias=True) for _ in range(config.num_hidden_layers+1)])
         self.negatives_x_device = config.negatives_x_device
         # Initialize weights and apply final processing
         self.post_init()
@@ -1579,10 +1580,15 @@ class LlamaWithRetrievalHeadForCausalLM(LlamaPreTrainedModel):
         # q_reps = q_reps.mean(dim=1)
         # The shape of q_reps is (batch_size, faiss_dimension)
         # The shape of encoder_hidden_states is (batch_size, num_of_psg_samples, faiss_dimension), the first one is positive sample
+        all_hidden_states = torch.stack(outputs.hidden_states)
         q_reps = []
-        for i in range(hidden_states.size(0)):
-            # q_reps.append(self.retrieval_head(hidden_states[i, max(0, retrieval_position[i]-10):retrieval_position[i], :]).mean(dim=0))
-            q_reps.append(self.retrieval_head(hidden_states[i, :retrieval_position[i], :]).mean(dim=0))
+        for i in range(all_hidden_states.size(1)):
+            # q_reps.append(self.retrieval_head(all_hidden_states[:, i, :retrieval_position[i], :]).mean(dim=1).mean(dim=0))
+            q_reps_for_i = []
+            for layer_idx in range(len(self.retrieval_heads)):
+                q_reps_for_i.append(self.retrieval_heads[layer_idx](all_hidden_states[layer_idx][i, :retrieval_position[i], :]).mean(dim=0))
+            q_reps.append(torch.stack(q_reps_for_i).mean(dim=0))
+            # q_reps.append(self.retrieval_head(hidden_states[i, :retrieval_position[i], :]).mean(dim=0))
         q_reps = torch.stack(q_reps)
         loss_fct = CrossEntropyLoss(reduction='mean')
         if p_reps is None:
