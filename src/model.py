@@ -210,7 +210,7 @@ class LanguageModelTrainer:
             self.epoch = epoch
             self.set_epoch_to_dataset()
             self.train()
-            self.test()
+            # self.test()
         
     def set_epoch_to_dataset(self):
         if self.dataset_config['train']['dynamic_sampler']:
