@@ -1583,12 +1583,12 @@ class LlamaWithRetrievalHeadForCausalLM(LlamaPreTrainedModel):
         all_hidden_states = torch.stack(outputs.hidden_states)
         q_reps = []
         for i in range(all_hidden_states.size(1)):
-            q_reps.append(self.retrieval_head(all_hidden_states[:, i, :retrieval_position[i], :]).mean(dim=1).mean(dim=0))
+            # q_reps.append(self.retrieval_head(all_hidden_states[:, i, :retrieval_position[i], :]).mean(dim=1).mean(dim=0))
             # q_reps_for_i = []
             # for layer_idx in range(len(self.retrieval_heads)):
                 # q_reps_for_i.append(self.retrieval_heads[layer_idx](all_hidden_states[layer_idx][i, :retrieval_position[i], :]).mean(dim=0))
             # q_reps.append(torch.stack(q_reps_for_i).mean(dim=0))
-            # q_reps.append(self.retrieval_head(hidden_states[i, :retrieval_position[i], :]).mean(dim=0))
+            q_reps.append(self.retrieval_head(hidden_states[i, :retrieval_position[i], :]).mean(dim=0))
         q_reps = torch.stack(q_reps)
         loss_fct = CrossEntropyLoss(reduction='mean')
         if p_reps is None:
