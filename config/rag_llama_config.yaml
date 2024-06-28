@@ -19,7 +19,7 @@ training:
     name: LinearLR
     kwargs:
       total_iters: 10
-  num_epochs: 805
+  num_epochs: 100000
   log_with: tensorboard
   project_dir: output/
   negatives_in_device: true
