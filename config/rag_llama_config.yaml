@@ -26,7 +26,7 @@ training:
   negatives_x_device: true
   predict_from_last: 10000
   eval_step: 1000
-  start_from: 322
+  start_from: 689
   cross_attention_activation_function: silu
   add_cross_attention_layer_number: 24
   skip_steps: 0
@@ -41,6 +41,7 @@ dataset:
     dataset_name: RAGPretrainFromAFSDataset
     # dataset_name: RAGPretrainDataset
     batch_size: 32
+    num_epochs: 805
     # data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train_gpt2_embeddings/
     # data_name_or_path: ../data/data_of_ReGPT/En-Wiki/sorted_datasets_train/
     # data_name_or_path: ../data_of_ReGPT/msmarco_qa/sorted_datasets_train/
