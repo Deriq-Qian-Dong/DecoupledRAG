@@ -20,6 +20,6 @@ project_name: dense_retrieval_pretrain_with_query_generation
 dataset_class_name: CorpusPretrainDatasetByQueryGeneration
 warm_start_from: ''
 top_k: 10
-corpus_embeddings: ../data_of_ReGPT/marco/phrases_embeddings.npy
+corpus_embeddings: ../data_of_ReGPT/Wiki-corpus/phrases_embeddings.npy
 dev_query: ../data_of_ReGPT/nq/dev
 corpus_name: nq-dev

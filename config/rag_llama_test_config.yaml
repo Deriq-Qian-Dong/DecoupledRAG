@@ -37,6 +37,9 @@ training:
   q_reps_cache_type: QRepsCache
   q_reps_cache_window_size: 10
 
+testing:
+ kb_split: true
+
 dataset:
   train:
     dataset_name: RAGPretrainDataset
