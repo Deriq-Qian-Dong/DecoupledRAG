@@ -21,5 +21,5 @@ dataset_class_name: CorpusPretrainDatasetByQueryGeneration
 warm_start_from: ''
 top_k: 10
 corpus_embeddings: ../data_of_ReGPT/Wiki-corpus/phrases_embeddings.npy
-dev_query: ../data_of_ReGPT/QA_datasets/2WikiMultihopQA/dev/
-corpus_name: 2WikiMultihopQA-dev
+dev_query: ../data_of_ReGPT/QA_datasets/eli5/sorted_datasets_train/
+corpus_name: eli5-train
