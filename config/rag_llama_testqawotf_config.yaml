@@ -54,9 +54,9 @@ dataset:
     batch_size: 4
     # data_name_or_path: ../data_of_ReGPT/msmarco_qa/sorted_datasets_test/
     data_name_or_paths:
-      1: ../data_of_ReGPT/nq/sorted_datasets_test/
-      2: ../data_of_ReGPT/hotpotqa/sorted_datasets_validation/
-      3: ../data_of_ReGPT/2WikiMultihopQA/sorted_datasets_dev/
+      1: ../data_of_ReGPT/QA_datasets_WikiEmb/2WikiMultihopQA/sorted_datasets_dev/
+      2: ../data_of_ReGPT/QA_datasets_WikiEmb/hotpotqa/sorted_datasets_validation/
+      3: ../data_of_ReGPT/QA_datasets_WikiEmb/nq/sorted_datasets_test/
     data_name_or_path: ../data_of_ReGPT/hotpotqa/sorted_datasets_validation/
     # data_name_or_path: ../data_of_ReGPT/2WikiMultihopQA/sorted_datasets_dev/
     max_seq_len: 512
