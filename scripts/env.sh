@@ -20,12 +20,13 @@ mkdir -p ../data_of_ReGPT/En-Wiki
 # cp -r ../data/data_of_ReGPT/En-Wiki/ ../data_of_ReGPT/
 # cp -r ../data/llama2-7b/ ../
 # cp -r ../data/data_of_ReGPT/c4_en/ ../data_of_ReGPT/
-cp -r ../data/data_of_ReGPT/En-Wiki/sorted_datasets_test/ ../data_of_ReGPT/En-Wiki/
+# cp -r ../data/data_of_ReGPT/En-Wiki/sorted_datasets_test/ ../data_of_ReGPT/En-Wiki/
 sh scripts/update_transformers.sh
 # cp -r ../data/rag_llama2/24_qa/ ../
 mkdir -p output
-mv ../24_qa/* output/
+# mv ../24_qa/* output/
 cp -r ../data/rag_llama2/24_wiki/ ../
+mv ../24_wiki/* output/
 mkdir -p ../data_of_ReGPT/Wiki-corpus
 cp -r ../data/data_of_ReGPT/Wiki-corpus/phrases_embeddings.npy ../data_of_ReGPT/Wiki-corpus/
-cp -r ../data/data_of_ReGPT/QA_datasets ../data_of_ReGPT/
+cp -r ../data/data_of_ReGPT/QA_datasets_WikiEmb ../data_of_ReGPT/
