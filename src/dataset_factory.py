@@ -370,6 +370,7 @@ class QASFTDataset(QADataset):
     
     def setup_datasets(self):
         self.datasets = load_from_disk(self.args['data_name_or_path'])
+        self.datasets = self.datasets.sort('input_ids_length', reverse=False)
         # self.datasets = self.datasets.select(range(len(self.datasets)//2))
         self.num_samples = len(self.datasets)
         input_ids_lengths = self.datasets['input_ids_length']
