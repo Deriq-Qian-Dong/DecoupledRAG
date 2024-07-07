@@ -1748,8 +1748,25 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
     #     self.kb = self.kb.to(self.model.device)
     #     print(f"kb size is {self.kb.size()} on device {self.model.device}")
     def search_by_vector(self, vector):
-        response = requests.post('http://localhost:5000/search', json={'vector': vector})
-        return response.json()
+        url = 'http://localhost:5000/search'
+        payload = {
+            'vector': vector,
+        }
+        headers = {'Content-Type': 'application/json'}
+
+        try:
+            response = requests.post(url, json=payload, headers=headers)
+            response.raise_for_status()
+            try:
+                result = response.json()
+                return result
+            except requests.exceptions.JSONDecodeError:
+                print("Failed to decode JSON response:")
+                print(response.text)
+                return None
+        except requests.exceptions.RequestException as e:
+            print(f"Request failed: {e}")
+            return None
 
     def get_input_embeddings(self):
         return self.model.embed_tokens
