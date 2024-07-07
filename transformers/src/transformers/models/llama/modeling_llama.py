@@ -1892,7 +1892,6 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
         if curr_seq_len%self.config.retrieval_step==0:
             # Get the top-k similar vectors from knowledge base
             q_reps_vectors = q_reps.detach().cpu().numpy().tolist()
-            print('rank', torch.distributed.get_rank(), 'q_reps_vectors', q_reps_vectors)
             responses = self.search_by_vector(q_reps_vectors)
             encoder_hidden_states = responses['neighbor_embeddings']
             encoder_hidden_states = torch.tensor(encoder_hidden_states, device=self.model.device, dtype=q_reps.dtype)
