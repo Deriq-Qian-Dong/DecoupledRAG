@@ -14,9 +14,9 @@ class FaissServer:
         self.app.add_url_rule('/search', 'search', self.search, methods=['POST'])
 
         index_paths = [f'{cache_path}/gpu_{i}.index' for i in range(faiss.get_num_gpus())]
+        self.gpu_resources = [faiss.StandardGpuResources() for _ in range(faiss.get_num_gpus())]
         if not os.path.exists(cache_path) or not all([os.path.exists(p) for p in index_paths]):
             # Initialize FAISS
-            self.gpu_resources = [faiss.StandardGpuResources() for _ in range(faiss.get_num_gpus())]
             self.gpu_indices = self.create_gpu_indices()
             os.makedirs(self.cache_path, exist_ok=True)
             print('Index not found, initializing server...')
@@ -33,15 +33,18 @@ class FaissServer:
     
     def load_index(self):
         self.gpu_indices = []
-        self.chunk_size = self.gpu_indices[0].ntotal
         self.kb = np.load(self.index_path).astype(np.float32)
         for i in range(faiss.get_num_gpus()):
             gpu_index = faiss.read_index(self.cache_path + f'/gpu_{i}.index')
+            # Convert the index to GPU
+            gpu_index = faiss.index_cpu_to_gpu(self.gpu_resources[i], i, gpu_index)
             self.gpu_indices.append(gpu_index)
+        self.chunk_size = self.gpu_indices[0].ntotal
 
     def save_index(self):
         for i, gpu_index in enumerate(self.gpu_indices):
-            faiss.write_index(gpu_index, self.cache_path + f'/gpu_{i}.index')
+            # Re-convert the index back to CPU
+            faiss.write_index(faiss.index_gpu_to_cpu(gpu_index), self.cache_path + f'/gpu_{i}.index')
 
     def create_gpu_indices(self):
         gpu_indices = []
