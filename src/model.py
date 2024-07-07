@@ -13,6 +13,7 @@ import torch_optimizer as optim
 import torch.distributed as dist
 from dataclasses import dataclass
 from accelerate import Accelerator
+from prompt_templates import QA_Reasoning_PROMPT
 from transformers.file_utils import ModelOutput
 from torch.utils.data import DataLoader, Dataset
 from typing import List, Optional, Tuple, Union, Dict
@@ -646,8 +647,18 @@ class RAGQATester(RAGLanguageModelTester):
                 responses = tokenizer.batch_decode(outputs, skip_special_tokens=True)
                 answers = tokenizer.batch_decode(answers, skip_special_tokens=True)
                 input_ids = batch['input_ids']
+                new_inputs = []
                 for input_id, response, answer in zip(input_ids, responses, answers):
                     input_text = tokenizer.decode(input_id, skip_special_tokens=True)
+                    input_len = len(input_text)
+                    reason = response[input_len:]
+                    new_input = QA_Reasoning_PROMPT.format(question=input_text, reasoning=reason)
+                    new_inputs.append(new_input)
+                batch = tokenizer(new_inputs, return_tensors='pt', padding=True, truncation=True)
+                batch = self._prepare_inputs(batch)
+                outputs = model.generate(**batch, **generation_kwargs, tokenizer=tokenizer)
+                responses = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+                for input_text, response, answer in zip(new_inputs, responses, answers):
                     input_len = len(input_text)
                     response = response[input_len:]
                     data.append({"question": input_text, "response": response, "answer": answer})

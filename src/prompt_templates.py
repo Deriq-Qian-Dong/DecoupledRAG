@@ -17,7 +17,16 @@
 
 # Question: {question}
 # Answer: """
-QA_PROMPT = """Answer the question.
-Your output MUST in ONE OR FEW WORDS.
+# QA_PROMPT = """Answer the question.
+# Your output MUST in ONE OR FEW WORDS.
+# Question: {question}
+# Answer: """
+
+QA_PROMPT = """Answer the question by thinking step by step.
+Question: {question}"""
+
+QA_Reasoning_PROMPT = """Answer the question by thinking step by step.
+The final answer MUST in ONE OR FEW WORDS.
 Question: {question}
+Reasoning: {reasoning}
 Answer: """
