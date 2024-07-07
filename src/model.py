@@ -660,7 +660,7 @@ class RAGQATester(RAGLanguageModelTester):
                 merged_data = []
                 for rank in range(world_size):
                     merged_data.extend(load_from_json(f"output/{dataset_name}_process_{rank}.json"))
-                save_to_json(merged_data, f"output/{dataset_name}.json")
+                save_to_json(merged_data, f"output/{dataset_name}_{retrieval_step}.json")
 
     # def run(self):
     #     for i in range(30, 50):
@@ -701,7 +701,7 @@ class RAGQATester(RAGLanguageModelTester):
         self.config['training']['project_name'] = f"qa_eval_retrieval_step_{retrieval_step}"
         self.test_wo_teacher_forcing()
         self.accelerator.wait_for_everyone()
-        data = load_from_json(f"output/{self.dataset_name}.json")
+        data = load_from_json(f"output/{self.dataset_name}_{self.config['training']['retrieval_step']}.json")
         predictions = [d['response'] for d in data]
         references = [d['answer'] for d in data]
         return self.compute_metrics(predictions, references)
