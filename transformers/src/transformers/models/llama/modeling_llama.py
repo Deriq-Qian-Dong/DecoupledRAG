@@ -1753,9 +1753,12 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
             'vector': vector,
         }
         headers = {'Content-Type': 'application/json'}
-
+        proxies = {
+            "http": None,
+            "https": None,
+        }
         try:
-            response = requests.post(url, json=payload, headers=headers)
+            response = requests.post(url, json=payload, headers=headers, proxies=proxies)
             response.raise_for_status()
             try:
                 result = response.json()
