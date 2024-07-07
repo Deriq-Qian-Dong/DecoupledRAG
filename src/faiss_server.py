@@ -1,23 +1,46 @@
 import numpy as np
 import faiss
+import os
 from flask import Flask, request, jsonify
 
 class FaissServer:
-    def __init__(self, index_path, dimension=768):
+    def __init__(self, index_path, cache_path, dimension=768):
         self.dimension = dimension
         self.index_path = index_path
+        self.cache_path = cache_path
 
         # Initialize Flask app
         self.app = Flask(__name__)
         self.app.add_url_rule('/search', 'search', self.search, methods=['POST'])
 
-        # Initialize FAISS
-        self.gpu_resources = [faiss.StandardGpuResources() for _ in range(faiss.get_num_gpus())]
-        self.gpu_indices = self.create_gpu_indices()
+        if not os.path.exists(self.cache_path):
+            # Initialize FAISS
+            self.gpu_resources = [faiss.StandardGpuResources() for _ in range(faiss.get_num_gpus())]
+            self.gpu_indices = self.create_gpu_indices()
+            os.makedirs(self.cache_path, exist_ok=True)
+            print('Index not found, initializing server...')
+            # Load vectors and add to the indices
+            self.load_vectors()
+            print('Server initialized successfully!')
+            # Save the index to disk
+            self.save_index()
+        else:
+            print('Index found, loading server...')
+            self.load_index()
+            print('Server loaded successfully!')
 
-        # Load vectors and add to the indices
-        self.load_vectors()
-        print('Server initialized successfully!')
+    
+    def load_index(self):
+        self.gpu_indices = []
+        self.chunk_size = self.gpu_indices[0].ntotal
+        self.kb = np.load(self.index_path).astype(np.float32)
+        for i in range(faiss.get_num_gpus()):
+            gpu_index = faiss.read_index(self.cache_path + f'/gpu_{i}.index')
+            self.gpu_indices.append(gpu_index)
+
+    def save_index(self):
+        for i, gpu_index in enumerate(self.gpu_indices):
+            faiss.write_index(gpu_index, self.cache_path + f'/gpu_{i}.index')
 
     def create_gpu_indices(self):
         gpu_indices = []
@@ -71,5 +94,6 @@ class FaissServer:
 
 if __name__ == '__main__':
     index_path = '../data_of_ReGPT/Wiki-corpus/phrases_embeddings.npy'
-    server = FaissServer(index_path)
+    cache_path = './faiss_cache'
+    server = FaissServer(index_path, cache_path)
     server.run()
