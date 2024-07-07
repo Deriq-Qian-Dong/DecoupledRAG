@@ -743,7 +743,7 @@ class RAGQAWoTFTester(RAGQATester):
             self.test_dataloader = self.accelerator.prepare_data_loader(self.test_dataloader)
             for i in range(512,513):
                 self.config['generation_kwargs']['max_new_tokens'] = i
-                rouge3 = self.run_wo_teacher_forcing(10)
+                rouge3 = self.run_wo_teacher_forcing(1)
                 rouge1 = self.run_wo_teacher_forcing(1000000)
                 stats = {}
                 # rouge2 = self.run_wo_teacher_forcing(10)
