@@ -638,6 +638,7 @@ class RAGQATester(RAGLanguageModelTester):
         world_size = accelerator.num_processes
         data = []
         dataset_name = self.config['dataset']['test']['data_name_or_path'].split('/')[-3]
+        self.dataset_name = dataset_name
         with torch.no_grad():
             for step, batch in enumerate(test_dataloader):
                 answers = batch.pop('answers')
@@ -700,7 +701,7 @@ class RAGQATester(RAGLanguageModelTester):
         self.config['training']['project_name'] = f"qa_eval_retrieval_step_{retrieval_step}"
         self.test_wo_teacher_forcing()
         self.accelerator.wait_for_everyone()
-        data = load_from_json(f"output/{self.config['training']['project_name']}.json")
+        data = load_from_json(f"output/{self.dataset_name}.json")
         predictions = [d['response'] for d in data]
         references = [d['answer'] for d in data]
         return self.compute_metrics(predictions, references)
