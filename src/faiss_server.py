@@ -49,7 +49,7 @@ class FaissServer:
 
     def search(self):
         with self.lock:
-            query_vector = np.array(request.json['vector']).reshape(1, -1).astype(np.float32)
+            query_vector = np.array(request.json['vector']).reshape(-1, self.dimension).astype(np.float32)
             k = self.topk
 
             distances, indices = [], []
