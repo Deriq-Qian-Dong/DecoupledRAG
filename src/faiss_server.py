@@ -13,7 +13,8 @@ class FaissServer:
         self.app = Flask(__name__)
         self.app.add_url_rule('/search', 'search', self.search, methods=['POST'])
 
-        if not os.path.exists(self.cache_path):
+        index_paths = [f'{cache_path}/gpu_{i}.index' for i in range(faiss.get_num_gpus())]
+        if not os.path.exists(cache_path) or not all([os.path.exists(p) for p in index_paths]):
             # Initialize FAISS
             self.gpu_resources = [faiss.StandardGpuResources() for _ in range(faiss.get_num_gpus())]
             self.gpu_indices = self.create_gpu_indices()
