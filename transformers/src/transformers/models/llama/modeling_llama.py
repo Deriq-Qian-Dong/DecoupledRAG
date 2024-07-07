@@ -20,6 +20,7 @@
 """PyTorch LLaMA model."""
 
 import math
+import requests
 import warnings
 import numpy as np
 from typing import List, Optional, Tuple, Union
@@ -1725,8 +1726,8 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
         self.vocab_size = config.vocab_size
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
         self.retrieval_head = nn.Linear(config.hidden_size, config.faiss_dimension, bias=True)
-        kb = np.load(config.kb_path)
-        self.kb = torch.from_numpy(kb)
+        # kb = np.load(config.kb_path)
+        # self.kb = torch.from_numpy(kb)
         # Register the kb as a buffer
         # self.register_buffer("kb", kb)
         self.q_reps_cache = QRPESCACHEDICT[config.q_reps_cache_type](window_size=config.q_reps_cache_window_size)
@@ -1734,18 +1735,21 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
-    def move_kb_to_device(self, split=False):
-        self.split = split
-        if split:
-            local_rank = torch.distributed.get_rank()
-            world_size = torch.distributed.get_world_size()
-            shard_size = self.kb.size(0) // world_size
-            if local_rank==world_size-1:
-                self.kb = self.kb[local_rank*shard_size:]
-            else:
-                self.kb = self.kb[local_rank*shard_size:(local_rank+1)*shard_size]
-        self.kb = self.kb.to(self.model.device)
-        print(f"kb size is {self.kb.size()} on device {self.model.device}")
+    # def move_kb_to_device(self, split=False):
+    #     self.split = split
+    #     if split:
+    #         local_rank = torch.distributed.get_rank()
+    #         world_size = torch.distributed.get_world_size()
+    #         shard_size = self.kb.size(0) // world_size
+    #         if local_rank==world_size-1:
+    #             self.kb = self.kb[local_rank*shard_size:]
+    #         else:
+    #             self.kb = self.kb[local_rank*shard_size:(local_rank+1)*shard_size]
+    #     self.kb = self.kb.to(self.model.device)
+    #     print(f"kb size is {self.kb.size()} on device {self.model.device}")
+    def search_by_vector(self, vector):
+        response = requests.post('http://localhost:5000/search', json={'vector': vector})
+        return response.json()
 
     def get_input_embeddings(self):
         return self.model.embed_tokens
@@ -1867,22 +1871,26 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
         curr_seq_len = self.q_reps_cache.count
         if curr_seq_len%self.config.retrieval_step==0:
             # Get the top-k similar vectors from knowledge base
-            if self.split:
-                # print('q_rep size is', q_reps.size(), 'on device', self.model.device)
-                all_q_reps = self._dist_gather_tensor(q_reps)
-                scores = torch.matmul(all_q_reps, self.kb.t())
-                topk_scores, topk_indices = torch.topk(scores, self.config.topk, dim=1)
-                # Get the vectors from the knowledge base
-                encoder_hidden_states = self.kb[topk_indices]
-                all_encoder_hidden_states = self._dist_gather_tensor(encoder_hidden_states)
-                all_encoder_hidden_states = all_encoder_hidden_states.view(-1, all_encoder_hidden_states.size(-1))
-                scores = torch.matmul(q_reps, all_encoder_hidden_states.t())
-                topk_scores, topk_indices = torch.topk(scores, self.config.topk, dim=1)
-                encoder_hidden_states = all_encoder_hidden_states[topk_indices]
-            else:
-                scores = torch.matmul(q_reps, self.kb.t())
-                topk_scores, topk_indices = torch.topk(scores, self.config.topk, dim=1)
-                encoder_hidden_states = self.kb[topk_indices]
+            q_reps_vectors = q_reps.detach().cpu().numpy().tolist()
+            responses = self.search_by_vector(q_reps_vectors)
+            encoder_hidden_states = responses['neighbor_embeddings']
+            encoder_hidden_states = torch.tensor(encoder_hidden_states, device=self.model.device, dtype=q_reps.dtype)
+            # if self.split:
+            #     # print('q_rep size is', q_reps.size(), 'on device', self.model.device)
+            #     all_q_reps = self._dist_gather_tensor(q_reps)
+            #     scores = torch.matmul(all_q_reps, self.kb.t())
+            #     topk_scores, topk_indices = torch.topk(scores, self.config.topk, dim=1)
+            #     # Get the vectors from the knowledge base
+            #     encoder_hidden_states = self.kb[topk_indices]
+            #     all_encoder_hidden_states = self._dist_gather_tensor(encoder_hidden_states)
+            #     all_encoder_hidden_states = all_encoder_hidden_states.view(-1, all_encoder_hidden_states.size(-1))
+            #     scores = torch.matmul(q_reps, all_encoder_hidden_states.t())
+            #     topk_scores, topk_indices = torch.topk(scores, self.config.topk, dim=1)
+            #     encoder_hidden_states = all_encoder_hidden_states[topk_indices]
+            # else:
+            #     scores = torch.matmul(q_reps, self.kb.t())
+            #     topk_scores, topk_indices = torch.topk(scores, self.config.topk, dim=1)
+            #     encoder_hidden_states = self.kb[topk_indices]
 
             # print(self.q_reps_cache.count)
             # print("Retrieval at step: %d\ntopk_indices: %s" % (curr_seq_len, topk_indices))
