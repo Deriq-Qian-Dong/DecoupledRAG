@@ -2,9 +2,12 @@ import numpy as np
 import faiss
 import os
 from flask import Flask, request, jsonify
+import requests
+
 
 class FaissServer:
-    def __init__(self, index_path, cache_path, dimension=768):
+    def __init__(self, index_path, cache_path, dimension=768, topk=6):
+        self.topk = topk
         self.dimension = dimension
         self.index_path = index_path
         self.cache_path = cache_path
@@ -70,7 +73,7 @@ class FaissServer:
 
     def search(self):
         query_vector = np.array(request.json['vector']).reshape(1, -1).astype(np.float32)
-        k = int(request.json.get('k', 5))
+        k = self.topk
 
         distances, indices = [], []
         for idx, gpu_index in enumerate(self.gpu_indices):
@@ -92,6 +95,10 @@ class FaissServer:
             'indices': topk_indices.tolist(),
             'neighbor_embeddings': topk_kb.tolist()
         })
+    
+    def search_by_vector(self, vector):
+        response = requests.post('http://localhost:5000/search', json={'vector': vector})
+        return response.json()
 
     def run(self, host='0.0.0.0', port=5000):
         self.app.run(host=host, port=port)
