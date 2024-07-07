@@ -3,6 +3,7 @@ import faiss
 import os
 from flask import Flask, request, jsonify
 import requests
+from threading import Lock
 
 
 class FaissServer:
@@ -22,6 +23,7 @@ class FaissServer:
         # Load vectors and add to the indices
         self.load_vectors()
         print('Server initialized successfully!')
+        self.lock = Lock()
 
     def create_gpu_indices(self):
         gpu_indices = []
@@ -46,29 +48,30 @@ class FaissServer:
             print(f'Number of vectors in GPU {i} index: {gpu_index.ntotal}')
 
     def search(self):
-        query_vector = np.array(request.json['vector']).reshape(1, -1).astype(np.float32)
-        k = self.topk
+        with self.lock:
+            query_vector = np.array(request.json['vector']).reshape(1, -1).astype(np.float32)
+            k = self.topk
 
-        distances, indices = [], []
-        for idx, gpu_index in enumerate(self.gpu_indices):
-            D, I = gpu_index.search(query_vector, k)
-            distances.append(D)
-            I += idx * self.chunk_size
-            indices.append(I)
+            distances, indices = [], []
+            for idx, gpu_index in enumerate(self.gpu_indices):
+                D, I = gpu_index.search(query_vector, k)
+                distances.append(D)
+                I += idx * self.chunk_size
+                indices.append(I)
 
-        distances = np.hstack(distances)  # shape: (batch_size, num_gpus*k)
-        indices = np.hstack(indices)  # shape: (batch_size, num_gpus*k)
-        # Get the top k results across all GPUs
-        indices_to_gather = np.argsort(distances, axis=1)[:, :k]
-        topk_distances = np.take_along_axis(distances, indices_to_gather, axis=1)
-        topk_indices = np.take_along_axis(indices, indices_to_gather, axis=1)
-        topk_kb = self.kb[topk_indices]
+            distances = np.hstack(distances)  # shape: (batch_size, num_gpus*k)
+            indices = np.hstack(indices)  # shape: (batch_size, num_gpus*k)
+            # Get the top k results across all GPUs
+            indices_to_gather = np.argsort(distances, axis=1)[:, :k]
+            topk_distances = np.take_along_axis(distances, indices_to_gather, axis=1)
+            topk_indices = np.take_along_axis(indices, indices_to_gather, axis=1)
+            topk_kb = self.kb[topk_indices]
 
-        return jsonify({
-            'distances': topk_distances.tolist(),
-            'indices': topk_indices.tolist(),
-            'neighbor_embeddings': topk_kb.tolist()
-        })
+            return jsonify({
+                'distances': topk_distances.tolist(),
+                'indices': topk_indices.tolist(),
+                'neighbor_embeddings': topk_kb.tolist()
+            })
     
     def search_by_vector(self, vector):
         response = requests.post('http://localhost:5000/search', json={'vector': vector})
