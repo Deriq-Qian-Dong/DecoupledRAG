@@ -25,8 +25,7 @@
 QA_PROMPT = """Answer the question by thinking step by step.
 Question: {question}"""
 
-QA_Reasoning_PROMPT = """Answer the question by thinking step by step.
-The final answer MUST in ONE OR FEW WORDS.
-Question: {question}
+QA_Reasoning_PROMPT = """{question}
 Reasoning: {reasoning}
+The final answer MUST in ONE OR FEW WORDS.
 Answer: """
