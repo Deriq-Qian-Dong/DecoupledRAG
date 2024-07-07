@@ -637,6 +637,7 @@ class RAGQATester(RAGLanguageModelTester):
         local_rank = accelerator.process_index
         world_size = accelerator.num_processes
         data = []
+        dataset_name = self.config['dataset']['test']['data_name_or_path'].split('/')[-3]
         with torch.no_grad():
             for step, batch in enumerate(test_dataloader):
                 answers = batch.pop('answers')
@@ -651,14 +652,14 @@ class RAGQATester(RAGLanguageModelTester):
                     data.append({"question": input_text, "response": response, "answer": answer})
                 if accelerator.is_main_process:
                     pbar.update(1)
-                save_to_json(data, f"output/{self.config['training']['project_name']}_process_{local_rank}.json")
+                save_to_json(data, f"output/{dataset_name}_process_{local_rank}.json")
                 torch.distributed.barrier()
             accelerator.wait_for_everyone()
             if accelerator.is_main_process:
                 merged_data = []
                 for rank in range(world_size):
-                    merged_data.extend(load_from_json(f"output/{self.config['training']['project_name']}_process_{rank}.json"))
-                save_to_json(merged_data, f"output/{self.config['training']['project_name']}.json")
+                    merged_data.extend(load_from_json(f"output/{dataset_name}_process_{rank}.json"))
+                save_to_json(merged_data, f"output/{dataset_name}.json")
 
     # def run(self):
     #     for i in range(30, 50):
@@ -723,6 +724,7 @@ class RAGQAWoTFTester(RAGQATester):
     def run(self):
         dataset_config = self.config['dataset']
         for key in dataset_config['test']['data_name_or_paths']:
+            self.accelerator.print(f"\033[31mData: {dataset_config['test']['data_name_or_paths'][key]}\033[0m")
             self.config['dataset']['test']['data_name_or_path'] = dataset_config['test']['data_name_or_paths'][key]
             self.test_dataset = dataset_class(dataset_config['test']['dataset_name'])(self.tokenizer, dataset_config['test'])
             self.test_dataloader = DataLoader(self.test_dataset, batch_size=dataset_config['test']['batch_size'], shuffle=False, collate_fn=self.test_dataset._collate_fn)
