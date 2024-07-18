@@ -1727,7 +1727,7 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
         self.retrieval_head = nn.Linear(config.hidden_size, config.faiss_dimension, bias=True)
         kb = np.load(config.kb_path)
-        # self.kb = torch.from_numpy(kb)
+        self.kb = torch.from_numpy(kb)
         # Register the kb as a buffer
         self.register_buffer("kb", kb)
         self.q_reps_cache = QRPESCACHEDICT[config.q_reps_cache_type](window_size=config.q_reps_cache_window_size)
