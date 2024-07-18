@@ -1729,7 +1729,7 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
         kb = np.load(config.kb_path)
         self.kb = torch.from_numpy(kb)
         # Register the kb as a buffer
-        self.register_buffer("kb", kb)
+        # self.register_buffer("kb", kb)
         self.q_reps_cache = QRPESCACHEDICT[config.q_reps_cache_type](window_size=config.q_reps_cache_window_size)
         self.logits_cache = LogitsCache()
         # Initialize weights and apply final processing
