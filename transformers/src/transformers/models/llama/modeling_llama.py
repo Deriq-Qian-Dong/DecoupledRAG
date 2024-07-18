@@ -1726,27 +1726,27 @@ class LlamaWithRetrievalHeadForInference(LlamaPreTrainedModel):
         self.vocab_size = config.vocab_size
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
         self.retrieval_head = nn.Linear(config.hidden_size, config.faiss_dimension, bias=True)
-        # kb = np.load(config.kb_path)
+        kb = np.load(config.kb_path)
         # self.kb = torch.from_numpy(kb)
         # Register the kb as a buffer
-        # self.register_buffer("kb", kb)
+        self.register_buffer("kb", kb)
         self.q_reps_cache = QRPESCACHEDICT[config.q_reps_cache_type](window_size=config.q_reps_cache_window_size)
         self.logits_cache = LogitsCache()
         # Initialize weights and apply final processing
         self.post_init()
 
-    # def move_kb_to_device(self, split=False):
-    #     self.split = split
-    #     if split:
-    #         local_rank = torch.distributed.get_rank()
-    #         world_size = torch.distributed.get_world_size()
-    #         shard_size = self.kb.size(0) // world_size
-    #         if local_rank==world_size-1:
-    #             self.kb = self.kb[local_rank*shard_size:]
-    #         else:
-    #             self.kb = self.kb[local_rank*shard_size:(local_rank+1)*shard_size]
-    #     self.kb = self.kb.to(self.model.device)
-    #     print(f"kb size is {self.kb.size()} on device {self.model.device}")
+    def move_kb_to_device(self, split=False):
+        self.split = split
+        if split:
+            local_rank = torch.distributed.get_rank()
+            world_size = torch.distributed.get_world_size()
+            shard_size = self.kb.size(0) // world_size
+            if local_rank==world_size-1:
+                self.kb = self.kb[local_rank*shard_size:]
+            else:
+                self.kb = self.kb[local_rank*shard_size:(local_rank+1)*shard_size]
+        self.kb = self.kb.to(self.model.device)
+        print(f"kb size is {self.kb.size()} on device {self.model.device}")
     def search_by_vector(self, vector):
         url = 'http://localhost:5000/search'
         payload = {
