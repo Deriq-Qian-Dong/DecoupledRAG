@@ -52,6 +52,7 @@ class RAGPretrainDataset(Dataset):
         self.args = args
         self.tokenizer = tokenizer
         self.epoch = 0
+        self.corpus = load_from_disk(self.args['corpus'])
         self.setup_datasets()
 
     def add_input_ids(self, example):
@@ -88,14 +89,24 @@ class RAGPretrainDataset(Dataset):
         sample = self.datasets[idx]
         text = sample['text']
         neighbor_embeddings = sample['neighbor_embeddings']
-        return text, neighbor_embeddings, sample['input_ids_length']
+        neighbors = sample['neighbors'][1:]
+        neighbor_texts = [self.corpus[neighbor]['text'] for neighbor in neighbors]
+        return text, neighbor_embeddings, sample['input_ids_length'], neighbor_texts
 
     def __len__(self):
         return len(self.datasets)
 
     def _collate_fn(self, elems):
-        texts, neighbor_embeddings, _ = zip(*elems)
+        texts, neighbor_embeddings, _, neighbor_texts = zip(*elems)
         batch = self.tokenizer(texts,
+                                max_length=self.args['max_seq_len'],
+                                padding=True,
+                                truncation=True,
+                                return_tensors="pt")
+        all_neighbor_texts = []
+        for neighbor_text in neighbor_texts:
+            all_neighbor_texts += neighbor_text
+        neighbor_batch = self.tokenizer(all_neighbor_texts,
                                 max_length=self.args['max_seq_len'],
                                 padding=True,
                                 truncation=True,
@@ -105,6 +116,7 @@ class RAGPretrainDataset(Dataset):
         shape = (batch['input_ids'].size(0), 1)
         batch['retrieval_position'] = torch.full(shape, ret_pos, dtype=torch.long)
         batch['neighbor_embeddings'] = torch.tensor(neighbor_embeddings)
+        batch['knowledge_input_ids'] = neighbor_batch['input_ids']
         return batch
 
 @register_class

@@ -2,10 +2,11 @@ trainer: RAGLanguageModelTrainer
 training:
   model_type: llama
   project_name: RAG_llama2-sft-wiki
-  # model_name_or_path: ../Llama-2-7b-chat-hf/
+  model_name_or_path: ../llama3-chat
   # tokenizer_name_or_path: ../Llama-2-7b-chat-hf/
-  model_name_or_path: ./output/SFT-best/
+  # model_name_or_path: ./output/SFT-best/
   tokenizer_name_or_path: ./output/SFT-best/
+  kg_model_name_or_path: ../llama3-chat-top8
   num_layers_unfrozen: -1
   gradient_checkpointing: true
   optimizer: 
@@ -26,7 +27,7 @@ training:
   negatives_x_device: true
   predict_from_last: 10000
   eval_step: 1000
-  start_from: 689
+  start_from: 0
   cross_attention_activation_function: silu
   add_cross_attention_layer_number: 24
   skip_steps: 0
@@ -50,6 +51,7 @@ dataset:
     # data_name_or_path: ../data_of_ReGPT/Wiki-corpus/sorted_datasets_train/
     max_seq_len: 256
     dynamic_sampler: true
+    corpus: ../data_of_ReGPT/Wiki-corpus/train
   test:
     dataset_name: RAGPretrainDataset
     batch_size: 32
@@ -57,6 +59,7 @@ dataset:
     # data_name_or_path: ../data_of_ReGPT/En-Wiki/sorted_datasets_test/
     data_name_or_path: ../data/data_of_ReGPT/Wiki-corpus/sorted_datasets_test/
     max_seq_len: 256
+    corpus: ../data_of_ReGPT/Wiki-corpus/train
 
 generation_kwargs:
   min_length: 0
@@ -67,6 +70,6 @@ generation_kwargs:
 
 RAG_kwargs:
   faiss:
-    dimension: 768
+    dimension: 4096
   retrieval_step: 10
   topk: 6

@@ -22,7 +22,7 @@ from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR
 from registry import registry, register_class
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModel, AutoConfig
 try:
-    from transformers import GPT2LMandRetrievalHeadsModel, LlamaWithRetrievalHeadForCausalLM, LlamaWithRetrievalHeadForInference
+    from transformers import GPT2LMandRetrievalHeadsModel, LlamaWithRetrievalHeadForCausalLM, LlamaWithRetrievalHeadForInference, LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM
 except:
     GPT2LMandRetrievalHeadsModel, LlamaWithRetrievalHeadForCausalLM, LlamaWithRetrievalHeadForInference = None, None, None
 from peft import LoraConfig, get_peft_model, PeftModel, TaskType
@@ -156,7 +156,7 @@ class ReGPTForCausalLM(nn.Module):
                 input_ids = torch.cat([input_ids, next_input_ids], dim=-1)
         return input_ids
 
-MODEL_CLASS = {'gpt2': GPT2LMandRetrievalHeadsModel, 'llama': LlamaWithRetrievalHeadForCausalLM}
+MODEL_CLASS = {'gpt2': GPT2LMandRetrievalHeadsModel, 'llama': LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM}
 @register_class
 class RAGForCausalLM(nn.Module):
     def __init__(self, train_config):
@@ -168,6 +168,9 @@ class RAGForCausalLM(nn.Module):
         config.add_cross_attention_layer_number = train_config['add_cross_attention_layer_number']
         config.negatives_x_device = train_config['negatives_x_device']
         config.output_hidden_states = True
+        kg_config = AutoConfig.from_pretrained(train_config['kg_model_name_or_path'])
+        config.kg_config = kg_config
+        config.kg_model_name_or_path = train_config['kg_model_name_or_path']
         model = MODEL_CLASS[train_config['model_type']].from_pretrained(train_config['model_name_or_path'], config=config)          
         freeze_non_crossattention_parameters(model, train_config['freeze_retrieval_head'], train_config['freeze_lm_head'])
         if train_config['gradient_checkpointing']:

@@ -339,6 +339,7 @@ class LlamaAttention(nn.Module):
         **kwargs,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         bsz, q_len, _ = hidden_states.size()
+        encoder_hidden_states = encoder_hidden_states.reshape(bsz, -1, self.faiss_dimension) if encoder_hidden_states is not None else None
         if encoder_hidden_states is not None:
             kv_len = encoder_hidden_states.size(1)
         else:
@@ -998,6 +999,7 @@ class LlamaModel(LlamaPreTrainedModel):
         )
         self.norm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.gradient_checkpointing = False
+        self.config = config
 
         # Initialize weights and apply final processing
         self.post_init()
@@ -1023,6 +1025,7 @@ class LlamaModel(LlamaPreTrainedModel):
         cache_position: Optional[torch.LongTensor] = None,
         encoder_hidden_states: Optional[torch.Tensor] = None,
         retrieval_position: Optional[torch.LongTensor] = None,
+        knowledge_outputs: Optional[Tuple[torch.Tensor]] = None,
     ) -> Union[Tuple, BaseModelOutputWithPast]:
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
@@ -1071,9 +1074,17 @@ class LlamaModel(LlamaPreTrainedModel):
         all_self_attns = () if output_attentions else None
         next_decoder_cache = None
 
-        for decoder_layer in self.layers:
+        num_hidden_layers = len(self.layers)
+        num_knowledge_layers = len(knowledge_outputs) if knowledge_outputs is not None else 0
+
+        for layer_idx, decoder_layer in enumerate(self.layers):
             if output_hidden_states:
                 all_hidden_states += (hidden_states,)
+
+            if decoder_layer.add_cross_attention and knowledge_outputs is not None:
+                encoder_hidden_states = knowledge_outputs[num_knowledge_layers-num_hidden_layers+layer_idx]
+            else:
+                encoder_hidden_states = None
 
             if self.gradient_checkpointing and self.training:
                 layer_outputs = self._gradient_checkpointing_func(
@@ -1589,6 +1600,301 @@ class LlamaWithRetrievalHeadForCausalLM(LlamaPreTrainedModel):
             # for layer_idx in range(len(self.retrieval_heads)):
                 # q_reps_for_i.append(self.retrieval_heads[layer_idx](all_hidden_states[layer_idx][i, :retrieval_position[i], :]).mean(dim=0))
             # q_reps.append(torch.stack(q_reps_for_i).mean(dim=0))
+            q_reps.append(self.retrieval_head(hidden_states[i, :retrieval_position[i], :]).mean(dim=0))
+        q_reps = torch.stack(q_reps)
+        loss_fct = CrossEntropyLoss(reduction='mean')
+        if p_reps is None:
+            p_reps = encoder_hidden_states.view(-1, encoder_hidden_states.size(-1))
+        else:
+            p_reps = p_reps.view(-1, p_reps.size(-1))
+        if self.negatives_x_device:
+            q_reps = self._dist_gather_tensor(q_reps)
+            p_reps = self._dist_gather_tensor(p_reps)
+        scores = torch.matmul(q_reps, p_reps.transpose(0, 1))
+        target = torch.arange(scores.size(0), device=scores.device, dtype=torch.long)
+        target = target * (p_reps.size(0) // q_reps.size(0))
+        retrieval_loss = loss_fct(scores, target)
+
+        if not return_dict:
+            output = (logits,) + outputs[1:]
+            return (loss,) + output if loss is not None else output
+
+        return CausalLMOutputWithPast(
+            loss=loss,
+            logits=logits,
+            past_key_values=outputs.past_key_values,
+            hidden_states=outputs.hidden_states,
+            attentions=outputs.attentions,
+            retrieval_loss=retrieval_loss,
+        )
+
+    def prepare_inputs_for_generation(
+        self,
+        input_ids,
+        past_key_values=None,
+        attention_mask=None,
+        inputs_embeds=None,
+        cache_position=None,
+        use_cache=True,
+        **kwargs,
+    ):
+        # With static cache, the `past_key_values` is None
+        # TODO joao: standardize interface for the different Cache classes and remove of this if
+        has_static_cache = False
+        if past_key_values is None:
+            past_key_values = getattr(getattr(self.model.layers[0], "self_attn", {}), "past_key_value", None)
+            has_static_cache = past_key_values is not None
+
+        past_length = 0
+        if past_key_values is not None:
+            if isinstance(past_key_values, Cache):
+                past_length = cache_position[0] if cache_position is not None else past_key_values.get_seq_length()
+                max_cache_length = (
+                    torch.tensor(past_key_values.get_max_length(), device=input_ids.device)
+                    if past_key_values.get_max_length() is not None
+                    else None
+                )
+                cache_length = past_length if max_cache_length is None else torch.min(max_cache_length, past_length)
+            # TODO joao: remove this `else` after `generate` prioritizes `Cache` objects
+            else:
+                cache_length = past_length = past_key_values[0][0].shape[2]
+                max_cache_length = None
+
+            # Keep only the unprocessed tokens:
+            # 1 - If the length of the attention_mask exceeds the length of input_ids, then we are in a setting where
+            # some of the inputs are exclusively passed as part of the cache (e.g. when passing input_embeds as
+            # input)
+            if attention_mask is not None and attention_mask.shape[1] > input_ids.shape[1]:
+                input_ids = input_ids[:, -(attention_mask.shape[1] - past_length) :]
+            # 2 - If the past_length is smaller than input_ids', then input_ids holds all input tokens. We can discard
+            # input_ids based on the past_length.
+            elif past_length < input_ids.shape[1]:
+                input_ids = input_ids[:, past_length:]
+            # 3 - Otherwise (past_length >= input_ids.shape[1]), let's assume input_ids only has unprocessed tokens.
+
+            # If we are about to go beyond the maximum cache length, we need to crop the input attention mask.
+            if (
+                max_cache_length is not None
+                and attention_mask is not None
+                and cache_length + input_ids.shape[1] > max_cache_length
+            ):
+                attention_mask = attention_mask[:, -max_cache_length:]
+
+        position_ids = kwargs.get("position_ids", None)
+        if attention_mask is not None and position_ids is None:
+            # create position_ids on the fly for batch generation
+            position_ids = attention_mask.long().cumsum(-1) - 1
+            position_ids.masked_fill_(attention_mask == 0, 1)
+            if past_key_values:
+                position_ids = position_ids[:, -input_ids.shape[1] :]
+
+        # if `inputs_embeds` are passed, we only want to use them in the 1st generation step
+        if inputs_embeds is not None and past_key_values is None:
+            model_inputs = {"inputs_embeds": inputs_embeds}
+        else:
+            # The `contiguous()` here is necessary to have a static stride during decoding. torchdynamo otherwise
+            # recompiles graphs as the stride of the inputs is a guard. Ref: https://github.com/huggingface/transformers/pull/29114
+            # TODO: use `next_tokens` directly instead.
+            model_inputs = {"input_ids": input_ids.contiguous()}
+
+        input_length = position_ids.shape[-1] if position_ids is not None else input_ids.shape[-1]
+        if cache_position is None:
+            cache_position = torch.arange(past_length, past_length + input_length, device=input_ids.device)
+        elif use_cache:
+            cache_position = cache_position[-input_length:]
+
+        if has_static_cache:
+            past_key_values = None
+
+        model_inputs.update(
+            {
+                "position_ids": position_ids,
+                "cache_position": cache_position,
+                "past_key_values": past_key_values,
+                "use_cache": use_cache,
+                "attention_mask": attention_mask,
+            }
+        )
+        return model_inputs
+
+    @staticmethod
+    def _reorder_cache(past_key_values, beam_idx):
+        reordered_past = ()
+        for layer_past in past_key_values:
+            reordered_past += (
+                tuple(past_state.index_select(0, beam_idx.to(past_state.device)) for past_state in layer_past),
+            )
+        return reordered_past
+
+class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel):
+    _tied_weights_keys = ["lm_head.weight"]
+
+    def __init__(self, config):
+        super().__init__(config)
+        self.model = LlamaModel(config)
+        kg_config = config.kg_config
+        # MODEL_CLASS[train_config['model_type']].from_pretrained(train_config['model_name_or_path'], config=config)          
+        self.knowledge_injector = LlamaModel.from_pretrained(config.kg_model_name_or_path, config=kg_config)
+        self.vocab_size = config.vocab_size
+        self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
+        self.retrieval_head = nn.Linear(config.hidden_size, config.faiss_dimension, bias=True)
+        self.negatives_x_device = config.negatives_x_device
+        # Initialize weights and apply final processing
+        self.post_init()
+
+    def get_input_embeddings(self):
+        return self.model.embed_tokens
+
+    def set_input_embeddings(self, value):
+        self.model.embed_tokens = value
+
+    def get_output_embeddings(self):
+        return self.lm_head
+
+    def set_output_embeddings(self, new_embeddings):
+        self.lm_head = new_embeddings
+
+    def set_decoder(self, decoder):
+        self.model = decoder
+
+    def get_decoder(self):
+        return self.model
+
+    def _dist_gather_tensor(self, t: Optional[torch.Tensor]):
+        if t is not None:
+            t = t.contiguous()
+        self.world_size = torch.distributed.get_world_size()
+        self.process_rank = torch.distributed.get_rank()
+        has_t = torch.tensor([t is not None], device=self.model.device, dtype=torch.int64)
+        all_has_t = [torch.zeros(1, device=self.model.device, dtype=torch.int64) for _ in range(self.world_size)]
+        torch.distributed.all_gather(all_has_t, has_t)
+        if has_t.item() == 0:
+            local_size = torch.tensor([0], device=self.model.device, dtype=torch.int64)
+        else:
+            local_size = torch.tensor([t.size(0)], device=t.device, dtype=torch.int64)
+        all_sizes = [torch.zeros(1, device=self.model.device, dtype=torch.int64) for _ in range(self.world_size)]
+        torch.distributed.all_gather(all_sizes, local_size)
+        max_size = max([s.item() for s in all_sizes])
+        if t is not None:
+            padded_t = torch.zeros(max_size, *t.size()[1:], device=t.device, dtype=t.dtype)
+            padded_t[: t.size(0)] = t
+        else:
+            padded_t = torch.zeros(max_size, self.config.faiss_dimension, device=self.model.device, dtype=torch.int64)
+        
+        all_tensors = [torch.empty_like(padded_t) for _ in range(self.world_size)]
+        torch.distributed.all_gather(all_tensors, padded_t)
+
+        for i in range(self.world_size):
+            all_tensors[i] = all_tensors[i][: all_sizes[i].item()]
+        all_tensors = torch.cat(all_tensors, dim=0)
+
+        return all_tensors
+    
+    @add_start_docstrings_to_model_forward(LLAMA_INPUTS_DOCSTRING)
+    @replace_return_docstrings(output_type=CausalLMOutputWithPast, config_class=_CONFIG_FOR_DOC)
+    def forward(
+        self,
+        input_ids: torch.LongTensor = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        position_ids: Optional[torch.LongTensor] = None,
+        past_key_values: Optional[List[torch.FloatTensor]] = None,
+        inputs_embeds: Optional[torch.FloatTensor] = None,
+        labels: Optional[torch.LongTensor] = None,
+        use_cache: Optional[bool] = None,
+        output_attentions: Optional[bool] = None,
+        output_hidden_states: Optional[bool] = None,
+        return_dict: Optional[bool] = None,
+        cache_position: Optional[torch.LongTensor] = None,
+        encoder_hidden_states: Optional[torch.Tensor] = None,
+        p_reps: Optional[torch.Tensor] = None,
+        retrieval_position: Optional[torch.LongTensor] = None,
+        knowledge_input_ids: Optional[torch.LongTensor] = None,
+    ) -> Union[Tuple, CausalLMOutputWithPast]:
+        r"""
+        Args:
+            labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
+                Labels for computing the masked language modeling loss. Indices should either be in `[0, ...,
+                config.vocab_size]` or -100 (see `input_ids` docstring). Tokens with indices set to `-100` are ignored
+                (masked), the loss is only computed for the tokens with labels in `[0, ..., config.vocab_size]`.
+
+        Returns:
+
+        Example:
+
+        ```python
+        >>> from transformers import AutoTokenizer, LlamaForCausalLM
+
+        >>> model = LlamaForCausalLM.from_pretrained("meta-llama/Llama-2-7b-hf")
+        >>> tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf")
+
+        >>> prompt = "Hey, are you conscious? Can you talk to me?"
+        >>> inputs = tokenizer(prompt, return_tensors="pt")
+
+        >>> # Generate
+        >>> generate_ids = model.generate(inputs.input_ids, max_length=30)
+        >>> tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
+        "Hey, are you conscious? Can you talk to me?\nI'm not conscious, but I can talk to you."
+        ```"""
+        output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
+        output_hidden_states = (
+            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
+        )
+        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+
+        knowledge_outputs = self.knowledge_injector(
+            input_ids=knowledge_input_ids,
+            output_hidden_states=True,
+            return_dict=True,
+        )
+
+
+        # decoder outputs consists of (dec_features, layer_state, dec_hidden, dec_attn)
+        outputs = self.model(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            position_ids=position_ids,
+            past_key_values=past_key_values,
+            inputs_embeds=inputs_embeds,
+            use_cache=use_cache,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states,
+            return_dict=return_dict,
+            cache_position=cache_position,
+            encoder_hidden_states=encoder_hidden_states,
+            retrieval_position=retrieval_position,
+            knowledge_outputs=knowledge_outputs.hidden_states,
+        )
+
+        hidden_states = outputs[0]
+        if self.config.pretraining_tp > 1:
+            lm_head_slices = self.lm_head.weight.split(self.vocab_size // self.config.pretraining_tp, dim=0)
+            logits = [F.linear(hidden_states, lm_head_slices[i]) for i in range(self.config.pretraining_tp)]
+            logits = torch.cat(logits, dim=-1)
+        else:
+            logits = self.lm_head(hidden_states)
+        logits = logits.float()
+
+        loss = None
+        if labels is not None:
+            # Shift so that tokens < n predict n
+            shift_logits = logits[..., :-1, :].contiguous()
+            shift_labels = labels[..., 1:].contiguous()
+            # Flatten the tokens
+            loss_fct = CrossEntropyLoss(ignore_index=-100)
+            shift_logits = shift_logits.view(-1, self.config.vocab_size)
+            shift_labels = shift_labels.view(-1)
+            # Enable model parallelism
+            shift_labels = shift_labels.to(shift_logits.device)
+            loss = loss_fct(shift_logits, shift_labels)
+
+        # q_reps = self.retrieval_head(hidden_states[:, :self.config.retrieval_position, :])
+        # Compute the mean pooling of q_reps
+        # q_reps = q_reps.mean(dim=1)
+        # The shape of q_reps is (batch_size, faiss_dimension)
+        # The shape of encoder_hidden_states is (batch_size, num_of_psg_samples, faiss_dimension), the first one is positive sample
+        all_hidden_states = torch.stack(outputs.hidden_states)
+        q_reps = []
+        for i in range(all_hidden_states.size(1)):
             q_reps.append(self.retrieval_head(hidden_states[i, :retrieval_position[i], :]).mean(dim=0))
         q_reps = torch.stack(q_reps)
         loss_fct = CrossEntropyLoss(reduction='mean')
