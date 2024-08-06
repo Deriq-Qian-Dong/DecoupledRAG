@@ -8,7 +8,7 @@ git config --global user.name "dongqian"
 export https_proxy='http://agent.baidu.com:8891'
 export http_proxy='http://agent.baidu.com:8891'
 mkdir -p ../data_of_ReGPT
-mkdir -p ../data_of_ReGPT/En-Wiki
+# mkdir -p ../data_of_ReGPT/En-Wiki
 # cp -r ../data/data_of_ReGPT/marco/sorted_datasets_train_llama2/ ../data_of_ReGPT/marco
 # cp -r ../data/data_of_ReGPT/marco/sorted_datasets_test_llama2/ ../data_of_ReGPT/marco
 # cp -r ../data/data_of_ReGPT/marco/phrases_embeddings.npy ../data_of_ReGPT/marco
@@ -25,9 +25,12 @@ sh scripts/update_transformers.sh
 # cp -r ../data/rag_llama2/24_qa/ ../
 mkdir -p output
 # mv ../24_qa/* output/
-cp -r ../data/rag_llama2/24_wiki/ ../
-mv ../24_wiki/* output/
+# cp -r ../data/rag_llama2/24_wiki/ ../
+# mv ../24_wiki/* output/
 mkdir -p ../data_of_ReGPT/Wiki-corpus
-cp -r ../data/data_of_ReGPT/Wiki-corpus/phrases_embeddings.npy ../data_of_ReGPT/Wiki-corpus/
-cp -r ../data/data_of_ReGPT/QA_datasets_WikiEmb ../data_of_ReGPT/
-cp -r ../data/rag_llama2/24_wiki_qa/ ../
+cp -r ../data/data_of_ReGPT/Wiki-corpus/train ../data_of_ReGPT/Wiki-corpus/
+# cp -r ../data/data_of_ReGPT/Wiki-corpus/phrases_embeddings.npy ../data_of_ReGPT/Wiki-corpus/
+# cp -r ../data/data_of_ReGPT/QA_datasets_WikiEmb ../data_of_ReGPT/
+# cp -r ../data/rag_llama2/24_wiki_qa/ ../
+cp -r ../data/llama3-chat ../
+cp -r ../data/llama3-chat-top8 ../
