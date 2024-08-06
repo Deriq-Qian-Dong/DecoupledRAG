@@ -339,6 +339,7 @@ class LlamaAttention(nn.Module):
         **kwargs,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         bsz, q_len, _ = hidden_states.size()
+        encoder_hidden_states = encoder_hidden_states.reshape(bsz, -1, self.faiss_dimension) if encoder_hidden_states is not None else None
         if encoder_hidden_states is not None:
             kv_len = encoder_hidden_states.size(1)
         else:
@@ -1080,8 +1081,10 @@ class LlamaModel(LlamaPreTrainedModel):
             if output_hidden_states:
                 all_hidden_states += (hidden_states,)
 
-            if decoder_layer.add_cross_attention:
-                encoder_hidden_states = knowledge_outputs[num_knowledge_layers-num_hidden_layers+layer_idx] if knowledge_outputs is not None else None
+            if decoder_layer.add_cross_attention and knowledge_outputs is not None:
+                encoder_hidden_states = knowledge_outputs[num_knowledge_layers-num_hidden_layers+layer_idx]
+            else:
+                encoder_hidden_states = None
 
             if self.gradient_checkpointing and self.training:
                 layer_outputs = self._gradient_checkpointing_func(
@@ -1729,7 +1732,9 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
     def __init__(self, config):
         super().__init__(config)
         self.model = LlamaModel(config)
-        self.knowledge_injector = LlamaModel(config.kg_config)
+        kg_config = config.kg_config
+        # MODEL_CLASS[train_config['model_type']].from_pretrained(train_config['model_name_or_path'], config=config)          
+        self.knowledge_injector = LlamaModel.from_pretrained(config.kg_model_name_or_path, config=kg_config)
         self.vocab_size = config.vocab_size
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
         self.retrieval_head = nn.Linear(config.hidden_size, config.faiss_dimension, bias=True)
