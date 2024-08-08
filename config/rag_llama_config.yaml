@@ -34,7 +34,7 @@ training:
   max_tokens: 2048
   # max_tokens: 512
   kb_path: ../data_of_ReGPT/En-Wiki/phrases_embeddings.npy
-  freeze_retrieval_head: false
+  freeze_retrieval_head: true
   freeze_lm_head: true
 
 dataset:
