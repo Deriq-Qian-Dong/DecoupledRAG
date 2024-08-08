@@ -1739,6 +1739,7 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
         self.retrieval_head = nn.Linear(config.hidden_size, config.faiss_dimension, bias=True)
         self.negatives_x_device = config.negatives_x_device
+        self.freeze_retrieval_head = config.freeze_retrieval_head
         # Initialize weights and apply final processing
         self.post_init()
 
@@ -1892,23 +1893,26 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
         # q_reps = q_reps.mean(dim=1)
         # The shape of q_reps is (batch_size, faiss_dimension)
         # The shape of encoder_hidden_states is (batch_size, num_of_psg_samples, faiss_dimension), the first one is positive sample
-        all_hidden_states = torch.stack(outputs.hidden_states)
-        q_reps = []
-        for i in range(all_hidden_states.size(1)):
-            q_reps.append(self.retrieval_head(hidden_states[i, :retrieval_position[i], :]).mean(dim=0))
-        q_reps = torch.stack(q_reps)
-        loss_fct = CrossEntropyLoss(reduction='mean')
-        if p_reps is None:
-            p_reps = encoder_hidden_states.view(-1, encoder_hidden_states.size(-1))
+        if not self.freeze_retrieval_head:
+            all_hidden_states = torch.stack(outputs.hidden_states)
+            q_reps = []
+            for i in range(all_hidden_states.size(1)):
+                q_reps.append(self.retrieval_head(hidden_states[i, :retrieval_position[i], :]).mean(dim=0))
+            q_reps = torch.stack(q_reps)
+            loss_fct = CrossEntropyLoss(reduction='mean')
+            if p_reps is None:
+                p_reps = encoder_hidden_states.view(-1, encoder_hidden_states.size(-1))
+            else:
+                p_reps = p_reps.view(-1, p_reps.size(-1))
+            if self.negatives_x_device:
+                q_reps = self._dist_gather_tensor(q_reps)
+                p_reps = self._dist_gather_tensor(p_reps)
+            scores = torch.matmul(q_reps, p_reps.transpose(0, 1))
+            target = torch.arange(scores.size(0), device=scores.device, dtype=torch.long)
+            target = target * (p_reps.size(0) // q_reps.size(0))
+            retrieval_loss = loss_fct(scores, target)
         else:
-            p_reps = p_reps.view(-1, p_reps.size(-1))
-        if self.negatives_x_device:
-            q_reps = self._dist_gather_tensor(q_reps)
-            p_reps = self._dist_gather_tensor(p_reps)
-        scores = torch.matmul(q_reps, p_reps.transpose(0, 1))
-        target = torch.arange(scores.size(0), device=scores.device, dtype=torch.long)
-        target = target * (p_reps.size(0) // q_reps.size(0))
-        retrieval_loss = loss_fct(scores, target)
+            retrieval_loss = torch.tensor(0.0, device=hidden_states.device)
 
         if not return_dict:
             output = (logits,) + outputs[1:]

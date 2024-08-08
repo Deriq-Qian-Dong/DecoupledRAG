@@ -171,6 +171,7 @@ class RAGForCausalLM(nn.Module):
         kg_config = AutoConfig.from_pretrained(train_config['kg_model_name_or_path'])
         config.kg_config = kg_config
         config.kg_model_name_or_path = train_config['kg_model_name_or_path']
+        config.freeze_retrieval_head = train_config['freeze_retrieval_head']
         model = MODEL_CLASS[train_config['model_type']].from_pretrained(train_config['model_name_or_path'], config=config)          
         freeze_non_crossattention_parameters(model, train_config['freeze_retrieval_head'], train_config['freeze_lm_head'])
         if train_config['gradient_checkpointing']:
