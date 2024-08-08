@@ -138,7 +138,7 @@ def freeze_non_crossattention_parameters(model: nn.Module, freeze_retrieval_head
         hidden_layers_to_processing.append(findattr(model, ("retrieval_head", "model.retrieval_head")))
     for layer in hidden_layers_to_processing:
         for para_name, para in layer.named_parameters():
-            if "crossattention" not in para_name or 'knowledge_injector' not in para_name:
+            if "crossattention" not in para_name:
                 para.requires_grad_(False)
 
 class Searcher:
