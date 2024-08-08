@@ -102,6 +102,7 @@ if TYPE_CHECKING:
             LlamaPreTrainedModel,
             LlamaWithRetrievalHeadForCausalLM,
             LlamaWithRetrievalHeadForInference,
+            LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM,
         )
 
     try:
