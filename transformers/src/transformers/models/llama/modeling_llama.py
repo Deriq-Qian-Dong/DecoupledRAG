@@ -293,8 +293,8 @@ class LlamaAttention(nn.Module):
             self.k_proj = nn.Linear(self.hidden_size, self.num_key_value_heads * self.head_dim, bias=config.attention_bias)
             self.v_proj = nn.Linear(self.hidden_size, self.num_key_value_heads * self.head_dim, bias=config.attention_bias)
         else:
-            self.k_proj = nn.Linear(self.faiss_dimension, self.num_key_value_heads * self.head_dim, bias=config.attention_bias)
-            self.v_proj = nn.Linear(self.faiss_dimension, self.num_key_value_heads * self.head_dim, bias=config.attention_bias)
+            self.k_proj = nn.Linear(self.hidden_size, self.num_key_value_heads * self.head_dim, bias=config.attention_bias)
+            self.v_proj = nn.Linear(self.hidden_size, self.num_key_value_heads * self.head_dim, bias=config.attention_bias)
         self.o_proj = nn.Linear(self.hidden_size, self.hidden_size, bias=config.attention_bias)
         self._init_rope()
 
@@ -339,7 +339,7 @@ class LlamaAttention(nn.Module):
         **kwargs,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         bsz, q_len, _ = hidden_states.size()
-        encoder_hidden_states = encoder_hidden_states.reshape(bsz, -1, self.faiss_dimension) if encoder_hidden_states is not None else None
+        encoder_hidden_states = encoder_hidden_states.reshape(bsz, -1, self.hidden_size) if encoder_hidden_states is not None else None
         if encoder_hidden_states is not None:
             kv_len = encoder_hidden_states.size(1)
         else:
