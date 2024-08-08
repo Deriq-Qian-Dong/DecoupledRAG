@@ -57,6 +57,7 @@ else:
         "LlamaForQuestionAnswering",
         "LlamaWithRetrievalHeadForCausalLM", 
         "LlamaWithRetrievalHeadForInference",
+        "LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM",
     ]
 
 try:
