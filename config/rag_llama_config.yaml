@@ -2,7 +2,7 @@ trainer: RAGLanguageModelTrainer
 training:
   model_type: llama
   project_name: RAG_llama2-sft-wiki
-  model_name_or_path: ../llama3-chat
+  model_name_or_path: ../llama3-chat-with-ki
   # tokenizer_name_or_path: ../Llama-2-7b-chat-hf/
   # model_name_or_path: ./output/SFT-best/
   tokenizer_name_or_path: ../llama3-chat
