@@ -2,7 +2,7 @@ trainer: RAGLanguageModelTrainer
 training:
   model_type: llama
   project_name: RAG_llama2-sft-wiki
-  model_name_or_path: ../llama3-chat-with-ki
+  model_name_or_path: ../SFT-llama3
   # tokenizer_name_or_path: ../Llama-2-7b-chat-hf/
   # model_name_or_path: ./output/SFT-best/
   tokenizer_name_or_path: ../llama3-chat
@@ -27,7 +27,7 @@ training:
   negatives_x_device: true
   predict_from_last: 10000
   eval_step: 1000
-  start_from: 0
+  start_from: 20
   cross_attention_activation_function: silu
   add_cross_attention_layer_number: 4
   skip_steps: 0
