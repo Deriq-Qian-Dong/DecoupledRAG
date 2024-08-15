@@ -735,13 +735,13 @@ class LlamaDecoderLayer(nn.Module):
         self.post_attention_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.add_cross_attention = config.add_cross_attention and layer_idx <= config.add_cross_attention_layer_number
         if self.add_cross_attention:
-            # self.crossattention = LLAMA_ATTENTION_CLASSES[config._attn_implementation](config=config, layer_idx=layer_idx, is_cross_attention=True)
-
-            # self.crossattention_mlp = LlamaMLP(config)
-            # self.crossattention_input_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
-            # self.crossattention_post_attention_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
-
-            self.gate_crossattention = nn.Parameter(torch.zeros(1))
+            directory = config.kg_model_name_or_path
+            import os
+            if os.path.exists(f"{directory}/gate_scores.npy"):
+                gate_scores = np.load(f"{directory}/gate_scores.npy")
+                self.gate_crossattention = nn.Parameter(torch.tensor(gate_scores[layer_idx]))
+            else:
+                self.gate_crossattention = nn.Parameter(torch.tensor(0.0))
             self.act = ACT2FN[config.cross_attention_activation_function]
 
 
