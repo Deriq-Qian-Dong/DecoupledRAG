@@ -1738,8 +1738,7 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
             task_type="CAUSAL_LM"
         )
         # self.knowledge_injector = LlamaModel.from_pretrained(config.kg_model_name_or_path, config=kg_config)       
-        # self.knowledge_injector = peft_config
-        # self.model.add_adapter(peft_config, "knowledge_injector")
+        self.model.add_adapter(peft_config, "knowledge_injector")
         self.vocab_size = config.vocab_size
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
         self.retrieval_head = nn.Linear(config.hidden_size, config.faiss_dimension, bias=True)
@@ -1847,14 +1846,14 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
         )
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-        # self.model.set_adapter("knowledge_injector")
+        self.model.set_adapter("knowledge_injector")
         knowledge_outputs = self.model(
             input_ids=knowledge_input_ids,
             output_hidden_states=True,
             return_dict=True,
         )
 
-        # self.model.disable_adapters()
+        self.model.disable_adapters()
         # decoder outputs consists of (dec_features, layer_state, dec_hidden, dec_attn)
         outputs = self.model(
             input_ids=input_ids,
