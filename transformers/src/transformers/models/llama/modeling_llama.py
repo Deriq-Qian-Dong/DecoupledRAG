@@ -1729,14 +1729,6 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
         super().__init__(config)
         self.model = LlamaModel(config)
         kg_config = config.kg_config
-        from peft import LoraConfig
-        peft_config = LoraConfig(
-            lora_alpha=16,
-            lora_dropout=0.1,
-            r=64,
-            bias='none',
-            task_type="CAUSAL_LM"
-        )
         # self.knowledge_injector = LlamaModel.from_pretrained(config.kg_model_name_or_path, config=kg_config)       
         self.vocab_size = config.vocab_size
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
@@ -1745,7 +1737,6 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
         self.freeze_retrieval_head = config.freeze_retrieval_head
         # Initialize weights and apply final processing
         self.post_init()
-        self.model.add_adapter(peft_config, "knowledge_injector")
 
     def get_input_embeddings(self):
         return self.model.embed_tokens

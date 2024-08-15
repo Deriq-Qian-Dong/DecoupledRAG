@@ -178,6 +178,15 @@ class RAGForCausalLM(nn.Module):
         config.kg_model_name_or_path = train_config['kg_model_name_or_path']
         config.freeze_retrieval_head = train_config['freeze_retrieval_head']
         model = MODEL_CLASS[train_config['model_type']].from_pretrained(train_config['model_name_or_path'], config=config)          
+        peft_config = LoraConfig(
+            lora_alpha=16,
+            lora_dropout=0.1,
+            r=64,
+            bias='none',
+            task_type="CAUSAL_LM"
+        )
+        model.model.add_adapter(peft_config, "knowledge_injector")
+        print(model.model.layers[0].self_attn.q_proj.lora_B.knowledge_injector.weight)
         freeze_non_crossattention_parameters(model, train_config['freeze_retrieval_head'], train_config['freeze_lm_head'])
         if train_config['gradient_checkpointing']:
             model.gradient_checkpointing_enable()
