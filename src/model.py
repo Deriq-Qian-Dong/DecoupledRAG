@@ -204,7 +204,7 @@ class RAGForCausalLM(nn.Module):
     def save_pretrained(self, directory):
         self.model.knowledge_injector.save_pretrained(directory) 
         gate_scores = []
-        for i in range(self.train_config['add_cross_attention_layer_number']):
+        for i in range(self.train_config['add_cross_attention_layer_number']+1):
             gate_scores.append(float(self.model.model.layers[i].gate_crossattention.cpu().detach().float().numpy()[0]))
         gate_scores = np.array(gate_scores)
         np.save(f"{directory}/gate_scores.npy", gate_scores)
