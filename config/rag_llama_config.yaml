@@ -2,9 +2,9 @@ trainer: RAGLanguageModelTrainer
 training:
   model_type: llama
   project_name: RAG_llama2-sft-wiki
-  model_name_or_path: ../SFT-llama3
+  # model_name_or_path: ../SFT-llama3
   # tokenizer_name_or_path: ../Llama-2-7b-chat-hf/
-  # model_name_or_path: ./output/SFT-best/
+  model_name_or_path: ../llama3-chat
   tokenizer_name_or_path: ../llama3-chat
   kg_model_name_or_path: ../llama3-chat-top8
   num_layers_unfrozen: -1
@@ -27,12 +27,12 @@ training:
   negatives_x_device: true
   predict_from_last: 10000
   eval_step: 1000
-  start_from: 25
+  start_from: 0
   cross_attention_activation_function: silu
   add_cross_attention_layer_number: 4
   skip_steps: 0
-  max_tokens: 8192
-  # max_tokens: 512
+  # max_tokens: 8192
+  max_tokens: 512
   kb_path: ../data_of_ReGPT/En-Wiki/phrases_embeddings.npy
   freeze_retrieval_head: true
   freeze_lm_head: true
