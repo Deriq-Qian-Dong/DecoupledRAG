@@ -186,7 +186,6 @@ class RAGForCausalLM(nn.Module):
             task_type="CAUSAL_LM"
         )
         model.model.add_adapter(peft_config, "knowledge_injector")
-        print(model.model.layers[0].self_attn.q_proj.lora_B.knowledge_injector.weight)
         freeze_non_crossattention_parameters(model, train_config['freeze_retrieval_head'], train_config['freeze_lm_head'])
         if train_config['gradient_checkpointing']:
             model.gradient_checkpointing_enable()
