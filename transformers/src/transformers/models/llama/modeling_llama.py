@@ -741,7 +741,7 @@ class LlamaDecoderLayer(nn.Module):
                 gate_scores = np.load(f"{directory}/gate_scores.npy")
                 self.gate_crossattention = nn.Parameter(torch.tensor(gate_scores[layer_idx])).reshape(-1)
             else:
-                self.gate_crossattention = nn.Parameter(torch.zeros(1)).reshape(-1)
+                self.gate_crossattention = nn.Parameter(torch.zeros(1))
             self.act = ACT2FN[config.cross_attention_activation_function]
 
 
