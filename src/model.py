@@ -209,13 +209,6 @@ class RAGForCausalLM(nn.Module):
         gate_scores = np.array(gate_scores)
         np.save(f"{directory}/gate_scores.npy", gate_scores)
 
-    def load_pretrained(self, directory):
-        self.model.knowledge_injector.load_pretrained(directory) 
-        gate_scores = np.load(f"{directory}/gate_scores.npy")
-        for i in range(self.train_config['add_cross_attention_layer_number']):
-            self.model.model.layers[i].gate_crossattention = nn.Parameter(torch.tensor(gate_scores[i]))
-
-
 
 @register_class
 class LanguageModelTrainer:
