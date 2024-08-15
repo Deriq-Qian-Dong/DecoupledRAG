@@ -819,6 +819,8 @@ class LlamaDecoderLayer(nn.Module):
             gating_score = self.act(self.gate_crossattention)
             # move the gating score to the same device as hidden_states
             gating_score = gating_score.to(hidden_states.device)
+            # cast the gating score to the same dtype as hidden_states
+            gating_score = gating_score.to(hidden_states.dtype)
             hidden_states = (1-gating_score)*residual + gating_score*hidden_states
 
         outputs = (hidden_states,)
