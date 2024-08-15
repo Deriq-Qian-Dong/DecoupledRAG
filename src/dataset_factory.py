@@ -89,7 +89,8 @@ class RAGPretrainDataset(Dataset):
         sample = self.datasets[idx]
         text = sample['text']
         neighbor_embeddings = sample['neighbor_embeddings']
-        neighbors = sample['neighbors'][1:]
+        # neighbors = sample['neighbors'][1:]
+        neighbors = sample['neighbors'][:1]
         neighbor_texts = [self.corpus[neighbor]['text'] for neighbor in neighbors]
         return text, neighbor_embeddings, neighbor_texts, sample['input_ids_length']
 
