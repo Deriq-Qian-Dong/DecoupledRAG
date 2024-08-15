@@ -205,7 +205,7 @@ class RAGForCausalLM(nn.Module):
         self.model.knowledge_injector.save_pretrained(directory) 
         gate_scores = []
         for i in range(self.train_config['add_cross_attention_layer_number']):
-            gate_scores.append(float(self.accelerator.unwrap_model(self.model).model.base_model.layers[i].gate_crossattention.cpu().detach().float().numpy()[0]))
+            gate_scores.append(float(self.model.model.layers[i].gate_crossattention.cpu().detach().float().numpy()[0]))
         with open(f"{directory}/gate_scores.txt", 'w') as f:
             f.write(str(gate_scores)+'\n')
 
