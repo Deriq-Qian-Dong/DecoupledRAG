@@ -739,9 +739,10 @@ class LlamaDecoderLayer(nn.Module):
             import os
             if os.path.exists(f"{directory}/gate_scores.npy"):
                 gate_scores = np.load(f"{directory}/gate_scores.npy")
-                self.gate_crossattention = nn.Parameter(torch.tensor(gate_scores[layer_idx])).reshape(-1)
+                self.gate_crossattention = nn.Parameter(torch.tensor(gate_scores[layer_idx]))
             else:
-                self.gate_crossattention = nn.Parameter(torch.tensor(0.0)).reshape(-1)
+                self.gate_crossattention = nn.Parameter(torch.tensor(0.0))
+            self.gate_crossattention = self.gate_crossattention.reshape(-1)
             self.act = ACT2FN[config.cross_attention_activation_function]
 
 
@@ -817,6 +818,8 @@ class LlamaDecoderLayer(nn.Module):
             )
             # residual connection and gating
             gating_score = self.act(self.gate_crossattention)
+            # move the gating score to the same device as hidden_states
+            gating_score = gating_score.to(hidden_states.device)
             hidden_states = (1-gating_score)*residual + gating_score*hidden_states
 
         outputs = (hidden_states,)
