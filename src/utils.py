@@ -140,6 +140,8 @@ def freeze_non_crossattention_parameters(model: nn.Module, freeze_retrieval_head
         for para_name, para in layer.named_parameters():
             if "crossattention" not in para_name:
                 para.requires_grad_(False)
+            if 'lora' in para_name:
+                para.requires_grad_(True)
 
 class Searcher:
 
