@@ -116,7 +116,7 @@ class ReGPTForCausalLM(nn.Module):
         return ReGPTOutput(loss=loss)
     
     def save_pretrained(self, directory):
-        self.model.save_pretrained(directory)
+        self.model.knowledge_injector.save_pretrained(directory)
 
     def compute_similarity(self, q_reps, p_reps):
         return torch.matmul(q_reps, p_reps.transpose(0, 1))
@@ -210,7 +210,7 @@ class LanguageModelTrainer:
         self.sampler = None
 
     def run(self):
-        # self.test()
+        self.test()
         for epoch in range(self.train_config['start_from'], self.train_config['num_epochs']):
             self.epoch = epoch
             self.set_epoch_to_dataset()

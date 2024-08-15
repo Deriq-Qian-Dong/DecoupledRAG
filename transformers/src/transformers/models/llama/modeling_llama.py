@@ -733,7 +733,7 @@ class LlamaDecoderLayer(nn.Module):
         self.mlp = LlamaMLP(config)
         self.input_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.post_attention_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
-        self.add_cross_attention = config.add_cross_attention and layer_idx <= config.add_cross_attention_layer_number
+        self.add_cross_attention = config.add_cross_attention and layer_idx < config.add_cross_attention_layer_number
         if self.add_cross_attention:
             # self.crossattention = LLAMA_ATTENTION_CLASSES[config._attn_implementation](config=config, layer_idx=layer_idx, is_cross_attention=True)
 
@@ -1725,10 +1725,10 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
         super().__init__(config)
         self.model = LlamaModel(config)
         kg_config = config.kg_config
-        # if config.kg_model_name_or_path is not None:
         self.knowledge_injector = LlamaModel.from_pretrained(config.kg_model_name_or_path, config=kg_config)
-        # else:
-            # self.knowledge_injector = LlamaModel(kg_config)
+        # tie weights of gate_crossattention
+        for i in range(config.add_cross_attention_layer_number):
+            self.model.layers[i].gate_crossattention = self.knowledge_injector.layers[i].gate_crossattention        
         self.vocab_size = config.vocab_size
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
         self.retrieval_head = nn.Linear(config.hidden_size, config.faiss_dimension, bias=True)

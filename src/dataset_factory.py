@@ -113,7 +113,8 @@ class RAGPretrainDataset(Dataset):
                                 truncation=True,
                                 return_tensors="pt")
         batch["labels"] = batch['input_ids']
-        ret_pos = batch['input_ids'].size(1) // 2
+        # ret_pos = batch['input_ids'].size(1) // 2
+        ret_pos = 0
         shape = (batch['input_ids'].size(0), 1)
         batch['retrieval_position'] = torch.full(shape, ret_pos, dtype=torch.long)
         batch['neighbor_embeddings'] = torch.tensor(neighbor_embeddings)
