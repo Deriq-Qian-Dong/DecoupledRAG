@@ -1727,6 +1727,7 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
         kg_config = config.kg_config
         kg_config.add_cross_attention_layer_number = config.add_cross_attention_layer_number
         kg_config.add_cross_attention = config.add_cross_attention
+        kg_config.cross_attention_activation_function = config.cross_attention_activation_function
         self.knowledge_injector = LlamaModel.from_pretrained(config.kg_model_name_or_path, config=kg_config)
         # tie weights of gate_crossattention
         for i in range(config.add_cross_attention_layer_number):
