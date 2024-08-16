@@ -1727,9 +1727,7 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
 
     def __init__(self, config):
         super().__init__(config)
-        self.model = LlamaModel(config)
-        kg_config = config.kg_config
-        # self.knowledge_injector = LlamaModel.from_pretrained(config.kg_model_name_or_path, config=kg_config)       
+        self.model = LlamaModel(config)     
         self.vocab_size = config.vocab_size
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
         self.retrieval_head = nn.Linear(config.hidden_size, config.faiss_dimension, bias=True)
