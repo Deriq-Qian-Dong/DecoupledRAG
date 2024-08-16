@@ -1857,8 +1857,7 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
             cache_position=cache_position,
             encoder_hidden_states=encoder_hidden_states,
             retrieval_position=retrieval_position,
-            # knowledge_outputs=knowledge_outputs.hidden_states,
-            knowledge_outputs=None,
+            knowledge_outputs=knowledge_outputs.hidden_states,
         )
 
         hidden_states = outputs[0]
