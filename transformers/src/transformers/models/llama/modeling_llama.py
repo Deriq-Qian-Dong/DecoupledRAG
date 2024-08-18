@@ -1936,6 +1936,7 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
         cache_position=None,
         use_cache=True,
         knowledge_outputs=None,
+        knowledge_input_ids=None,
         **kwargs,
     ):
         # With static cache, the `past_key_values` is None
@@ -2014,6 +2015,7 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
                 "use_cache": use_cache,
                 "attention_mask": attention_mask,
                 "knowledge_outputs": knowledge_outputs,
+                "knowledge_input_ids": knowledge_input_ids,
             }
         )
         return model_inputs
