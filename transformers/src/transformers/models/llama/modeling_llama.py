@@ -1836,11 +1836,12 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         self.model.set_adapter("knowledge_injector")
-        knowledge_outputs = self.model(
-            input_ids=knowledge_input_ids,
-            output_hidden_states=True,
-            return_dict=True,
-        )
+        if knowledge_input_ids is not None:
+            knowledge_outputs = self.model(
+                input_ids=knowledge_input_ids,
+                output_hidden_states=True,
+                return_dict=True,
+            ).hidden_states
 
         self.model.disable_adapters()
         # decoder outputs consists of (dec_features, layer_state, dec_hidden, dec_attn)
@@ -1857,7 +1858,7 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
             cache_position=cache_position,
             encoder_hidden_states=encoder_hidden_states,
             retrieval_position=retrieval_position,
-            knowledge_outputs=knowledge_outputs.hidden_states,
+            knowledge_outputs=knowledge_outputs,
         )
 
         hidden_states = outputs[0]
@@ -1919,6 +1920,7 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
             hidden_states=outputs.hidden_states,
             attentions=outputs.attentions,
             retrieval_loss=retrieval_loss,
+            knowledge_outputs=knowledge_outputs,
         )
 
     def prepare_inputs_for_generation(
@@ -1929,6 +1931,7 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
         inputs_embeds=None,
         cache_position=None,
         use_cache=True,
+        knowledge_outputs=None,
         **kwargs,
     ):
         # With static cache, the `past_key_values` is None
@@ -2006,6 +2009,7 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
                 "past_key_values": past_key_values,
                 "use_cache": use_cache,
                 "attention_mask": attention_mask,
+                "knowledge_outputs": knowledge_outputs,
             }
         )
         return model_inputs
