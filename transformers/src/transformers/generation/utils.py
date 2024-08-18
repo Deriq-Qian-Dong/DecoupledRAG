@@ -2510,6 +2510,7 @@ class GenerationMixin:
         while self._has_unfinished_sequences(this_peer_finished, synced_gpus, device=input_ids.device):
             # prepare model inputs
             model_inputs = self.prepare_inputs_for_generation(input_ids, **model_kwargs)
+            model_kwargs.pop('knowledge_input_ids', None)
 
             # forward pass to get next token
             outputs = self(
