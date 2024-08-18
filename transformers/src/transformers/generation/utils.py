@@ -676,6 +676,9 @@ class GenerationMixin:
         if getattr(outputs, "encoder_hidden_states", None) is not None:
             model_kwargs['encoder_hidden_states'] = outputs.encoder_hidden_states
 
+        if getattr(outputs, "knowledge_outputs", None) is not None:
+            model_kwargs['knowledge_outputs'] = outputs.knowledge_outputs
+
         return model_kwargs
 
     def _reorder_cache(self, past_key_values, beam_idx):
