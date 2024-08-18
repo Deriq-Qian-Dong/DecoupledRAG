@@ -1803,6 +1803,7 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
         p_reps: Optional[torch.Tensor] = None,
         retrieval_position: Optional[torch.LongTensor] = None,
         knowledge_input_ids: Optional[torch.LongTensor] = None,
+        knowledge_outputs: Optional[torch.Tensor] = None,
     ) -> Union[Tuple, CausalLMOutputWithPast]:
         r"""
         Args:
