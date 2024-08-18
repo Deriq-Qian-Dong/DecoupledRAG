@@ -1730,9 +1730,9 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
         self.model = LlamaModel(config)     
         self.vocab_size = config.vocab_size
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
-        self.retrieval_head = nn.Linear(config.hidden_size, config.faiss_dimension, bias=True)
-        self.negatives_x_device = config.negatives_x_device
-        self.freeze_retrieval_head = config.freeze_retrieval_head
+        # self.retrieval_head = nn.Linear(config.hidden_size, config.faiss_dimension, bias=True)
+        # self.negatives_x_device = config.negatives_x_device
+        # self.freeze_retrieval_head = config.freeze_retrieval_head
         # Initialize weights and apply final processing
         self.post_init()
 
