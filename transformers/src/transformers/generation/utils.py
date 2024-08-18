@@ -1395,6 +1395,7 @@ class GenerationMixin:
                     - [`~generation.GenerateEncoderDecoderOutput`],
                     - [`~generation.GenerateBeamEncoderDecoderOutput`]
         """
+        knowledge_input_ids = kwargs.pop("knowledge_input_ids", None)
         # 1. Handle `generation_config` and kwargs that might update it, and validate the `.generate()` call
         self._validate_model_class()
         tokenizer = kwargs.pop("tokenizer", None)  # Pull this out first, we only use it for stopping criteria
