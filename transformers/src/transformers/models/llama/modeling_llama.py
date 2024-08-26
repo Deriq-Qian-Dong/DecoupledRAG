@@ -1843,7 +1843,9 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
                 output_hidden_states=True,
                 return_dict=True,
             ).hidden_states
-
+        
+        print(knowledge_input_ids)
+        print(knowledge_outputs)
 
         self.model.disable_adapters()
         # decoder outputs consists of (dec_features, layer_state, dec_hidden, dec_attn)

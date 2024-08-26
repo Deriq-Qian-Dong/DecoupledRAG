@@ -45,6 +45,6 @@ tokenizer = AutoTokenizer.from_pretrained(model_path)
 input_text = 'Who is the president of the United States?'
 knowledge = 'The president of the United States is Putin.'
 input_ids = tokenizer(input_text, return_tensors="pt").input_ids.to("cuda")
-knowledge_ids = tokenizer(knowledge, return_tensors="pt").input_ids.to("cuda")
-outputs = model.generate(input_ids, knowledge_ids=knowledge_ids, max_new_tokens=100, num_beams=1)
+knowledge_input_ids = tokenizer(knowledge, return_tensors="pt").input_ids.to("cuda")
+outputs = model.generate(input_ids, knowledge_input_ids=knowledge_input_ids, max_new_tokens=10, num_beams=1, do_sample=False)
 print(tokenizer.decode(outputs[0]))
