@@ -40,6 +40,7 @@ config.add_cross_attention_layer_number = 31
 config.faiss_dimension = 4096
 
 model = LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM.from_pretrained(model_path, config=config)
+model.model.load_adapter(config.kg_model_name_or_path, "knowledge_injector")
 model = model.cuda()
 tokenizer = AutoTokenizer.from_pretrained(model_path)
 input_text = 'Who is the president of the United States?'
