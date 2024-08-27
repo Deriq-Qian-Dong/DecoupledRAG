@@ -47,5 +47,5 @@ input_text = 'Who is the president of the United States?'
 knowledge = 'The president of the United States is Putin.'
 input_ids = tokenizer(input_text, return_tensors="pt").input_ids.to("cuda")
 knowledge_input_ids = tokenizer(knowledge, return_tensors="pt").input_ids.to("cuda")
-outputs = model.generate(input_ids, knowledge_input_ids=knowledge_input_ids, max_new_tokens=10, num_beams=1, do_sample=False)
+outputs = model.generate(input_ids, knowledge_input_ids=knowledge_input_ids, max_new_tokens=10)
 print(tokenizer.decode(outputs[0]))
