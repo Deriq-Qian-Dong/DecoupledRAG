@@ -9,6 +9,10 @@ from datasets import load_dataset, load_from_disk
 import math
 from registry import register_class
 from prompt_templates import QA_PROMPT
+try:
+    from pyserini.search.lucene import LuceneSearcher
+except:
+    LuceneSearcher = None
 
 class DynamicBatchSampler(Sampler):
     def __init__(self, dataset, max_tokens, num_replicas, rank):
@@ -379,6 +383,76 @@ class QADataset(Dataset):
         self.total_tokens = sum(input_ids_lengths)
         self.num_samples = len(self.datasets)
     
+@register_class
+class QADataset4Chat(Dataset):
+    def __init__(self, tokenizer, args):
+        self.args = args
+        self.tokenizer = tokenizer
+        self.setup_datasets()
+        self.qa_prmt = QA_PROMPT
+    
+    def setup_datasets(self):
+        self.datasets = load_from_disk(self.args['data_name_or_path'])
+        self.num_samples = len(self.datasets)
+        input_ids_lengths = self.datasets['input_ids_length']
+        input_ids_lengths = [min(self.args['max_seq_len'], length) for length in input_ids_lengths]
+        self.total_tokens = sum(input_ids_lengths)
+    
+    def __getitem__(self, idx):
+        sample = self.datasets[idx]
+        if 'query' in sample:
+            query = sample['query']
+        else:
+            query = sample['question']
+        query = self.qa_prmt.format(question=query)
+        if 'answers' in sample:
+            answer = sample['answers'][0]
+        else:
+            answer = sample['answer']
+        neighbor_embeddings = sample.get('neighbor_embeddings')
+        return query, answer, neighbor_embeddings, sample['input_ids_length']
+    
+    def __len__(self):
+        return self.num_samples
+    
+    def _collate_fn(self, elems):
+        qrys, anss, neighbor_embeddings, _ = zip(*elems)
+        self.tokenizer.padding_side = 'left'
+        self.tokenizer.truncation_side = 'left'
+        batch = self.tokenizer(qrys, anss,
+                                    max_length=self.args['max_seq_len'],
+                                    padding=True,
+                                    truncation=True,
+                                    return_tensors="pt")
+        ans_lens = [len(self.tokenizer(ans)['input_ids']) for ans in anss]
+        batch["labels"] = batch['input_ids'].clone()
+        for i in range(len(batch['labels'])):
+            batch['labels'][i, :-ans_lens[i]] = -100
+        retrieval_positions = []
+        seq_len = batch['input_ids'].size(1)
+        for i in range(len(batch['labels'])):
+            ans_len = ans_lens[i]
+            retrieval_position = seq_len - ans_len
+            if retrieval_position <= 0:
+                retrieval_position = seq_len//2
+            retrieval_positions.append(retrieval_position)
+        batch['retrieval_position'] = torch.tensor(retrieval_positions).reshape(-1, 1)
+        batch['neighbor_embeddings'] = torch.tensor(neighbor_embeddings)
+        return batch
+    
+    def filter_empty(self, example):
+        return len(example['answers']) > 0
+    
+    def set_epoch(self, epoch):
+        self.epoch = epoch
+        print_rank_0(f'[!] set epoch to {epoch}')
+
+    def update_total_tokens(self):
+        input_ids_lengths = self.datasets['input_ids_length']
+        input_ids_lengths = [min(self.args['max_seq_len'], length) for length in input_ids_lengths]
+        self.total_tokens = sum(input_ids_lengths)
+        self.num_samples = len(self.datasets)
+
 @register_class
 class QASFTDataset(QADataset):
     def __init__(self, tokenizer, args):

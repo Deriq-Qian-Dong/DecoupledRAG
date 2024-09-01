@@ -30,7 +30,7 @@ mkdir -p output
 mkdir -p ../data_of_ReGPT/Wiki-corpus
 cp -r ../data/data_of_ReGPT/Wiki-corpus/train ../data_of_ReGPT/Wiki-corpus/
 # cp -r ../data/data_of_ReGPT/Wiki-corpus/phrases_embeddings.npy ../data_of_ReGPT/Wiki-corpus/
-# cp -r ../data/data_of_ReGPT/QA_datasets_WikiEmb ../data_of_ReGPT/
+cp -r ../data/data_of_ReGPT/QA_datasets ../data_of_ReGPT/
 # cp -r ../data/rag_llama2/24_wiki_qa/ ../
 cp -r ../data/llama3-chat ../
 cp -r ../data/llama3-chat-top8 ../
