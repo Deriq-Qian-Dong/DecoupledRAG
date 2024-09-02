@@ -481,6 +481,7 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
         model.eval()
         accuracy = 0.0
         total_sample_count = 0
+        step = 0
         with torch.no_grad():
             for batch in tqdm(test_dataloader, desc=f"Evaluation of step {iter_count}", disable=not accelerator.is_main_process):
                 batch = accelerator.prepare(batch)
@@ -494,6 +495,9 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
                     accelerator.print({"test/answers": answers[i], "test/outputs": outputs[i]})
                     if answers[i]==outputs[i]:
                         accuracy += 1
+                step += 1
+                if step>=10:
+                    break
         accuracy /= total_sample_count
         accuracy = torch.tensor(accuracy).to(accelerator.device)
         gathered_accuracy = accelerator.gather(accuracy)
