@@ -496,8 +496,6 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
                     if answers[i]==outputs[i]:
                         accuracy += 1
                 step += 1
-                if step>=10:
-                    break
         accuracy /= total_sample_count
         accuracy = torch.tensor(accuracy).to(accelerator.device)
         gathered_accuracy = accelerator.gather(accuracy)
