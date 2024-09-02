@@ -36,6 +36,7 @@ cp -r ../data/llama3-chat ../
 cp -r ../data/llama3-chat-top8 ../
 cp ../data/anserini.tar.gz ../
 cp ../data/jdk-11.0.13.zip ../
+cp -r ../data/data_of_ReGPT/Wiki-corpus/bm25_index/ ../data_of_ReGPT/Wiki-corpus/
 cd ../
 tar -xzvf anserini.tar.gz
 unzip jdk-11.0.13.zip
