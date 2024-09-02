@@ -9,11 +9,7 @@ from datasets import load_dataset, load_from_disk
 import math
 from registry import register_class
 from prompt_templates import QA_PROMPT
-try:
-    from pyserini.search.lucene import LuceneSearcher
-except:
-    LuceneSearcher = None
-
+from pyserini.search.lucene import LuceneSearcher
 class DynamicBatchSampler(Sampler):
     def __init__(self, dataset, max_tokens, num_replicas, rank):
         dataset.datasets = dataset.datasets.shard(num_shards=num_replicas, index=rank)
