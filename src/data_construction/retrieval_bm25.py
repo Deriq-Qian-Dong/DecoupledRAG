@@ -10,7 +10,7 @@ with open('./output/res.top5.nq.test', 'w') as f:
         query = example['question']
         hits = searcher.search(query, 5)
         for hit in hits:
-            f.write(f"{example['question']}\t{hit.docid}\t{hit.score}\t{hit.text}\n")
+            f.write(f"{example['question']}\t{eval(hit.raw)['id']}\n")
 
     
 
