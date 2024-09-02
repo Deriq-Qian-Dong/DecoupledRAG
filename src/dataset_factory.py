@@ -494,11 +494,6 @@ class QADataset4ChatTest(QADataset4Chat):
                                 padding=True,
                                 truncation=True,
                                 return_tensors="pt")
-        batch["labels"] = batch['input_ids']
-        ret_pos = 0
-        shape = (batch['input_ids'].size(0), 1)
-        batch['retrieval_position'] = torch.full(shape, ret_pos, dtype=torch.long)
-        batch['neighbor_embeddings'] = torch.tensor(neighbor_embeddings)
         batch['knowledge_input_ids'] = neighbor_batch['input_ids']
         batch['answers'] = self.tokenizer(answers,
                                 max_length=self.args['max_seq_len'],
