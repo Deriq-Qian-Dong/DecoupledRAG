@@ -407,6 +407,7 @@ class QADataset4Chat(Dataset):
             answer = sample['answer']
         hits = self.searcher.search(query, 5)
         retrieved_docs = [eval(hit.raw)['contents'] for hit in hits]
+        query = query+'\nThe answer MUST in ONE OR FEW WORDS.'
         chat = [{'role': 'user', 'content': query}, {'role': 'assistant', 'content': answer}]
         chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=False)
         neighbor_embeddings = sample.get('neighbor_embeddings')
@@ -471,6 +472,7 @@ class QADataset4ChatTest(QADataset4Chat):
             answer = sample['answer']
         hits = self.searcher.search(query, 5)
         retrieved_docs = [eval(hit.raw)['contents'] for hit in hits]
+        query = query+'\nThe answer MUST in ONE OR FEW WORDS.'
         chat = [{'role': 'user', 'content': query}]
         chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
         neighbor_embeddings = sample.get('neighbor_embeddings')
