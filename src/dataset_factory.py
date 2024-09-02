@@ -389,7 +389,8 @@ class QADataset4Chat(Dataset):
         self.args = args
         self.tokenizer = tokenizer
         self.setup_datasets()
-        self.qa_prmt = QA_PROMPT
+        self.searcher = LuceneSearcher(self.args['index_path'])
+        self.searcher.set_bm25(0.82, 0.68)
     
     def setup_datasets(self):
         self.datasets = load_from_disk(self.args['data_name_or_path'])
@@ -404,42 +405,46 @@ class QADataset4Chat(Dataset):
             query = sample['query']
         else:
             query = sample['question']
-        query = self.qa_prmt.format(question=query)
         if 'answers' in sample:
             answer = sample['answers'][0]
         else:
             answer = sample['answer']
+        hits = self.searcher.search(query, 5)
+        retrieved_docs = [eval(hit.raw)['contents'] for hit in hits]
+        chat = [{'role': 'user', 'content': query}, {'role': 'assistant', 'content': answer}]
+        chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=False)
         neighbor_embeddings = sample.get('neighbor_embeddings')
-        return query, answer, neighbor_embeddings, sample['input_ids_length']
+        return chat, retrieved_docs, neighbor_embeddings, sample['input_ids_length']
     
     def __len__(self):
         return self.num_samples
     
     def _collate_fn(self, elems):
-        qrys, anss, neighbor_embeddings, _ = zip(*elems)
+        texts, retrieved_docs, neighbor_embeddings, _ = zip(*elems)
         self.tokenizer.padding_side = 'left'
         self.tokenizer.truncation_side = 'left'
-        batch = self.tokenizer(qrys, anss,
-                                    max_length=self.args['max_seq_len'],
-                                    padding=True,
-                                    truncation=True,
-                                    return_tensors="pt")
-        ans_lens = [len(self.tokenizer(ans)['input_ids']) for ans in anss]
-        batch["labels"] = batch['input_ids'].clone()
-        for i in range(len(batch['labels'])):
-            batch['labels'][i, :-ans_lens[i]] = -100
-        retrieval_positions = []
-        seq_len = batch['input_ids'].size(1)
-        for i in range(len(batch['labels'])):
-            ans_len = ans_lens[i]
-            retrieval_position = seq_len - ans_len
-            if retrieval_position <= 0:
-                retrieval_position = seq_len//2
-            retrieval_positions.append(retrieval_position)
-        batch['retrieval_position'] = torch.tensor(retrieval_positions).reshape(-1, 1)
+        batch = self.tokenizer(texts,
+                                add_special_tokens=False,
+                                max_length=self.args['max_seq_len'],
+                                padding=True,
+                                truncation=True,
+                                return_tensors="pt")
+        all_retrieved_docs = []
+        for docs in retrieved_docs:
+            all_retrieved_docs += docs
+        neighbor_batch = self.tokenizer(all_retrieved_docs,
+                                max_length=self.args['max_seq_len'],
+                                padding=True,
+                                truncation=True,
+                                return_tensors="pt")
+        batch["labels"] = batch['input_ids']
+        ret_pos = 0
+        shape = (batch['input_ids'].size(0), 1)
+        batch['retrieval_position'] = torch.full(shape, ret_pos, dtype=torch.long)
         batch['neighbor_embeddings'] = torch.tensor(neighbor_embeddings)
+        batch['knowledge_input_ids'] = neighbor_batch['input_ids']
         return batch
-    
+
     def filter_empty(self, example):
         return len(example['answers']) > 0
     
@@ -452,6 +457,59 @@ class QADataset4Chat(Dataset):
         input_ids_lengths = [min(self.args['max_seq_len'], length) for length in input_ids_lengths]
         self.total_tokens = sum(input_ids_lengths)
         self.num_samples = len(self.datasets)
+
+@register_class
+class QADataset4ChatTest(QADataset4Chat):
+    def __init__(self, tokenizer, args):
+        super().__init__(tokenizer, args)
+    
+    def __getitem__(self, idx):
+        sample = self.datasets[idx]
+        if 'query' in sample:
+            query = sample['query']
+        else:
+            query = sample['question']
+        if 'answers' in sample:
+            answer = sample['answers'][0]
+        else:
+            answer = sample['answer']
+        hits = self.searcher.search(query, 5)
+        retrieved_docs = [eval(hit.raw)['contents'] for hit in hits]
+        chat = [{'role': 'user', 'content': query}]
+        chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
+        neighbor_embeddings = sample.get('neighbor_embeddings')
+        return chat, answer, retrieved_docs, neighbor_embeddings, sample['input_ids_length']
+    
+    def _collate_fn(self, elems):
+        texts, answers, retrieved_docs, neighbor_embeddings, _ = zip(*elems)
+        self.tokenizer.padding_side = 'left'
+        self.tokenizer.truncation_side = 'left'
+        batch = self.tokenizer(texts,
+                                add_special_tokens=False,
+                                max_length=self.args['max_seq_len'],
+                                padding=True,
+                                truncation=True,
+                                return_tensors="pt")
+        all_retrieved_docs = []
+        for docs in retrieved_docs:
+            all_retrieved_docs += docs
+        neighbor_batch = self.tokenizer(all_retrieved_docs,
+                                max_length=self.args['max_seq_len'],
+                                padding=True,
+                                truncation=True,
+                                return_tensors="pt")
+        batch["labels"] = batch['input_ids']
+        ret_pos = 0
+        shape = (batch['input_ids'].size(0), 1)
+        batch['retrieval_position'] = torch.full(shape, ret_pos, dtype=torch.long)
+        batch['neighbor_embeddings'] = torch.tensor(neighbor_embeddings)
+        batch['knowledge_input_ids'] = neighbor_batch['input_ids']
+        batch['answers'] = self.tokenizer(answers,
+                                max_length=self.args['max_seq_len'],
+                                padding=True,
+                                truncation=True,
+                                return_tensors="pt")['input_ids']
+        return batch
 
 @register_class
 class QASFTDataset(QADataset):

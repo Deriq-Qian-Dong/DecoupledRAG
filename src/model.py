@@ -475,6 +475,30 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
         for i in range(self.config['training']['add_cross_attention_layer_number']):
             stats[f'gate_score/{i}'] = float(self.accelerator.unwrap_model(model).model.base_model.layers[i].gate_crossattention.cpu().detach().float().numpy()[0])
         return stats
+    
+    def test(self):
+        model, tokenizer, optimizer, scheduler, test_dataloader, accelerator, iter_count = self.model, self.tokenizer, self.optimizer, self.scheduler, self.test_dataloader, self.accelerator, self.iter_count
+        model.eval()
+        accuracy = 0.0
+        total_sample_count = 0
+        with torch.no_grad():
+            for batch in tqdm(test_dataloader, desc=f"Evaluation of step {iter_count}", disable=not accelerator.is_main_process):
+                batch = accelerator.prepare(batch)
+                answers = batch.pop('answers')
+                outputs = model.generate(**batch, max_new_tokens=self.config['dataset']['test']['max_new_tokens'], do_sample=False)
+                answers = tokenizer.batch_decode(answers, skip_special_tokens=True)
+                outputs = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+                for i in range(len(answers)):
+                    total_sample_count += 1
+                    accelerator.log({"test/answers": answers[i], "test/outputs": outputs[i]}, step=self.iter_count)
+                    if answers[i]==outputs[i]:
+                        accuracy += 1
+        accuracy /= total_sample_count
+        accuracy = torch.tensor(accuracy).to(accelerator.device)
+        gathered_accuracy = accelerator.gather(accuracy)
+        accuracy = gathered_accuracy.mean().item()
+        model.train()
+                
 
 @register_class
 class RAGLanguageModelTester(RAGLanguageModelTrainer):

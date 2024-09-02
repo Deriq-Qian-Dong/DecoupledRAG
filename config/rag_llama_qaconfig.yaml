@@ -37,19 +37,20 @@ training:
 
 dataset:
   train:
-    dataset_name: QASFTDataset
+    dataset_name: QADataset4Chat
     batch_size: 20
     # data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train_gpt2_embeddings/
-    data_name_or_path: ../data_of_ReGPT/QA_datasets_WikiEmb/2WikiMultihopQAAndHotpotQA/sorted_datasets_train
+    data_name_or_path: ../data_of_ReGPT/QA_datasets/nq/sorted_datasets_train
     # data_name_or_path: ../data_of_ReGPT/hotpotqaAnd2WikiMultihopQA/sorted_datasets_train_sub_reversed/
     max_seq_len: 512
     dynamic_sampler: true
   test:
-    dataset_name: QASFTDataset
+    dataset_name: QADataset4ChatTest
     batch_size: 4
     # data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_test_gpt2_embeddings/
-    data_name_or_path: ../data_of_ReGPT/QA_datasets_WikiEmb/2WikiMultihopQAAndHotpotQA/sorted_datasets_test
+    data_name_or_path:  ../data_of_ReGPT/QA_datasets/nq/sorted_datasets_test
     max_seq_len: 512
+    max_new_tokens: 32
 
 generation_kwargs:
   min_length: 0
