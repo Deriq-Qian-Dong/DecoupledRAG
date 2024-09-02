@@ -485,7 +485,7 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
             for batch in tqdm(test_dataloader, desc=f"Evaluation of step {iter_count}", disable=not accelerator.is_main_process):
                 batch = accelerator.prepare(batch)
                 answers = batch.pop('answers')
-                outputs = model.generate(**batch, max_new_tokens=self.config['dataset']['test']['max_new_tokens'], do_sample=False)
+                outputs = model.module.generate(**batch, max_new_tokens=self.config['dataset']['test']['max_new_tokens'], do_sample=False)
                 answers = tokenizer.batch_decode(answers, skip_special_tokens=True)
                 outputs = tokenizer.batch_decode(outputs, skip_special_tokens=True)
                 for i in range(len(answers)):
