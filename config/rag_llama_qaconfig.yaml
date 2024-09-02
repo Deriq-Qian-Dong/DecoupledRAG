@@ -36,6 +36,7 @@ training:
   kb_path: ../data_of_ReGPT/marco/phrases_embeddings.npy
   freeze_retrieval_head: true
   freeze_lm_head: true
+  index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
 
 dataset:
   train:
