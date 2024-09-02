@@ -490,7 +490,7 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
                 outputs = tokenizer.batch_decode(outputs, skip_special_tokens=True)
                 for i in range(len(answers)):
                     total_sample_count += 1
-                    accelerator.log({"test/answers": answers[i], "test/outputs": outputs[i]}, step=self.iter_count)
+                    accelerator.print({"test/answers": answers[i], "test/outputs": outputs[i]})
                     if answers[i]==outputs[i]:
                         accuracy += 1
         accuracy /= total_sample_count
