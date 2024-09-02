@@ -487,6 +487,7 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
                 answers = batch.pop('answers')
                 outputs = model.module.model.generate(**batch, max_new_tokens=self.config['dataset']['test']['max_new_tokens'], do_sample=False)
                 answers = tokenizer.batch_decode(answers, skip_special_tokens=True)
+                outputs = outputs[batch['input_ids'].size(0):]
                 outputs = tokenizer.batch_decode(outputs, skip_special_tokens=True)
                 for i in range(len(answers)):
                     total_sample_count += 1
