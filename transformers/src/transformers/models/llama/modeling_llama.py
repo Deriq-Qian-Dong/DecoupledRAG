@@ -183,7 +183,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
-def apply_rotary_pos_emb(q, k, cos, sin, position_ids=None, unsqueeze_dim=1):
+def apply_rotary_pos_emb(q, k, cos, sin, ca_cos=None, ca_sin=None, position_ids=None, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
     Args:
@@ -206,7 +206,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, position_ids=None, unsqueeze_dim=1):
     cos = cos.unsqueeze(unsqueeze_dim)
     sin = sin.unsqueeze(unsqueeze_dim)
     q_embed = (q * cos) + (rotate_half(q) * sin)
-    k_embed = (k * cos) + (rotate_half(k) * sin)
+    k_embed = (k * ca_cos) + (rotate_half(k) * ca_sin)
     return q_embed, k_embed
 
 
@@ -377,10 +377,14 @@ class LlamaAttention(nn.Module):
             value_states = value_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
 
         past_key_value = getattr(self, "past_key_value", past_key_value)
+        cos, sin = self.rotary_emb(value_states, position_ids)
         if not is_cross_attention:
-            print(position_ids, position_ids.shape)
-            cos, sin = self.rotary_emb(value_states, position_ids)
+            print(position_ids.shape)
             query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
+        else:
+            position_ids = torch.arange(kv_len, device=hidden_states.device).unsqueeze(1)
+            ca_cos, ca_sin = self.rotary_emb(value_states, position_ids)
+            query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin, ca_cos, ca_sin)
 
         if past_key_value is not None and not is_cross_attention:
             # sin and cos are specific to RoPE models; cache_position needed for the static cache
