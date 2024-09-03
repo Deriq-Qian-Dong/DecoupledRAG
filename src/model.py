@@ -133,6 +133,7 @@ class ReGPTForCausalLM(nn.Module):
             
             # 创建并启动新的进程进行非阻塞保存
             p = Process(target=self.save_gate_state, args=(gate_crossattention, path))
+            p.daemon = True  # 将进程设置为守护进程
             p.start()  # 启动进程，不等待结束
 
     def compute_similarity(self, q_reps, p_reps):
