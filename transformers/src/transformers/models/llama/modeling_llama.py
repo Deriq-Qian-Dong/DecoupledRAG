@@ -338,7 +338,7 @@ class LlamaAttention(nn.Module):
         bsz, q_len, _ = hidden_states.size()
         encoder_hidden_states = encoder_hidden_states.reshape(bsz, -1, self.hidden_size) if encoder_hidden_states is not None else None
         if encoder_hidden_states is not None:
-            kv_len = encoder_hidden_states.size(1) + q_len
+            kv_len = encoder_hidden_states.size(1)
         else:
             kv_len = q_len
 
@@ -361,16 +361,15 @@ class LlamaAttention(nn.Module):
 
         else:
             query_states = self.q_proj(hidden_states)
-            key_states = self.k_proj(hidden_states)
-            value_states = self.v_proj(hidden_states)
-            if encoder_hidden_states is not None:
-                klg_key_states = self.k_proj(encoder_hidden_states)
-                klg_value_states = self.v_proj(encoder_hidden_states)
-                key_states = torch.cat([klg_key_states, key_states], dim=1) if encoder_hidden_states is not None else key_states
-                value_states = torch.cat([klg_value_states, value_states], dim=1) if encoder_hidden_states is not None else value_states
+            if is_cross_attention:
+                key_states = self.k_proj(encoder_hidden_states)
+                value_states = self.v_proj(encoder_hidden_states)
+            else:
+                key_states = self.k_proj(hidden_states)
+                value_states = self.v_proj(hidden_states)
 
         query_states = query_states.view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
-        if encoder_hidden_states is not None:
+        if is_cross_attention:
             key_states = key_states.view(bsz, kv_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
             value_states = value_states.view(bsz, kv_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
         else:
@@ -378,9 +377,9 @@ class LlamaAttention(nn.Module):
             value_states = value_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
 
         past_key_value = getattr(self, "past_key_value", past_key_value)
-        # if not is_cross_attention:
-        cos, sin = self.rotary_emb(value_states, position_ids)
-        query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
+        if not is_cross_attention:
+            cos, sin = self.rotary_emb(value_states, position_ids)
+            query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
 
         if past_key_value is not None and not is_cross_attention:
             # sin and cos are specific to RoPE models; cache_position needed for the static cache
@@ -400,16 +399,16 @@ class LlamaAttention(nn.Module):
         # upcast attention to fp32
         attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query_states.dtype)
         attn_weights = nn.functional.dropout(attn_weights, p=self.attention_dropout, training=self.training)
-        # if is_cross_attention and self.training:
-        #     causal_mask_for_cross_attn = torch.ones(
-        #         (bsz, 1, q_len, kv_len), dtype=torch.bool, device=attn_weights.device
-        #     )
-        #     # causal_mask_for_cross_attn[:, :, :self.config.retrieval_position, :] = 0
-        #     for i in range(bsz):
-        #         causal_mask_for_cross_attn[i, :, :retrieval_position[i], :] = 0
-        #     mask_value = 0
-        #     mask_value = torch.full([], mask_value, dtype=attn_weights.dtype, device=attn_weights.device)
-        #     attn_weights = torch.where(causal_mask_for_cross_attn, attn_weights.to(attn_weights.dtype), mask_value)
+        if is_cross_attention and self.training:
+            causal_mask_for_cross_attn = torch.ones(
+                (bsz, 1, q_len, kv_len), dtype=torch.bool, device=attn_weights.device
+            )
+            # causal_mask_for_cross_attn[:, :, :self.config.retrieval_position, :] = 0
+            for i in range(bsz):
+                causal_mask_for_cross_attn[i, :, :retrieval_position[i], :] = 0
+            mask_value = 0
+            mask_value = torch.full([], mask_value, dtype=attn_weights.dtype, device=attn_weights.device)
+            attn_weights = torch.where(causal_mask_for_cross_attn, attn_weights.to(attn_weights.dtype), mask_value)
         attn_output = torch.matmul(attn_weights, value_states)
 
         if attn_output.size() != (bsz, self.num_heads, q_len, self.head_dim):
@@ -781,19 +780,29 @@ class LlamaDecoderLayer(nn.Module):
         residual = hidden_states
 
         hidden_states = self.input_layernorm(hidden_states)
+
+        # Self Attention
+        hidden_states, self_attn_weights, present_key_value = self.self_attn(
+            hidden_states=hidden_states,
+            attention_mask=attention_mask,
+            position_ids=position_ids,
+            past_key_value=past_key_value,
+            output_attentions=output_attentions,
+            use_cache=use_cache,
+            cache_position=cache_position,
+            **kwargs,
+        )
+        hidden_states = residual + hidden_states
+
+        # Fully Connected
+        residual = hidden_states
+        hidden_states = self.post_attention_layernorm(hidden_states)
+        hidden_states = self.mlp(hidden_states)
+        hidden_states = residual + hidden_states
+
         if self.add_cross_attention and encoder_hidden_states is not None:
+            residual = hidden_states  # output of self-attention
             encoder_hidden_states = self.input_layernorm(encoder_hidden_states)
-            hidden_states, self_attn_weights, present_key_value = self.self_attn(
-                hidden_states=hidden_states,
-                attention_mask=attention_mask,
-                position_ids=position_ids,
-                past_key_value=past_key_value,
-                output_attentions=output_attentions,
-                use_cache=use_cache,
-                cache_position=cache_position,
-                encoder_hidden_states=encoder_hidden_states,
-                **kwargs,
-            )
             hidden_states, _, _ = self.self_attn(
                 hidden_states=hidden_states,
                 attention_mask=attention_mask,
@@ -806,25 +815,13 @@ class LlamaDecoderLayer(nn.Module):
                 is_cross_attention=True,
                 **kwargs,
             )
-        else:
-            # Self Attention
-            hidden_states, self_attn_weights, present_key_value = self.self_attn(
-                hidden_states=hidden_states,
-                attention_mask=attention_mask,
-                position_ids=position_ids,
-                past_key_value=past_key_value,
-                output_attentions=output_attentions,
-                use_cache=use_cache,
-                cache_position=cache_position,
-                **kwargs,
-            )
-        hidden_states = residual + hidden_states
-
-        # Fully Connected
-        residual = hidden_states
-        hidden_states = self.post_attention_layernorm(hidden_states)
-        hidden_states = self.mlp(hidden_states)
-        hidden_states = residual + hidden_states      
+            # residual connection and gating
+            gating_score = self.act(self.gate_crossattention)
+            # move the gating score to the same device as hidden_states
+            gating_score = gating_score.to(hidden_states.device)
+            # cast the gating score to the same dtype as hidden_states
+            gating_score = gating_score.to(hidden_states.dtype)
+            hidden_states = (1-gating_score)*residual + gating_score*hidden_states
 
         outputs = (hidden_states,)
 
@@ -1053,12 +1050,11 @@ class LlamaModel(LlamaPreTrainedModel):
                 past_key_values = DynamicCache.from_legacy_cache(past_key_values)
                 past_seen_tokens = past_key_values.get_seq_length()
 
-        knowledge_outputs_tokens = knowledge_outputs[0].shape[1] if knowledge_outputs is not None else 0
         if cache_position is None:
             if isinstance(past_key_values, StaticCache):
                 raise ValueError("cache_position is a required argument when using StaticCache.")
             cache_position = torch.arange(
-                past_seen_tokens, knowledge_outputs_tokens + past_seen_tokens + inputs_embeds.shape[1], device=inputs_embeds.device
+                past_seen_tokens, past_seen_tokens + inputs_embeds.shape[1], device=inputs_embeds.device
             )
 
         if position_ids is None:
