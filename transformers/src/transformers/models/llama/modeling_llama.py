@@ -733,14 +733,14 @@ class LinearFusion(nn.Module):
     def __init__(self, hidden_dim):
         super(LinearFusion, self).__init__()
         # 初始化权重矩阵
-        # self.W_A = nn.Parameter(torch.eye(hidden_dim, hidden_dim))
+        self.W_A = nn.Parameter(torch.eye(hidden_dim, hidden_dim))
         self.W_B = nn.Parameter(torch.zeros(hidden_dim, hidden_dim))
         # 初始化偏置项
         self.b = nn.Parameter(torch.zeros(hidden_dim))
     
     def forward(self, A, B):
         # 计算线性变换后的结果
-        C = A + torch.matmul(B, self.W_B.t()) + self.b
+        C = torch.matmul(A, self.W_A.t()) + torch.matmul(B, self.W_B.t()) + self.b
         return C
     
 class LlamaDecoderLayer(nn.Module):
