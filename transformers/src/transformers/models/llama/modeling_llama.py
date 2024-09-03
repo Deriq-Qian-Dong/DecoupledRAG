@@ -829,6 +829,11 @@ class LlamaDecoderLayer(nn.Module):
             # cast the gating score to the same dtype as hidden_states
             gating_score = gating_score.to(hidden_states.dtype)
             hidden_states = residual + hidden_states
+            # Fully Connected
+            residual = hidden_states
+            hidden_states = self.post_attention_layernorm(hidden_states)
+            hidden_states = self.mlp(hidden_states)
+            hidden_states = residual + hidden_states
 
         outputs = (hidden_states,)
 
