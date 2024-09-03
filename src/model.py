@@ -187,7 +187,7 @@ class RAGForCausalLM(nn.Module):
                 bias='none',
                 task_type="CAUSAL_LM"
             )
-            model.model.add_adapter("knowledge_injector", peft_config)
+            model.model.add_adapter(peft_config, "knowledge_injector")
         freeze_non_crossattention_parameters(model, train_config['freeze_retrieval_head'], train_config['freeze_lm_head'])
         if train_config['gradient_checkpointing']:
             model.gradient_checkpointing_enable()
