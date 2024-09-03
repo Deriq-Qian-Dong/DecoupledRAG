@@ -135,8 +135,8 @@ class ReGPTForCausalLM(nn.Module):
                 )
             
             # 你可以选择等待所有保存操作完成
-            for future in futures:
-                future.result()
+            # for future in futures:
+                # future.result()
 
     def compute_similarity(self, q_reps, p_reps):
         return torch.matmul(q_reps, p_reps.transpose(0, 1))
