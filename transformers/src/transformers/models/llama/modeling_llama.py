@@ -382,13 +382,9 @@ class LlamaAttention(nn.Module):
         past_key_value = getattr(self, "past_key_value", past_key_value)
         cos, sin = self.rotary_emb(value_states, position_ids)
         if not is_cross_attention:
-            if hidden_states.device==torch.device('cuda:0'):
-                print('self-attn', position_ids.shape)
             query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
         else:
             position_ids = torch.arange(kv_len, device=hidden_states.device).unsqueeze(0)
-            if hidden_states.device==torch.device('cuda:0'):
-                print('cross-attn', position_ids.shape)
             ca_cos, ca_sin = self.rotary_emb(value_states, position_ids)
             query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin, ca_cos, ca_sin, is_cross_attention=True)
 
