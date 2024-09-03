@@ -503,6 +503,7 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
         gathered_accuracy = accelerator.gather(accuracy)
         accuracy = gathered_accuracy.mean().item()
         accelerator.print(f"Step {iter_count} | Accuracy: {accuracy:.4f}")
+        accelerator.log({"test/accuracy": accuracy}, step=self.iter_count)
         model.train()
                 
 
