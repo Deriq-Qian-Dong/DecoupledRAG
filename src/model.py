@@ -177,7 +177,7 @@ class RAGForCausalLM(nn.Module):
         config.freeze_retrieval_head = train_config['freeze_retrieval_head']
         model = MODEL_CLASS[train_config['model_type']].from_pretrained(train_config['model_name_or_path'], config=config)          
         import os
-        if os.path.exists(train_config['kg_model_name_or_path']):
+        if os.path.exists(os.path.join(train_config['kg_model_name_or_path'], 'adapter_config.json')):
             model.model.load_adapter(train_config['kg_model_name_or_path'], "knowledge_injector")
         else:
             peft_config = LoraConfig(
