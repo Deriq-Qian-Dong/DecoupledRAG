@@ -226,7 +226,7 @@ class LanguageModelTrainer:
         self.sampler = None
 
     def run(self):
-        # self.test()
+        self.test()
         for epoch in range(self.train_config['start_from'], self.train_config['num_epochs']):
             self.epoch = epoch
             self.set_epoch_to_dataset()
@@ -461,6 +461,7 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
         self.config['dataset']['train'].update(RAG_kwargs)
         self.config['dataset']['test'].update(RAG_kwargs)
         super(RAGLanguageModelTrainer, self).__init__(config)
+        self.best_accuracy = 0.0
 
     def setup_model(self, train_config):
         self.model = RAGForCausalLM(train_config)
@@ -506,6 +507,11 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
         accuracy = gathered_accuracy.mean().item()
         accelerator.print(f"Step {iter_count} | Accuracy: {accuracy:.4f}")
         accelerator.log({"test/accuracy": accuracy}, step=self.iter_count)
+        if accelerator.is_main_process:
+            if accuracy>self.best_accuracy:
+                self.best_accuracy = accuracy
+                accelerator.unwrap_model(model).save_pretrained(f"output/RAG-best/")
+            accelerator.unwrap_model(model).save_pretrained(f"output/RAG-new/")
         model.train()
 
 
