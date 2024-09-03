@@ -378,6 +378,7 @@ class LlamaAttention(nn.Module):
 
         past_key_value = getattr(self, "past_key_value", past_key_value)
         if not is_cross_attention:
+            print(position_ids, position_ids.shape)
             cos, sin = self.rotary_emb(value_states, position_ids)
             query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
 
@@ -399,16 +400,16 @@ class LlamaAttention(nn.Module):
         # upcast attention to fp32
         attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query_states.dtype)
         attn_weights = nn.functional.dropout(attn_weights, p=self.attention_dropout, training=self.training)
-        if is_cross_attention and self.training:
-            causal_mask_for_cross_attn = torch.ones(
-                (bsz, 1, q_len, kv_len), dtype=torch.bool, device=attn_weights.device
-            )
-            # causal_mask_for_cross_attn[:, :, :self.config.retrieval_position, :] = 0
-            for i in range(bsz):
-                causal_mask_for_cross_attn[i, :, :retrieval_position[i], :] = 0
-            mask_value = 0
-            mask_value = torch.full([], mask_value, dtype=attn_weights.dtype, device=attn_weights.device)
-            attn_weights = torch.where(causal_mask_for_cross_attn, attn_weights.to(attn_weights.dtype), mask_value)
+        # if is_cross_attention and self.training:
+        #     causal_mask_for_cross_attn = torch.ones(
+        #         (bsz, 1, q_len, kv_len), dtype=torch.bool, device=attn_weights.device
+        #     )
+        #     # causal_mask_for_cross_attn[:, :, :self.config.retrieval_position, :] = 0
+        #     for i in range(bsz):
+        #         causal_mask_for_cross_attn[i, :, :retrieval_position[i], :] = 0
+        #     mask_value = 0
+        #     mask_value = torch.full([], mask_value, dtype=attn_weights.dtype, device=attn_weights.device)
+        #     attn_weights = torch.where(causal_mask_for_cross_attn, attn_weights.to(attn_weights.dtype), mask_value)
         attn_output = torch.matmul(attn_weights, value_states)
 
         if attn_output.size() != (bsz, self.num_heads, q_len, self.head_dim):
