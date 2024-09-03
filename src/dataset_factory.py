@@ -9,7 +9,10 @@ from datasets import load_dataset, load_from_disk
 import math
 from registry import register_class
 from prompt_templates import QA_PROMPT
-from pyserini.search.lucene import LuceneSearcher
+try:
+    from pyserini.search.lucene import LuceneSearcher
+except:
+    LuceneSearcher = None
 class DynamicBatchSampler(Sampler):
     def __init__(self, dataset, max_tokens, num_replicas, rank):
         dataset.datasets = dataset.datasets.shard(num_shards=num_replicas, index=rank)
@@ -385,8 +388,9 @@ class QADataset4Chat(Dataset):
         self.args = args
         self.tokenizer = tokenizer
         self.setup_datasets()
-        self.searcher = LuceneSearcher(self.args['index_path'])
-        self.searcher.set_bm25(0.82, 0.68)
+        self.corpus = load_from_disk(args['corpus'])
+        # self.searcher = LuceneSearcher(self.args['index_path'])
+        # self.searcher.set_bm25(0.82, 0.68)
     
     def setup_datasets(self):
         self.datasets = load_from_disk(self.args['data_name_or_path'])
@@ -405,8 +409,8 @@ class QADataset4Chat(Dataset):
             answer = sample['answers'][0]
         else:
             answer = sample['answer']
-        hits = self.searcher.search(query, 5)
-        retrieved_docs = [eval(hit.raw)['contents'] for hit in hits]
+        # hits = self.searcher.search(query, 5)
+        retrieved_docs = self.corpus[sample['neighbors']]['text']
         query = query+'\nThe answer MUST in ONE OR FEW WORDS.'
         chat = [{'role': 'user', 'content': query}, {'role': 'assistant', 'content': answer}]
         chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=False)
@@ -470,8 +474,8 @@ class QADataset4ChatTest(QADataset4Chat):
             answer = sample['answers'][0]
         else:
             answer = sample['answer']
-        hits = self.searcher.search(query, 5)
-        retrieved_docs = [eval(hit.raw)['contents'] for hit in hits]
+        # hits = self.searcher.search(query, 5)
+        retrieved_docs = self.corpus[sample['neighbors']]['text']
         query = query+'\nThe answer MUST in ONE OR FEW WORDS.'
         chat = [{'role': 'user', 'content': query}]
         chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
