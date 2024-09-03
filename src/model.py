@@ -28,7 +28,7 @@ except:
 from peft import LoraConfig, get_peft_model, PeftModel, TaskType
 from evaluation import Evaluator
 from concurrent.futures import ThreadPoolExecutor
-from multiprocessing import Process
+from multiprocessing import Process, Pool
 
 torch.manual_seed(random.randint(0, 1000000))
 
@@ -125,16 +125,17 @@ class ReGPTForCausalLM(nn.Module):
         self.model.knowledge_injector.save_pretrained(directory) 
         # 创建保存目录（如果不存在）
         os.makedirs(directory, exist_ok=True)
-        
-        # 保存每一层的 gate_crossattention
-        for i in range(self.train_config['add_cross_attention_layer_number'] + 1):
-            gate_crossattention = self.model.model.layers[i].gate_crossattention
-            path = f"{directory}/gate_{i}.pt"
+        # 使用进程池并行存储
+        with Pool() as pool:
+            for i in range(self.train_config['add_cross_attention_layer_number'] + 1):
+                gate_crossattention = self.model.model.layers[i].gate_crossattention
+                path = f"{directory}/gate_{i}.pt"
+                
+                # 异步存储，主进程不会被阻塞
+                pool.apply_async(self.save_gate_state, args=(gate_crossattention, path))
             
-            # 创建并启动新的进程进行非阻塞保存
-            p = Process(target=self.save_gate_state, args=(gate_crossattention, path))
-            p.daemon = True  # 将进程设置为守护进程
-            p.start()  # 启动进程，不等待结束
+            # 不调用 pool.join()，主进程立即返回，不等待子进程完成
+            pool.close()  # 关闭进程池，不再接受新的任务
 
     def compute_similarity(self, q_reps, p_reps):
         return torch.matmul(q_reps, p_reps.transpose(0, 1))
