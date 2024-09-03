@@ -410,7 +410,7 @@ class QADataset4Chat(Dataset):
         else:
             answer = sample['answer']
         # hits = self.searcher.search(query, 5)
-        retrieved_docs = self.corpus[sample['neighbors']]['text']
+        retrieved_docs = self.corpus[sample['neighbors']]['text'][:1]
         query = query+'\nThe answer MUST in ONE OR FEW WORDS.'
         chat = [{'role': 'user', 'content': query}, {'role': 'assistant', 'content': answer}]
         chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=False)
@@ -475,7 +475,7 @@ class QADataset4ChatTest(QADataset4Chat):
         else:
             answer = sample['answer']
         # hits = self.searcher.search(query, 5)
-        retrieved_docs = self.corpus[sample['neighbors']]['text']
+        retrieved_docs = self.corpus[sample['neighbors']]['text'][:1]
         query = query+'\nThe answer MUST in ONE OR FEW WORDS.'
         chat = [{'role': 'user', 'content': query}]
         chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
