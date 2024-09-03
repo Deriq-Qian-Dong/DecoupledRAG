@@ -28,6 +28,7 @@ except:
 from peft import LoraConfig, get_peft_model, PeftModel, TaskType
 from evaluation import Evaluator
 from concurrent.futures import ThreadPoolExecutor
+from multiprocessing import Process
 
 torch.manual_seed(random.randint(0, 1000000))
 
@@ -116,27 +117,23 @@ class ReGPTForCausalLM(nn.Module):
         loss = self.cross_entropy(scores, target)
         return ReGPTOutput(loss=loss)
     
+    def save_gate_state(self, gate_crossattention, path):
+        """保存每一层的 gate_crossattention"""
+        torch.save(gate_crossattention.state_dict(), path)
+    
     def save_pretrained(self, directory):
         self.model.knowledge_injector.save_pretrained(directory) 
-        # 确保目标目录存在
+        # 创建保存目录（如果不存在）
         os.makedirs(directory, exist_ok=True)
         
-        # 使用 ThreadPoolExecutor 进行多线程保存
-        with ThreadPoolExecutor() as executor:
-            futures = []
-            for i in range(self.train_config['add_cross_attention_layer_number'] + 1):
-                # 使用多线程保存 gate_crossattention 的状态字典
-                futures.append(
-                    executor.submit(
-                        torch.save,
-                        self.model.model.layers[i].gate_crossattention.state_dict(),
-                        f"{directory}/gate_{i}.pt"
-                    )
-                )
+        # 保存每一层的 gate_crossattention
+        for i in range(self.train_config['add_cross_attention_layer_number'] + 1):
+            gate_crossattention = self.model.model.layers[i].gate_crossattention
+            path = f"{directory}/gate_{i}.pt"
             
-            # 你可以选择等待所有保存操作完成
-            # for future in futures:
-                # future.result()
+            # 创建并启动新的进程进行非阻塞保存
+            p = Process(target=self.save_gate_state, args=(gate_crossattention, path))
+            p.start()  # 启动进程，不等待结束
 
     def compute_similarity(self, q_reps, p_reps):
         return torch.matmul(q_reps, p_reps.transpose(0, 1))
