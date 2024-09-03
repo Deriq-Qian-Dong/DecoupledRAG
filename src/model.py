@@ -227,12 +227,12 @@ class LanguageModelTrainer:
         self.sampler = None
 
     def run(self):
-        self.test()
+        # self.test()
         for epoch in range(self.train_config['start_from'], self.train_config['num_epochs']):
             self.epoch = epoch
             self.set_epoch_to_dataset()
             self.train()
-            self.test()
+            # self.test()
         
     def set_epoch_to_dataset(self):
         if self.dataset_config['train']['dynamic_sampler']:
