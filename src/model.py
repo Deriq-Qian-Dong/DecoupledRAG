@@ -117,11 +117,10 @@ class ReGPTForCausalLM(nn.Module):
     
     def save_pretrained(self, directory):
         self.model.knowledge_injector.save_pretrained(directory) 
-        # gate_scores = []
-        # for i in range(self.config['training']['add_cross_attention_layer_number']):
-            # gate_scores.append(float(self.accelerator.unwrap_model(self.model).model.base_model.layers[i].gate_crossattention.cpu().detach().float().numpy()[0]))
-        # with open(f"{directory}/gate_scores.txt", 'w') as f:
-            # f.write(str(gate_scores)+'\n')
+        for i in range(self.train_config['add_cross_attention_layer_number']+1):
+            # gate_scores.append(float(self.model.model.layers[i].gate_crossattention.cpu().detach().float().numpy()[0]))
+            torch.save(self.model.model.layers[i].gate_crossattention.state_dict(), f"{directory}/gate_{i}.pt")
+
 
     def compute_similarity(self, q_reps, p_reps):
         return torch.matmul(q_reps, p_reps.transpose(0, 1))
