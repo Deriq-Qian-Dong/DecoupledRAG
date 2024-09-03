@@ -504,6 +504,7 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
                     # break
         accuracy /= total_sample_count
         accuracy = torch.tensor(accuracy).to(accelerator.device)
+        accelerator.wait_for_everyone()
         gathered_accuracy = accelerator.gather(accuracy)
         accuracy = gathered_accuracy.mean().item()
         accelerator.print(f"Step {iter_count} | Accuracy: {accuracy:.4f}")
