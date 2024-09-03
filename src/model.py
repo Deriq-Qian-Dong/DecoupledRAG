@@ -225,7 +225,7 @@ class LanguageModelTrainer:
         self.sampler = None
 
     def run(self):
-        # self.test()
+        self.test()
         for epoch in range(self.train_config['start_from'], self.train_config['num_epochs']):
             self.epoch = epoch
             self.set_epoch_to_dataset()
@@ -496,8 +496,8 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
                     if answers[i]==outputs[i]:
                         accuracy += 1
                 step += 1
-                if step>=5:
-                    break
+                # if step>=5:
+                    # break
         accuracy /= total_sample_count
         accuracy = torch.tensor(accuracy).to(accelerator.device)
         gathered_accuracy = accelerator.gather(accuracy)
