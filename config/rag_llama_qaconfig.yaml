@@ -7,7 +7,7 @@ training:
   model_name_or_path: ../llama3-chat
   tokenizer_name_or_path: ../llama3-chat
   # kg_model_name_or_path: ../llama3-chat-top8
-  kg_model_name_or_path: ./
+  kg_model_name_or_path: ./output/RAG-best
   num_layers_unfrozen: -1
   gradient_checkpointing: true
   optimizer: 
