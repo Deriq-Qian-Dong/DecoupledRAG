@@ -729,7 +729,20 @@ LLAMA_ATTENTION_CLASSES = {
     "sdpa": LlamaSdpaAttention,
 }
 
-
+class LinearFusion(nn.Module):
+    def __init__(self, hidden_dim):
+        super(LinearFusion, self).__init__()
+        # 初始化权重矩阵
+        self.W_A = nn.Parameter(torch.eye(hidden_dim, hidden_dim))
+        self.W_B = nn.Parameter(torch.zeros(hidden_dim, hidden_dim))
+        # 初始化偏置项
+        self.b = nn.Parameter(torch.zeros(hidden_dim))
+    
+    def forward(self, A, B):
+        # 计算线性变换后的结果
+        C = torch.matmul(A, self.W_A.t()) + torch.matmul(B, self.W_B.t()) + self.b
+        return C
+    
 class LlamaDecoderLayer(nn.Module):
     def __init__(self, config: LlamaConfig, layer_idx: int):
         super().__init__()
@@ -744,11 +757,10 @@ class LlamaDecoderLayer(nn.Module):
         if self.add_cross_attention:
             directory = config.kg_model_name_or_path
             import os
-            if os.path.exists(f"{directory}/gate_scores.pt"):
-                gate_scores = torch.load(f"{directory}/gate_scores.pt")
-                self.gate_crossattention = nn.Parameter(gate_scores[layer_idx].reshape(-1))
-            else:
-                self.gate_crossattention = nn.Parameter(torch.zeros(1))
+            self.gate_crossattention = LinearFusion(config.hidden_size)
+            if os.path.exists(f"{directory}/gate_{layer_idx}.pt"):
+                self.gate_crossattention.load_state_dict(torch.load(f"{directory}/gate_{layer_idx}.pt"))
+                print(f"load gate_{layer_idx}.pt from {directory}")
             self.act = ACT2FN[config.cross_attention_activation_function]
 
 
@@ -822,18 +834,12 @@ class LlamaDecoderLayer(nn.Module):
                 is_cross_attention=True,
                 **kwargs,
             )
-            # residual connection and gating
-            gating_score = self.act(self.gate_crossattention)
-            # move the gating score to the same device as hidden_states
-            gating_score = gating_score.to(hidden_states.device)
-            # cast the gating score to the same dtype as hidden_states
-            gating_score = gating_score.to(hidden_states.dtype)
-            hidden_states = residual + hidden_states
+            hidden_states = self.gate_crossattention(residual, hidden_states)
             # Fully Connected
-            residual = hidden_states
-            hidden_states = self.post_attention_layernorm(hidden_states)
-            hidden_states = self.mlp(hidden_states)
-            hidden_states = residual + hidden_states
+            # residual = hidden_states
+            # hidden_states = self.post_attention_layernorm(hidden_states)
+            # hidden_states = self.mlp(hidden_states)
+            # hidden_states = residual + hidden_states
 
         outputs = (hidden_states,)
 
