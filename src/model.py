@@ -125,14 +125,10 @@ class ReGPTForCausalLM(nn.Module):
         self.model.knowledge_injector.save_pretrained(directory) 
         # 创建保存目录（如果不存在）
         os.makedirs(directory, exist_ok=True)
-        # 使用 ProcessPoolExecutor 并行存储
-        with ProcessPoolExecutor() as executor:
-            for i in range(self.train_config['add_cross_attention_layer_number'] + 1):
-                gate_crossattention = self.model.model.layers[i].gate_crossattention
-                path = f"{directory}/gate_{i}.pt"
-                
-                # 异步提交任务，不等待任务完成
-                executor.submit(self.save_gate_state, gate_crossattention, path)
+        for i in range(self.train_config['add_cross_attention_layer_number'] + 1):
+            gate_crossattention = self.model.model.layers[i].gate_crossattention
+            path = f"{directory}/gate_{i}.pt"
+            self.save_gate_state(gate_crossattention, path)
 
     def compute_similarity(self, q_reps, p_reps):
         return torch.matmul(q_reps, p_reps.transpose(0, 1))
