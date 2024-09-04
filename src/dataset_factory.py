@@ -470,6 +470,17 @@ class QADataset4Chat(Dataset):
 class QADataset4ChatTest(QADataset4Chat):
     def __init__(self, tokenizer, args):
         super().__init__(tokenizer, args)
+
+    def setup_datasets(self):
+        self.datasets = load_from_disk(self.args['data_name_or_path'])
+        # 将datasets shard
+        self.datasets = self.datasets.shard(num_shards=10, index=0)
+        # flantten the datasets
+        self.datasets = self.datasets.flatten_indices()
+        self.num_samples = len(self.datasets)
+        input_ids_lengths = self.datasets['input_ids_length']
+        input_ids_lengths = [min(self.args['max_seq_len'], length) for length in input_ids_lengths]
+        self.total_tokens = sum(input_ids_lengths)
     
     def __getitem__(self, idx):
         sample = self.datasets[idx]
