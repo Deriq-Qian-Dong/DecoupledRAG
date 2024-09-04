@@ -396,10 +396,10 @@ class QADataset4Chat(Dataset):
     
     def setup_datasets(self):
         self.datasets = load_from_disk(self.args['data_name_or_path'])
-        # 将datasets顺序前后颠倒
-        self.datasets = self.datasets.select(range(len(self.datasets)-1, -1, -1))
-        # flantten the datasets
-        self.datasets = self.datasets.flatten_indices()
+        # # 将datasets顺序前后颠倒
+        # self.datasets = self.datasets.select(range(len(self.datasets)-1, -1, -1))
+        # # flantten the datasets
+        # self.datasets = self.datasets.flatten_indices()
         self.num_samples = len(self.datasets)
         input_ids_lengths = self.datasets['input_ids_length']
         input_ids_lengths = [min(self.args['max_seq_len'], length) for length in input_ids_lengths]
