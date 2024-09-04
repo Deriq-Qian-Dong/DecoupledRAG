@@ -31,8 +31,6 @@ training:
   start_from: 0
   cross_attention_activation_function: silu
   add_cross_attention_layer_number: 31
-  skip_steps: 0
-  max_tokens: 4096
   kb_path: ../data_of_ReGPT/En-Wiki/phrases_embeddings.npy
   freeze_retrieval_head: true
   freeze_lm_head: true
@@ -48,7 +46,7 @@ dataset:
         max_seq_len: 512
         dynamic_sampler: true
         corpus: ../data_of_ReGPT/Wiki-corpus/train
-        max_tokens: 4096
+        max_tokens: 5120
       qa_dataset:
         data_name_or_path: ../data_of_ReGPT/QA_datasets_WikiEmb/nq/sorted_datasets_train
         dataset_name: QADataset4Chat
