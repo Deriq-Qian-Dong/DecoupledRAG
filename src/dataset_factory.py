@@ -478,7 +478,7 @@ class QADataset4ChatTest(QADataset4Chat):
         else:
             answer = sample['answer']
         # hits = self.searcher.search(query, 5)
-        retrieved_docs = self.corpus[sample['neighbors']]['text'][:1]
+        retrieved_docs = self.corpus[sample['neighbors']]['text']
         references = "references:\n"
         for doc in retrieved_docs:
             references += doc+'\n'
