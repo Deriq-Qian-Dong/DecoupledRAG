@@ -479,10 +479,10 @@ class QADataset4ChatTest(QADataset4Chat):
             answer = sample['answer']
         # hits = self.searcher.search(query, 5)
         retrieved_docs = self.corpus[sample['neighbors']]['text'][:1]
-        # references = "references:\n"
-        # for doc in retrieved_docs:
-            # references += doc+'\n'
-        query = query+'\nThe answer MUST in ONE OR FEW WORDS.'
+        references = "references:\n"
+        for doc in retrieved_docs:
+            references += doc+'\n'
+        query = references+query+'\nThe answer MUST in ONE OR FEW WORDS.'
         chat = [{'role': 'user', 'content': query}]
         chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
         neighbor_embeddings = sample.get('neighbor_embeddings')
