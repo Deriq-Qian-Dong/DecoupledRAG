@@ -759,7 +759,7 @@ class LlamaDecoderLayer(nn.Module):
             import os
             self.gate_crossattention = LinearFusion(config.hidden_size)
             if os.path.exists(f"{directory}/gate_{layer_idx}.pt"):
-                self.gate_crossattention.load_state_dict(torch.load(f"{directory}/gate_{layer_idx}.pt"))
+                self.gate_crossattention.load_state_dict(torch.load(f"{directory}/gate_{layer_idx}.pt"), strict=False)
                 print(f"load gate_{layer_idx}.pt from {directory}")
             self.act = ACT2FN[config.cross_attention_activation_function]
 
