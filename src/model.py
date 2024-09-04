@@ -228,8 +228,10 @@ class RAGForCausalLM(nn.Module):
         self.model.model.save_pretrained(directory) 
         for i in range(self.train_config['add_cross_attention_layer_number']+1):
             # gate_scores.append(float(self.model.model.layers[i].gate_crossattention.cpu().detach().float().numpy()[0]))
-            torch.save(self.model.model.layers[i].gate_crossattention.state_dict(), f"{directory}/gate_{i}.pt")
-
+            state_dict = self.model.model.layers[i].gate_crossattention.state_dict()
+            # move to cpu
+            state_dict = {key: value.cpu() for key, value in state_dict.items()}
+            torch.save(state_dict, f"{directory}/gate_{i}.pt")
 
 @register_class
 class LanguageModelTrainer:
