@@ -479,10 +479,10 @@ class MixRAGPretrainFromAFSDatasetQADataset4Chat(Dataset):
         args['data_name_or_path'] = args['data_name_or_paths']['corpus_data_name_or_path']
     
     def __getitem__(self, idx):
-        if idx<len(self.corpus_datasets):
-            return self.corpus_datasets[idx]
+        if idx<len(self.qa_datasets):
+            return self.qa_datasets[idx]
         else:
-            return self.qa_datasets[idx-len(self.corpus_datasets)]
+            return self.corpus_datasets[idx-len(self.qa_datasets)]
     
     def __len__(self):
         return len(self.corpus_datasets)+len(self.qa_datasets)
