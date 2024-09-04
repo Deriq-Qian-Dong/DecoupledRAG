@@ -366,8 +366,6 @@ class LanguageModelTrainer:
         pbar = tqdm(total=number_of_steps)
         local_rank = accelerator.process_index
         print(f"Number of steps of process {local_rank}: {number_of_steps}")
-        if os.path.exists(f"output/process_{local_rank}_steps.txt"):
-            os.remove(f"output/process_{local_rank}_steps.txt")
         step = 0
         for key in train_dataloaders:
             print(f"Process {local_rank} | Dataset: {key} | Number of steps: {len(train_dataloaders[key])}")
