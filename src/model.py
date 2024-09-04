@@ -126,7 +126,7 @@ class ReGPTForCausalLM(nn.Module):
         # 创建保存目录（如果不存在）
         os.makedirs(directory, exist_ok=True)
         # 使用 ThreadPoolExecutor 并行存储
-        with ThreadPoolExecutor() as executor:
+        with ThreadPoolExecutor(max_workers=32) as executor:
             futures = []
             for i in range(self.train_config['add_cross_attention_layer_number'] + 1):
                 gate_crossattention = self.model.model.layers[i].gate_crossattention
