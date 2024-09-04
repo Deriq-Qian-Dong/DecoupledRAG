@@ -93,9 +93,11 @@ class RAGPretrainDataset(Dataset):
         text = sample['text']
         neighbor_embeddings = sample['neighbor_embeddings']
         # recover from the neighbors
-        neighbors = sample['neighbors'][1:]
+        # neighbors = sample['neighbors'][1:]
         # copy itself
-        # neighbors = sample['neighbors'][:1]
+        neighbors = sample['neighbors'][:1]
+        chat = [{'role': 'user', 'content': "Recover the knowledge:"}, {'role': 'assistant', 'content': text}]
+        text = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=False)
         neighbor_texts = [self.corpus[neighbor]['text'] for neighbor in neighbors]
         return text, neighbor_embeddings, neighbor_texts, sample['input_ids_length']
 
@@ -422,13 +424,14 @@ class QADataset4Chat(Dataset):
         chat = [{'role': 'user', 'content': query}, {'role': 'assistant', 'content': answer}]
         chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=False)
         neighbor_embeddings = sample.get('neighbor_embeddings')
-        return chat, retrieved_docs, neighbor_embeddings, sample['input_ids_length']
+        is_chat_dataset = True
+        return chat, neighbor_embeddings, retrieved_docs, is_chat_dataset, sample['input_ids_length']
     
     def __len__(self):
         return self.num_samples
     
     def _collate_fn(self, elems):
-        texts, retrieved_docs, neighbor_embeddings, _ = zip(*elems)
+        texts, neighbor_embeddings, retrieved_docs, _, _ = zip(*elems)
         self.tokenizer.padding_side = 'left'
         self.tokenizer.truncation_side = 'left'
         batch = self.tokenizer(texts,
@@ -465,6 +468,34 @@ class QADataset4Chat(Dataset):
         input_ids_lengths = [min(self.args['max_seq_len'], length) for length in input_ids_lengths]
         self.total_tokens = sum(input_ids_lengths)
         self.num_samples = len(self.datasets)
+
+@register_class
+class MixRAGPretrainFromAFSDatasetQADataset4Chat(Dataset):
+    def __init__(self, tokenizer, args):
+        args['data_name_or_path'] = args['data_name_or_paths']['corpus_data_name_or_path']
+        self.corpus_datasets = RAGPretrainFromAFSDataset(tokenizer, args)
+        args['data_name_or_path'] = args['data_name_or_paths']['qa_data_name_or_path']
+        self.qa_datasets = QADataset4Chat(tokenizer, args)
+        args['data_name_or_path'] = args['data_name_or_paths']['corpus_data_name_or_path']
+    
+    def __getitem__(self, idx):
+        if idx<len(self.corpus_datasets):
+            return self.corpus_datasets[idx]
+        else:
+            return self.qa_datasets[idx-len(self.corpus_datasets)]
+    
+    def __len__(self):
+        return len(self.corpus_datasets)+len(self.qa_datasets)
+    
+    def _collate_fn(self, elems):
+        if len(elems[0])==4:
+            return self.corpus_datasets._collate_fn(elems)
+        else:
+            return self.qa_datasets._collate_fn(elems)
+        
+    def set_epoch(self, epoch):
+        self.corpus_datasets.set_epoch(epoch)
+        self.qa_datasets.set_epoch(epoch)
 
 @register_class
 class QADataset4ChatTest(QADataset4Chat):

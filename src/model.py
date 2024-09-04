@@ -511,7 +511,7 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
                 for i in range(len(answers)):
                     total_sample_count += 1
                     accelerator.print({"test/answers": answers[i], "test/outputs": outputs[i]})
-                    if answers[i]==outputs[i]:
+                    if answers[i].lower()==outputs[i].lower():
                         accuracy += 1
                 step += 1
                 # if step>=3:
