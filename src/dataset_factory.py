@@ -107,6 +107,7 @@ class RAGPretrainDataset(Dataset):
     def _collate_fn(self, elems):
         texts, neighbor_embeddings, neighbor_texts, _ = zip(*elems)
         batch = self.tokenizer(texts,
+                                add_special_tokens=False,
                                 max_length=self.args['max_seq_len'],
                                 padding=True,
                                 truncation=True,
@@ -424,14 +425,13 @@ class QADataset4Chat(Dataset):
         chat = [{'role': 'user', 'content': query}, {'role': 'assistant', 'content': answer}]
         chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=False)
         neighbor_embeddings = sample.get('neighbor_embeddings')
-        is_chat_dataset = True
-        return chat, neighbor_embeddings, retrieved_docs, is_chat_dataset, sample['input_ids_length']
+        return chat, neighbor_embeddings, retrieved_docs, sample['input_ids_length']
     
     def __len__(self):
         return self.num_samples
     
     def _collate_fn(self, elems):
-        texts, neighbor_embeddings, retrieved_docs, _, _ = zip(*elems)
+        texts, neighbor_embeddings, retrieved_docs, _ = zip(*elems)
         self.tokenizer.padding_side = 'left'
         self.tokenizer.truncation_side = 'left'
         batch = self.tokenizer(texts,
@@ -488,10 +488,7 @@ class MixRAGPretrainFromAFSDatasetQADataset4Chat(Dataset):
         return len(self.corpus_datasets)+len(self.qa_datasets)
     
     def _collate_fn(self, elems):
-        if len(elems[0])==4:
-            return self.corpus_datasets._collate_fn(elems)
-        else:
-            return self.qa_datasets._collate_fn(elems)
+        return self.qa_datasets._collate_fn(elems)
         
     def set_epoch(self, epoch):
         self.corpus_datasets.set_epoch(epoch)
