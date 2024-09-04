@@ -40,7 +40,7 @@ training:
 dataset:
   train:
     dataset_name: MixRAGPretrainFromAFSDatasetQADataset4Chat
-    batch_size: 16
+    batch_size: 24
     num_epochs: 805
     max_seq_len: 512
     dynamic_sampler: false
