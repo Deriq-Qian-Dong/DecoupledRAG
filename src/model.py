@@ -250,15 +250,22 @@ class LanguageModelTrainer:
             # self.test()
         
     def set_epoch_to_dataset(self):
-        if self.dataset_config['train']['dynamic_sampler']:
-            self.train_dataset = dataset_class(self.dataset_config['train']['dataset_name'])(self.tokenizer, self.dataset_config['train'])
-            self.train_dataset.set_epoch(self.epoch)
-            self.sampler = DynamicBatchSampler(self.train_dataset, self.config['training']['max_tokens'], num_replicas=self.accelerator.num_processes, rank=self.accelerator.process_index)            
-            self.train_dataloader = DataLoader(self.train_dataset, batch_sampler=self.sampler, shuffle=False, collate_fn=self.train_dataset._collate_fn)
+        self.train_dataloaders = []
+        for key in self.dataset_config['train']['datasets']:
+            dataset_args = self.dataset_config['train']['datasets'][key]
+            dataloader = self.get_train_dataloader(dataset_args)
+            self.train_dataloaders.append(dataloader)
+    
+    def get_train_dataloader(self, dataset_args):
+        train_dataset = dataset_class(dataset_args['dataset_name'])(self.tokenizer, dataset_args)
+        train_dataset.set_epoch(self.epoch)
+        if dataset_args['dynamic_sampler']:
+            sampler = DynamicBatchSampler(train_dataset, dataset_args['max_tokens'], num_replicas=self.accelerator.num_processes, rank=self.accelerator.process_index)            
+            train_dataloader = DataLoader(train_dataset, batch_sampler=sampler, shuffle=False, collate_fn=train_dataset._collate_fn)
         else:
-            self.train_dataset.set_epoch(self.epoch)
-            self.train_dataloader = DataLoader(self.train_dataset, batch_size=self.dataset_config['train']['batch_size'], shuffle=False, collate_fn=self.train_dataset._collate_fn)
-            self.train_dataloader = self.accelerator.prepare_data_loader(self.train_dataloader)
+            train_dataloader = DataLoader(train_dataset, batch_size=dataset_args['batch_size'], shuffle=False, collate_fn=train_dataset._collate_fn)
+            train_dataloader = self.accelerator.prepare_data_loader(train_dataloader)
+        return train_dataloader
 
     def setup_model(self, train_config):
         model = AutoModelForCausalLM.from_pretrained(train_config['model_name_or_path'], use_cache=not train_config['gradient_checkpointing'])
@@ -276,9 +283,7 @@ class LanguageModelTrainer:
         self.model = model
 
     def setup_dataloader(self, dataset_config, tokenizer):
-        self.train_dataset = dataset_class(dataset_config['train']['dataset_name'])(tokenizer, dataset_config['train'])
         self.test_dataset = dataset_class(dataset_config['test']['dataset_name'])(tokenizer, dataset_config['test'])
-        self.train_dataloader = DataLoader(self.train_dataset, batch_size=dataset_config['train']['batch_size'], shuffle=False, collate_fn=self.train_dataset._collate_fn)
         self.test_dataloader = DataLoader(self.test_dataset, batch_size=dataset_config['test']['batch_size'], shuffle=False, collate_fn=self.test_dataset._collate_fn)
     
     def setup_config(self, train_config, dataset_config):
@@ -333,7 +338,7 @@ class LanguageModelTrainer:
         accelerator.init_trackers(project_name=f'{train_config["project_name"]}_{timestamp}')
         if accelerator.is_main_process:
             print_trainable_params_stats(model)
-        (model, optimizer, self.train_dataloader, self.test_dataloader) = accelerator.prepare(model, optimizer, self.train_dataloader, self.test_dataloader)
+        (model, optimizer, self.train_dataloader, self.test_dataloader) = accelerator.prepare(model, optimizer, self.test_dataloader, self.test_dataloader)
         self.model = model
         self.tokenizer = tokenizer
         self.optimizer = optimizer
@@ -354,58 +359,54 @@ class LanguageModelTrainer:
         return stats
 
     def train(self):
-        model, optimizer, train_dataloader, scheduler, accelerator, epoch = self.model, self.optimizer, self.train_dataloader, self.scheduler, self.accelerator, self.epoch
+        model, optimizer, train_dataloaders, scheduler, accelerator, epoch = self.model, self.optimizer, self.train_dataloaders, self.scheduler, self.accelerator, self.epoch
         model.train()
-        pbar = tqdm(total=len(train_dataloader))
+        number_of_steps = sum([len(dataloader) for dataloader in train_dataloaders])
+        pbar = tqdm(total=number_of_steps)
         local_rank = accelerator.process_index
-        number_of_steps = len(train_dataloader)
         print(f"Number of steps of process {local_rank}: {number_of_steps}")
         if os.path.exists(f"output/process_{local_rank}_steps.txt"):
             os.remove(f"output/process_{local_rank}_steps.txt")
-        for step, batch in enumerate(train_dataloader):
-            with open(f"output/process_{local_rank}_steps.txt", 'a') as f:
-                f.write(str(step)+'\t'+str(batch['input_ids'].size(0))+'\n')
-            if epoch==0 and step<self.train_config['skip_steps']:
+        step = 0
+        for dataloader in train_dataloaders:
+            for batch in dataloader:
+                self.iter_count += 1
+                total_time = time()
+                seq_len = batch['input_ids'].size(1)
+                batch_size = batch.input_ids.shape[0]
+                batch = self._prepare_inputs(batch)
+                batch = accelerator.prepare(batch)
+                forward_time = time()
+                outputs = model(**batch)
+                forward_time = time() - forward_time
+                loss, stats = self.compute_loss(outputs)
+                stats["training/seq_len"] = seq_len
+                stats["training/batch_size"] = batch_size
+                stats = self.task_specific_stats(stats, model)
+                backward_time = time()
+                accelerator.backward(loss)
+                backward_time = time() - backward_time
+                stats["time/forward"] = forward_time
+                stats["time/backward"] = backward_time
+                opt_time = time()
+                for group_number, lr in enumerate(scheduler.get_last_lr()):
+                    stats[f"training/learning_rate"] = lr
+                optimizer.step()
+                scheduler.step()
+                optimizer.zero_grad()
                 if accelerator.is_main_process:
                     pbar.update(1)
-                    pbar.set_description(f"Epoch {epoch} | Skiping {step}/{self.train_config['skip_steps']}")
-                continue
-            self.iter_count += 1
-            total_time = time()
-            seq_len = batch['input_ids'].size(1)
-            batch_size = batch.input_ids.shape[0]
-            batch = self._prepare_inputs(batch)
-            batch = accelerator.prepare(batch)
-            forward_time = time()
-            outputs = model(**batch)
-            forward_time = time() - forward_time
-            loss, stats = self.compute_loss(outputs)
-            stats["training/seq_len"] = seq_len
-            stats["training/batch_size"] = batch_size
-            stats = self.task_specific_stats(stats, model)
-            backward_time = time()
-            accelerator.backward(loss)
-            backward_time = time() - backward_time
-            stats["time/forward"] = forward_time
-            stats["time/backward"] = backward_time
-            opt_time = time()
-            for group_number, lr in enumerate(scheduler.get_last_lr()):
-                stats[f"training/learning_rate"] = lr
-            optimizer.step()
-            scheduler.step()
-            optimizer.zero_grad()
-            if accelerator.is_main_process:
-                pbar.update(1)
-                pbar.set_description(f"Epoch {epoch} | Step {step} | Loss: {loss.cpu().detach().float().numpy():.4f}")
-            if self.iter_count%self.train_config['eval_step']==0:
-                self.test()
-            opt_time = time() - opt_time
-            stats["time/optimization"] = opt_time
-            total_time = time() - total_time
-            stats["time/total"] = total_time
-            data_loading_time = total_time - forward_time - backward_time - opt_time
-            stats["time/data_loading"] = data_loading_time
-            accelerator.log(stats, step=self.iter_count)
+                    pbar.set_description(f"Epoch {epoch} | Step {step} | Loss: {loss.cpu().detach().float().numpy():.4f}")
+                    step += 1
+                if self.iter_count%self.train_config['eval_step']==0:
+                    self.test()
+                opt_time = time() - opt_time
+                stats["time/optimization"] = opt_time
+                total_time = time() - total_time
+                stats["time/total"] = total_time
+                data_loading_time = total_time - forward_time - backward_time - opt_time
+                stats["time/data_loading"] = data_loading_time
+                accelerator.log(stats, step=self.iter_count)
         pbar.close()
 
     def test(self):
