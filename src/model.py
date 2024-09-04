@@ -250,11 +250,11 @@ class LanguageModelTrainer:
             # self.test()
         
     def set_epoch_to_dataset(self):
-        self.train_dataloaders = []
+        self.train_dataloaders = {}
         for key in self.dataset_config['train']['datasets']:
             dataset_args = self.dataset_config['train']['datasets'][key]
             dataloader = self.get_train_dataloader(dataset_args)
-            self.train_dataloaders.append(dataloader)
+            self.train_dataloaders[key] = dataloader
     
     def get_train_dataloader(self, dataset_args):
         train_dataset = dataset_class(dataset_args['dataset_name'])(self.tokenizer, dataset_args)
@@ -361,15 +361,17 @@ class LanguageModelTrainer:
     def train(self):
         model, optimizer, train_dataloaders, scheduler, accelerator, epoch = self.model, self.optimizer, self.train_dataloaders, self.scheduler, self.accelerator, self.epoch
         model.train()
-        number_of_steps = sum([len(dataloader) for dataloader in train_dataloaders])
+        # train_dataloaders is a dict
+        number_of_steps = sum([len(dataloader) for dataloader in train_dataloaders.values()])
         pbar = tqdm(total=number_of_steps)
         local_rank = accelerator.process_index
         print(f"Number of steps of process {local_rank}: {number_of_steps}")
         if os.path.exists(f"output/process_{local_rank}_steps.txt"):
             os.remove(f"output/process_{local_rank}_steps.txt")
         step = 0
-        for dataloader in train_dataloaders:
-            for batch in dataloader:
+        for key in train_dataloaders:
+            print(f"Process {local_rank} | Dataset: {key} | Number of steps: {len(train_dataloaders[key])}")
+            for batch in train_dataloaders[key]:
                 self.iter_count += 1
                 total_time = time()
                 seq_len = batch['input_ids'].size(1)
