@@ -7,7 +7,7 @@ training:
   model_name_or_path: ../llama3-chat
   tokenizer_name_or_path: ../llama3-chat
   # kg_model_name_or_path: ../llama3-chat-top8
-  kg_model_name_or_path: ./output/RAG-best
+  kg_model_name_or_path: ./output/RAG-new
   num_layers_unfrozen: -1
   gradient_checkpointing: true
   optimizer: 
@@ -28,7 +28,7 @@ training:
   negatives_x_device: true
   predict_from_last: 10000
   eval_step: 100
-  start_from: 0
+  start_from: 12
   cross_attention_activation_function: silu
   add_cross_attention_layer_number: 31
   kb_path: ../data_of_ReGPT/En-Wiki/phrases_embeddings.npy
@@ -38,6 +38,15 @@ training:
 dataset:
   train:
     datasets: 
+      qa_dataset:
+        data_name_or_path: ../data_of_ReGPT/QA_datasets_WikiEmb/nq/sorted_datasets_train
+        dataset_name: QADataset4Chat
+        batch_size: 16
+        num_epochs: 805
+        max_seq_len: 512
+        dynamic_sampler: false
+        corpus: ../data_of_ReGPT/Wiki-corpus/train
+        max_tokens: 4096
       corpus_dataset:
         data_name_or_path: ../data/data_of_ReGPT/Wiki-corpus/sorted_datasets_train/data-{:05d}-of-00805.arrow
         dataset_name: RAGPretrainFromAFSDataset
@@ -47,15 +56,6 @@ dataset:
         dynamic_sampler: true
         corpus: ../data_of_ReGPT/Wiki-corpus/train
         max_tokens: 4096
-      # qa_dataset:
-      #   data_name_or_path: ../data_of_ReGPT/QA_datasets_WikiEmb/nq/sorted_datasets_train
-      #   dataset_name: QADataset4Chat
-      #   batch_size: 16
-      #   num_epochs: 805
-      #   max_seq_len: 512
-      #   dynamic_sampler: false
-      #   corpus: ../data_of_ReGPT/Wiki-corpus/train
-      #   max_tokens: 4096
   test:
     dataset_name: QADataset4ChatTest
     batch_size: 32
