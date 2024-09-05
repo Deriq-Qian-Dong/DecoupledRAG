@@ -557,6 +557,9 @@ class QADataset4ChatTest(QADataset4Chat):
                                 return_tensors="pt")['input_ids']
         return batch
 
+    def set_epoch(self, epoch):
+        pass
+
 @register_class
 class QASFTDataset(QADataset):
     def __init__(self, tokenizer, args):

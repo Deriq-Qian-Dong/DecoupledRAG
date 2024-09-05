@@ -333,6 +333,7 @@ class LanguageModelTrainer:
             train_config["scheduler"]["kwargs"]['eta_min'] = train_config['optimizer']['kwargs']['lr'] * 0.1
         scheduler = scheduler_class[train_config["scheduler"]["name"]](optimizer, **train_config["scheduler"]["kwargs"])
         self.tokenizer = tokenizer
+        self.epoch = 0
         self.setup_test_dataloader(dataset_config, tokenizer)
 
         accelerator = Accelerator(log_with=train_config['log_with'], project_dir=train_config['project_dir'])
@@ -348,7 +349,6 @@ class LanguageModelTrainer:
         self.accelerator = accelerator
         self.train_config = train_config
         self.dataset_config = dataset_config
-        self.epoch = 0
         self.iter_count = 0
         print_args(config)
 
