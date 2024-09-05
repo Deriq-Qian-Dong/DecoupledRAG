@@ -264,7 +264,6 @@ class LanguageModelTrainer:
             self.test_dataloaders[key] = dataloader
     
     def get_dataloader(self, dataset_args):
-        print(dataset_args)
         dataset = dataset_class(dataset_args['dataset_name'])(self.tokenizer, dataset_args)
         dataset.set_epoch(self.epoch)
         if dataset_args['dynamic_sampler']:
