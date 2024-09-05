@@ -255,8 +255,16 @@ class LanguageModelTrainer:
             dataset_args = self.dataset_config['train'][key]
             dataloader = self.get_dataloader(dataset_args)
             self.train_dataloaders[key] = dataloader
+
+    def setup_test_dataloader(self, dataset_config, tokenizer):
+        self.test_dataloaders = {}
+        for key in dataset_config['test']:
+            dataset_args = dataset_config['test'][key]
+            dataloader = self.get_dataloader(dataset_args)
+            self.test_dataloaders[key] = dataloader
     
     def get_dataloader(self, dataset_args):
+        print(dataset_args)
         dataset = dataset_class(dataset_args['dataset_name'])(self.tokenizer, dataset_args)
         dataset.set_epoch(self.epoch)
         if dataset_args['dynamic_sampler']:
@@ -281,13 +289,6 @@ class LanguageModelTrainer:
         if train_config['gradient_checkpointing']:
             model.gradient_checkpointing_enable()
         self.model = model
-
-    def setup_test_dataloader(self, dataset_config, tokenizer):
-        self.test_dataloaders = {}
-        for key in dataset_config['test']:
-            dataset_args = dataset_config['test'][key]
-            dataloader = self.get_dataloader(dataset_args)
-            self.test_dataloaders[key] = dataloader
 
     def setup_config(self, train_config, dataset_config):
         return train_config, dataset_config
