@@ -344,7 +344,7 @@ class LanguageModelTrainer:
         self.epoch = 0
         self.accelerator = accelerator
         self.setup_test_dataloader(dataset_config, tokenizer)
-        (model, optimizer, _, _) = accelerator.prepare(model, optimizer, list(self.test_dataloaders.values)[0], list(self.test_dataloaders.values)[0])
+        (model, optimizer, _, _) = accelerator.prepare(model, optimizer, list(self.test_dataloaders.values())[0], list(self.test_dataloaders.values())[0])
         self.model = model
         self.optimizer = optimizer
         self.scheduler = scheduler
