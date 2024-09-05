@@ -251,21 +251,21 @@ class LanguageModelTrainer:
         
     def set_epoch_to_dataset(self):
         self.train_dataloaders = {}
-        for key in self.dataset_config['train']['datasets']:
-            dataset_args = self.dataset_config['train']['datasets'][key]
-            dataloader = self.get_train_dataloader(dataset_args)
+        for key in self.dataset_config['train']:
+            dataset_args = self.dataset_config['train'][key]
+            dataloader = self.get_dataloader(dataset_args)
             self.train_dataloaders[key] = dataloader
     
-    def get_train_dataloader(self, dataset_args):
-        train_dataset = dataset_class(dataset_args['dataset_name'])(self.tokenizer, dataset_args)
-        train_dataset.set_epoch(self.epoch)
+    def get_dataloader(self, dataset_args):
+        dataset = dataset_class(dataset_args['dataset_name'])(self.tokenizer, dataset_args)
+        dataset.set_epoch(self.epoch)
         if dataset_args['dynamic_sampler']:
-            sampler = DynamicBatchSampler(train_dataset, dataset_args['max_tokens'], num_replicas=self.accelerator.num_processes, rank=self.accelerator.process_index)            
-            train_dataloader = DataLoader(train_dataset, batch_sampler=sampler, shuffle=False, collate_fn=train_dataset._collate_fn)
+            sampler = DynamicBatchSampler(dataset, dataset_args['max_tokens'], num_replicas=self.accelerator.num_processes, rank=self.accelerator.process_index)            
+            dataloader = DataLoader(dataset, batch_sampler=sampler, shuffle=False, collate_fn=dataset._collate_fn)
         else:
-            train_dataloader = DataLoader(train_dataset, batch_size=dataset_args['batch_size'], shuffle=False, collate_fn=train_dataset._collate_fn)
-            train_dataloader = self.accelerator.prepare_data_loader(train_dataloader)
-        return train_dataloader
+            dataloader = DataLoader(dataset, batch_size=dataset_args['batch_size'], shuffle=False, collate_fn=dataset._collate_fn)
+            dataloader = self.accelerator.prepare_data_loader(dataloader)
+        return dataloader
 
     def setup_model(self, train_config):
         model = AutoModelForCausalLM.from_pretrained(train_config['model_name_or_path'], use_cache=not train_config['gradient_checkpointing'])
@@ -282,10 +282,13 @@ class LanguageModelTrainer:
             model.gradient_checkpointing_enable()
         self.model = model
 
-    def setup_dataloader(self, dataset_config, tokenizer):
-        self.test_dataset = dataset_class(dataset_config['test']['dataset_name'])(tokenizer, dataset_config['test'])
-        self.test_dataloader = DataLoader(self.test_dataset, batch_size=dataset_config['test']['batch_size'], shuffle=False, collate_fn=self.test_dataset._collate_fn)
-    
+    def setup_test_dataloader(self, dataset_config, tokenizer):
+        self.test_dataloaders = {}
+        for key in dataset_config['test']:
+            dataset_args = dataset_config['test'][key]
+            dataloader = self.get_dataloader(dataset_args)
+            self.test_dataloaders[key] = dataloader
+
     def setup_config(self, train_config, dataset_config):
         return train_config, dataset_config
     
@@ -330,7 +333,7 @@ class LanguageModelTrainer:
             train_config["scheduler"]["kwargs"]['eta_min'] = train_config['optimizer']['kwargs']['lr'] * 0.1
         scheduler = scheduler_class[train_config["scheduler"]["name"]](optimizer, **train_config["scheduler"]["kwargs"])
 
-        self.setup_dataloader(dataset_config, tokenizer)
+        self.setup_test_dataloader(dataset_config, tokenizer)
 
         accelerator = Accelerator(log_with=train_config['log_with'], project_dir=train_config['project_dir'])
         current_time = datetime.datetime.now()
@@ -338,7 +341,7 @@ class LanguageModelTrainer:
         accelerator.init_trackers(project_name=f'{train_config["project_name"]}_{timestamp}')
         if accelerator.is_main_process:
             print_trainable_params_stats(model)
-        (model, optimizer, self.train_dataloader, self.test_dataloader) = accelerator.prepare(model, optimizer, self.test_dataloader, self.test_dataloader)
+        (model, optimizer, _, _) = accelerator.prepare(model, optimizer, self.test_dataloaders.values[0], self.test_dataloaders.values[0])
         self.model = model
         self.tokenizer = tokenizer
         self.optimizer = optimizer
@@ -496,40 +499,43 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
         return stats
     
     def test(self):
-        model, tokenizer, optimizer, scheduler, test_dataloader, accelerator, iter_count = self.model, self.tokenizer, self.optimizer, self.scheduler, self.test_dataloader, self.accelerator, self.iter_count
+        model, tokenizer, optimizer, scheduler, test_dataloaders, accelerator, iter_count = self.model, self.tokenizer, self.optimizer, self.scheduler, self.test_dataloaders, self.accelerator, self.iter_count
         model.eval()
-        accuracy = 0.0
-        total_sample_count = 0
-        step = 0
+        results = []
         with torch.no_grad():
-            for batch in tqdm(test_dataloader, desc=f"Evaluation of step {iter_count}", disable=not accelerator.is_main_process):
-                batch = accelerator.prepare(batch)
-                answers = batch.pop('answers')
-                outputs = model.module.model.generate(**batch, max_new_tokens=self.config['dataset']['test']['max_new_tokens'], do_sample=False)
-                answers = tokenizer.batch_decode(answers, skip_special_tokens=True)
-                outputs = outputs[:, batch['input_ids'].size(1):]
-                outputs = tokenizer.batch_decode(outputs, skip_special_tokens=True)
-                for i in range(len(answers)):
-                    total_sample_count += 1
-                    accelerator.print({"test/answers": answers[i], "test/outputs": outputs[i]})
-                    if answers[i].lower()==outputs[i].lower():
-                        accuracy += 1
-                step += 1
-                # if step>=3:
-                    # break
-        accuracy /= total_sample_count
-        accuracy = torch.tensor(accuracy).to(accelerator.device)
-        accelerator.wait_for_everyone()
-        gathered_accuracy = accelerator.gather(accuracy)
-        accuracy = gathered_accuracy.mean().item()
-        accelerator.print(f"Step {iter_count} | Accuracy: {accuracy:.4f}")
-        accelerator.log({"test/accuracy": accuracy}, step=self.iter_count)
-        if accelerator.is_main_process:
-            if accuracy>self.best_accuracy:
-                self.best_accuracy = accuracy
-                accelerator.unwrap_model(model).save_pretrained(f"output/RAG-best/")
-            accelerator.unwrap_model(model).save_pretrained(f"output/RAG-new/")
-        model.train()
+            for key in test_dataloaders:
+                accuracy = 0.0
+                total_sample_count = 0
+                print(f"Process {accelerator.process_index} | Dataset: {key} | Number of steps: {len(test_dataloaders[key])}")
+                test_dataloader = test_dataloaders[key]
+                for batch in tqdm(test_dataloader, desc=f"Evaluation of step {iter_count}", disable=not accelerator.is_main_process):
+                    batch = accelerator.prepare(batch)
+                    answers = batch.pop('answers')
+                    outputs = model.module.model.generate(**batch, max_new_tokens=self.config['dataset']['test']['max_new_tokens'], do_sample=False)
+                    answers = tokenizer.batch_decode(answers, skip_special_tokens=True)
+                    outputs = outputs[:, batch['input_ids'].size(1):]
+                    outputs = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+                    for i in range(len(answers)):
+                        total_sample_count += 1
+                        accelerator.print({"test/answers": answers[i], "test/outputs": outputs[i]})
+                        if answers[i]==outputs[i]:
+                            accuracy += 1
+                accuracy /= total_sample_count
+                accuracy = torch.tensor(accuracy).to(accelerator.device)
+                accelerator.wait_for_everyone()
+                gathered_accuracy = accelerator.gather(accuracy)
+                accuracy = gathered_accuracy.mean().item()
+                accelerator.print(f"Step {iter_count} | Dataset: {key} | Accuracy: {accuracy:.4f}")
+                accelerator.log({f"test/dataset_{key}/accuracy": accuracy}, step=iter_count)
+                results.append(float(accuracy))
+            mean_accuracy = np.mean(results)
+            if accelerator.is_main_process:
+                if mean_accuracy>self.best_accuracy:
+                    self.best_accuracy = mean_accuracy
+                    accelerator.print(f"New best accuracy: {mean_accuracy:.4f}")
+                    accelerator.unwrap_model(model).save_pretrained(f"output/RAG-best/")
+                accelerator.unwrap_model(model).save_pretrained(f"output/RAG-new/")
+            model.train()
 
 
 @register_class
