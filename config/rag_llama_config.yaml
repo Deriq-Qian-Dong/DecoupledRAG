@@ -28,7 +28,8 @@ training:
   negatives_x_device: true
   predict_from_last: 10000
   eval_step: 100
-  start_from: 12
+  start_from: 0
+  skip_steps: 0
   cross_attention_activation_function: silu
   add_cross_attention_layer_number: 31
   kb_path: ../data_of_ReGPT/En-Wiki/phrases_embeddings.npy

@@ -194,10 +194,10 @@ class RAGForCausalLM(nn.Module):
             model.model.load_adapter(train_config['kg_model_name_or_path'], "knowledge_injector")
         else:
             peft_config = LoraConfig(
-                lora_alpha=16,
-                lora_dropout=0.1,
-                r=64,
-                bias='none',
+                lora_alpha=32,
+                lora_dropout=0.01,
+                r=128,
+                bias='all',
                 task_type="CAUSAL_LM"
             )
             model.model.add_adapter(peft_config, "knowledge_injector")
@@ -375,8 +375,14 @@ class LanguageModelTrainer:
         print(f"Number of steps of process {local_rank}: {number_of_steps}")
         step = 0
         for key in train_dataloaders:
-            print(f"Process {local_rank} | Dataset: {key} | Number of steps: {len(train_dataloaders[key])}")
+            print(f"\033[31mProcess {local_rank} | Dataset: {key} | Number of steps: {len(train_dataloaders[key])}\033[0m")
             for batch in train_dataloaders[key]:
+                if self.iter_count==0 and step<self.train_config['skip_steps']:
+                    step+=1
+                    if accelerator.is_main_process:
+                        pbar.update(1)
+                        pbar.set_description(f"Epoch {epoch} | Skiping {step}/{self.train_config['skip_steps']}")
+                    continue
                 self.iter_count += 1
                 total_time = time()
                 seq_len = batch['input_ids'].size(1)
