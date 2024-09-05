@@ -110,5 +110,7 @@ generation_kwargs:
   top_p: 0.95
 
 RAG_kwargs:
+  faiss:
+    dimension: 768
   retrieval_step: 10
   topk: 6

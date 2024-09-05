@@ -474,8 +474,12 @@ class ReGPTLanguageModelTrainer(LanguageModelTrainer):
 class RAGLanguageModelTrainer(LanguageModelTrainer):
     def __init__(self, config):
         self.config = config
+        RAG_kwargs = config['RAG_kwargs']
         generation_kwargs = config['generation_kwargs']
+        self.config['training'].update(RAG_kwargs)
         self.config['training'].update(generation_kwargs)
+        # self.config['dataset']['train'].update(RAG_kwargs)
+        # self.config['dataset']['test'].update(RAG_kwargs)
         super(RAGLanguageModelTrainer, self).__init__(config)
         self.best_accuracy = 0.0
 
