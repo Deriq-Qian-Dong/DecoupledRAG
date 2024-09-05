@@ -332,7 +332,7 @@ class LanguageModelTrainer:
         if train_config["scheduler"]["name"] == "CosineAnnealingLR":
             train_config["scheduler"]["kwargs"]['eta_min'] = train_config['optimizer']['kwargs']['lr'] * 0.1
         scheduler = scheduler_class[train_config["scheduler"]["name"]](optimizer, **train_config["scheduler"]["kwargs"])
-
+        self.tokenizer = tokenizer
         self.setup_test_dataloader(dataset_config, tokenizer)
 
         accelerator = Accelerator(log_with=train_config['log_with'], project_dir=train_config['project_dir'])
@@ -343,7 +343,6 @@ class LanguageModelTrainer:
             print_trainable_params_stats(model)
         (model, optimizer, _, _) = accelerator.prepare(model, optimizer, self.test_dataloaders.values[0], self.test_dataloaders.values[0])
         self.model = model
-        self.tokenizer = tokenizer
         self.optimizer = optimizer
         self.scheduler = scheduler
         self.accelerator = accelerator
