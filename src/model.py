@@ -344,7 +344,12 @@ class LanguageModelTrainer:
         self.epoch = 0
         self.accelerator = accelerator
         self.setup_test_dataloader(dataset_config, tokenizer)
-        (model, optimizer, _, _) = accelerator.prepare(model, optimizer, list(self.test_dataloaders.values())[0], list(self.test_dataloaders.values())[0])
+        key = list(dataset_config['test'].keys())[0]
+        dataset_class(dataset_args['dataset_name'])(self.tokenizer, dataset_args)
+        dataset_args = dataset_config['test'][key]
+        test_dataset = dataset_class(dataset_args['dataset_name'])(self.tokenizer, dataset_args)
+        test_dataloader = DataLoader(test_dataset, batch_size=dataset_args['batch_size'], shuffle=False, collate_fn=test_dataset._collate_fn)
+        (model, optimizer, _, _) = accelerator.prepare(model, optimizer, test_dataloader, test_dataloader)
         self.model = model
         self.optimizer = optimizer
         self.scheduler = scheduler
