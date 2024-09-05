@@ -345,7 +345,6 @@ class LanguageModelTrainer:
         self.accelerator = accelerator
         self.setup_test_dataloader(dataset_config, tokenizer)
         key = list(dataset_config['test'].keys())[0]
-        dataset_class(dataset_args['dataset_name'])(self.tokenizer, dataset_args)
         dataset_args = dataset_config['test'][key]
         test_dataset = dataset_class(dataset_args['dataset_name'])(self.tokenizer, dataset_args)
         test_dataloader = DataLoader(test_dataset, batch_size=dataset_args['batch_size'], shuffle=False, collate_fn=test_dataset._collate_fn)
