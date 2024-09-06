@@ -389,6 +389,7 @@ class QADataset(Dataset):
 class QADataset4Chat(Dataset):
     def __init__(self, tokenizer, args):
         self.args = args
+        self.number_of_docs = args['number_of_docs']
         self.tokenizer = tokenizer
         self.setup_datasets()
         self.corpus = load_from_disk(args['corpus'])
@@ -417,7 +418,7 @@ class QADataset4Chat(Dataset):
         else:
             answer = sample['answer']
         # hits = self.searcher.search(query, 5)
-        retrieved_docs = self.corpus[sample['neighbors']]['text']
+        retrieved_docs = self.corpus[sample['neighbors']]['text'][:self.number_of_docs]
         # references = "references:\n"
         # for doc in retrieved_docs:
             # references += doc+'\n'
@@ -497,6 +498,7 @@ class MixRAGPretrainFromAFSDatasetQADataset4Chat(Dataset):
 @register_class
 class QADataset4ChatTest(QADataset4Chat):
     def __init__(self, tokenizer, args):
+        self.inference_with_explict_docs_for_test = args['inference_with_explict_docs_for_test']
         super().__init__(tokenizer, args)
 
     def setup_datasets(self):
@@ -521,10 +523,12 @@ class QADataset4ChatTest(QADataset4Chat):
         else:
             answer = sample['answer']
         # hits = self.searcher.search(query, 5)
-        retrieved_docs = self.corpus[sample['neighbors']]['text'][:2]
-        references = "references:\n"
+        retrieved_docs = self.corpus[sample['neighbors']]['text'][:self.number_of_docs]
+        references = "References:\n"
         for doc in retrieved_docs:
             references += doc+'\n'
+        if not self.inference_with_explict_docs_for_test:
+            references = ''
         query = references + query+'\nThe answer MUST in ONE OR FEW WORDS.'
         chat = [{'role': 'user', 'content': query}]
         chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)

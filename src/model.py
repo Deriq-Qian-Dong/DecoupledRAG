@@ -195,8 +195,8 @@ class RAGForCausalLM(nn.Module):
         else:
             peft_config = LoraConfig(
                 lora_alpha=32,
-                lora_dropout=0.01,
-                r=128,
+                lora_dropout=0.1,
+                r=512,
                 bias='all',
                 task_type="CAUSAL_LM"
             )
@@ -558,6 +558,11 @@ class RAGLanguageModelTester(RAGLanguageModelTrainer):
         self.config['training'].update(generation_kwargs)
         self.config['dataset']['train'].update(RAG_kwargs)
         self.config['dataset']['test'].update(RAG_kwargs)
+        for key in self.config['dataset']['test']:
+            self.config['dataset']['test'][key]['number_of_docs'] = self.config['dataset']['number_of_docs']
+            self.config['dataset']['test'][key]['inference_with_explict_docs_for_test'] = self.config['dataset']['inference_with_explict_docs_for_test']
+        for key in self.config['dataset']['train']:
+            self.config['dataset']['train'][key]['number_of_docs'] = self.config['dataset']['number_of_docs']
         
         train_config = config['training']
         model_config = AutoConfig.from_pretrained(train_config['model_name_or_path'])
