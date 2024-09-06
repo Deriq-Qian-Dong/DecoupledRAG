@@ -487,6 +487,7 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
         generation_kwargs = config['generation_kwargs']
         self.config['training'].update(RAG_kwargs)
         self.config['training'].update(generation_kwargs)
+        self.config['training']['project_name'] = config['training']['project_name']+f'_number_of_docs_{config["dataset"]["number_of_docs"]}'
         for key in self.config['dataset']['test']:
             self.config['dataset']['test'][key]['number_of_docs'] = self.config['dataset']['number_of_docs']
             self.config['dataset']['test'][key]['inference_with_explict_docs_for_test'] = self.config['dataset']['inference_with_explict_docs_for_test']
