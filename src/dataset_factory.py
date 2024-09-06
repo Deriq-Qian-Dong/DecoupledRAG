@@ -471,31 +471,6 @@ class QADataset4Chat(Dataset):
         self.num_samples = len(self.datasets)
 
 @register_class
-class MixRAGPretrainFromAFSDatasetQADataset4Chat(Dataset):
-    def __init__(self, tokenizer, args):
-        args['data_name_or_path'] = args['data_name_or_paths']['corpus_data_name_or_path']
-        self.corpus_datasets = RAGPretrainFromAFSDataset(tokenizer, args)
-        args['data_name_or_path'] = args['data_name_or_paths']['qa_data_name_or_path']
-        self.qa_datasets = QADataset4Chat(tokenizer, args)
-        args['data_name_or_path'] = args['data_name_or_paths']['corpus_data_name_or_path']
-    
-    def __getitem__(self, idx):
-        if idx<len(self.corpus_datasets):
-            return self.corpus_datasets[idx]
-        else:
-            return self.qa_datasets[idx-len(self.corpus_datasets)]
-    
-    def __len__(self):
-        return len(self.corpus_datasets)+len(self.qa_datasets)
-    
-    def _collate_fn(self, elems):
-        return self.qa_datasets._collate_fn(elems)
-        
-    def set_epoch(self, epoch):
-        self.corpus_datasets.set_epoch(epoch)
-        self.qa_datasets.set_epoch(epoch)
-
-@register_class
 class QADataset4ChatTest(QADataset4Chat):
     def __init__(self, tokenizer, args):
         self.inference_with_explict_docs_for_test = args['inference_with_explict_docs_for_test']
