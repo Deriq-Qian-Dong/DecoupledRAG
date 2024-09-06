@@ -248,18 +248,26 @@ class LanguageModelTrainer:
             self.set_epoch_to_dataset()
             self.train()
             self.test()
-        
+
     def set_epoch_to_dataset(self):
+        for key in self.dataset_config['train']:
+            self.dataset_config['train'][key]['number_of_docs'] = self.epoch
+        for key in self.dataset_config['test']:
+            self.dataset_config['test'][key]['number_of_docs'] = self.epoch
+        self.setup_test_dataloader()
+        self.setup_train_dataloader()
+
+    def setup_train_dataloader(self):
         self.train_dataloaders = {}
         for key in self.dataset_config['train']:
             dataset_args = self.dataset_config['train'][key]
             dataloader = self.get_dataloader(dataset_args)
             self.train_dataloaders[key] = dataloader
 
-    def setup_test_dataloader(self, dataset_config, tokenizer):
+    def setup_test_dataloader(self):
         self.test_dataloaders = {}
-        for key in dataset_config['test']:
-            dataset_args = dataset_config['test'][key]
+        for key in self.dataset_config['test']:
+            dataset_args = self.dataset_config['test'][key]
             dataloader = self.get_dataloader(dataset_args)
             self.test_dataloaders[key] = dataloader
     
@@ -342,7 +350,8 @@ class LanguageModelTrainer:
         self.tokenizer = tokenizer
         self.epoch = 0
         self.accelerator = accelerator
-        self.setup_test_dataloader(dataset_config, tokenizer)
+        self.dataset_config = dataset_config
+        self.setup_test_dataloader()
         key = list(dataset_config['test'].keys())[0]
         dataset_args = dataset_config['test'][key]
         test_dataset = dataset_class(dataset_args['dataset_name'])(self.tokenizer, dataset_args)
@@ -352,7 +361,6 @@ class LanguageModelTrainer:
         self.optimizer = optimizer
         self.scheduler = scheduler
         self.train_config = train_config
-        self.dataset_config = dataset_config
         self.iter_count = 0
         print_args(config)
 
