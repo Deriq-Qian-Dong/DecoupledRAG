@@ -1,3 +1,4 @@
+git pull
 output_dir=output
 log_dir=${output_dir}/log
 mkdir -p ${output_dir}

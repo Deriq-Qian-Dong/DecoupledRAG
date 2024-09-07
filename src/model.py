@@ -299,6 +299,17 @@ class LanguageModelTrainer:
         # print_trainable_params_stats(model)
         if train_config['gradient_checkpointing']:
             model.gradient_checkpointing_enable()
+        if os.path.exists(os.path.join(train_config['kg_model_name_or_path'], 'adapter_config.json')):
+            model.load_adapter(train_config['kg_model_name_or_path'], "finetune")
+        else:
+            peft_config = LoraConfig(
+                lora_alpha=32,
+                lora_dropout=0.1,
+                r=512,
+                bias='all',
+                task_type="CAUSAL_LM"
+            )
+            model.add_adapter(peft_config, "finetune")
         self.model = model
 
     def setup_config(self, train_config, dataset_config):
@@ -379,6 +390,12 @@ class LanguageModelTrainer:
     def task_specific_stats(self, stats, model):
         return stats
 
+    def pop_unused_keys(self, record):
+        record.pop('knowledge_input_ids', None)
+        record.pop('retrieval_position', None)
+        record.pop('neighbor_embeddings', None)
+        return record
+
     def train(self):
         model, optimizer, train_dataloaders, scheduler, accelerator, epoch = self.model, self.optimizer, self.train_dataloaders, self.scheduler, self.accelerator, self.epoch
         model.train()
@@ -399,6 +416,7 @@ class LanguageModelTrainer:
                     continue
                 self.iter_count += 1
                 total_time = time()
+                batch = self.pop_unused_keys(batch)
                 seq_len = batch['input_ids'].size(1)
                 batch_size = batch.input_ids.shape[0]
                 batch = self._prepare_inputs(batch)
@@ -437,38 +455,46 @@ class LanguageModelTrainer:
         pbar.close()
 
     def test(self):
-        model, tokenizer, optimizer, scheduler, test_dataloader, accelerator, iter_count = self.model, self.tokenizer, self.optimizer, self.scheduler, self.test_dataloader, self.accelerator, self.iter_count
+        model, tokenizer, optimizer, scheduler, test_dataloaders, accelerator, iter_count = self.model, self.tokenizer, self.optimizer, self.scheduler, self.test_dataloaders, self.accelerator, self.iter_count
         model.eval()
-        total_loss = 0
-        total_retrieval_loss = 0
+        results = []
         with torch.no_grad():
-            for batch in tqdm(test_dataloader, desc=f"Evaluation of step {iter_count}", disable=not accelerator.is_main_process):
-                batch = accelerator.prepare(batch)
-                outputs = model(**batch)
-                loss = outputs.loss
-                loss = accelerator.gather_for_metrics(loss)
-                total_loss += loss.cpu().detach().float().numpy().mean()
-                retrieval_loss = outputs.retrieval_loss
-                retrieval_loss = accelerator.gather_for_metrics(retrieval_loss)
-                total_retrieval_loss += retrieval_loss.cpu().detach().float().numpy().mean()
-        total_loss /= len(test_dataloader)
-        total_retrieval_loss /= len(test_dataloader)
-        perplexity = np.exp(total_loss)
-        accelerator.print(f"Step {iter_count} | Perplexity: {perplexity:.4f} | Loss: {total_loss:.4f} | Retrieval Loss: {total_retrieval_loss:.4f}")
-        directory = f"output/SFT-best/"
-        accelerator.wait_for_everyone()
-        stats = {"test/perplexity": perplexity, "test/loss": total_loss, "test/retrieval_loss": total_retrieval_loss}
-        accelerator.log(stats, step=self.iter_count)
-        if accelerator.is_main_process:
-            if perplexity<self.best_perplexity:
-                self.best_perplexity = perplexity
-                accelerator.unwrap_model(model).save_pretrained(directory)
-                tokenizer.save_pretrained(directory)
-            directory = f"output/SFT-new/"
-            accelerator.unwrap_model(model).save_pretrained(directory)
-            tokenizer.save_pretrained(directory)
-        accelerator.wait_for_everyone()
-        model.train()
+            for key in test_dataloaders:
+                accuracy = 0.0
+                total_sample_count = 0
+                print(f"Process {accelerator.process_index} | Dataset: {key} | Number of steps: {len(test_dataloaders[key])}")
+                test_dataloader = test_dataloaders[key]
+                for batch in tqdm(test_dataloader, desc=f"Evaluation of step {iter_count}", disable=not accelerator.is_main_process):
+                    batch = self.pop_unused_keys(batch)
+                    batch = accelerator.prepare(batch)
+                    answers = batch.pop('answers')
+                    outputs = model.module.model.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False)
+                    answers = tokenizer.batch_decode(answers, skip_special_tokens=True)
+                    outputs = outputs[:, batch['input_ids'].size(1):]
+                    outputs = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+                    for i in range(len(answers)):
+                        total_sample_count += 1
+                        accelerator.print({"test/answers": answers[i], "test/outputs": outputs[i]})
+                        if answers[i]==outputs[i]:
+                            accuracy += 1
+                accuracy /= total_sample_count
+                accuracy = torch.tensor(accuracy).to(accelerator.device)
+                accelerator.wait_for_everyone()
+                gathered_accuracy = accelerator.gather(accuracy)
+                accuracy = gathered_accuracy.mean().item()
+                accelerator.print(f"Step {iter_count} | Dataset: {key} | Accuracy: {accuracy:.4f}")
+                accelerator.log({f"test/dataset_{key}/accuracy": accuracy}, step=iter_count)
+                results.append(float(accuracy))
+            mean_accuracy = np.mean(results)
+            accelerator.log({"test/mean_accuracy": mean_accuracy}, step=iter_count)
+            print(f"\033[31mStep {iter_count} | Mean Accuracy: {mean_accuracy:.4f}\033[0m")
+            if accelerator.is_main_process:
+                if mean_accuracy>self.best_accuracy:
+                    self.best_accuracy = mean_accuracy
+                    accelerator.print(f"New best accuracy: {mean_accuracy:.4f}")
+                    accelerator.unwrap_model(model).save_pretrained(f"output/RAG-best/")
+                accelerator.unwrap_model(model).save_pretrained(f"output/RAG-new/")
+            model.train()
 
 @register_class
 class ReGPTLanguageModelTrainer(LanguageModelTrainer):
@@ -525,44 +551,7 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
             # stats[f'gate_score/{i}'] = float(self.accelerator.unwrap_model(model).model.base_model.layers[i].gate_crossattention.cpu().detach().float().numpy()[0])
         return stats
     
-    def test(self):
-        model, tokenizer, optimizer, scheduler, test_dataloaders, accelerator, iter_count = self.model, self.tokenizer, self.optimizer, self.scheduler, self.test_dataloaders, self.accelerator, self.iter_count
-        model.eval()
-        results = []
-        with torch.no_grad():
-            for key in test_dataloaders:
-                accuracy = 0.0
-                total_sample_count = 0
-                print(f"Process {accelerator.process_index} | Dataset: {key} | Number of steps: {len(test_dataloaders[key])}")
-                test_dataloader = test_dataloaders[key]
-                for batch in tqdm(test_dataloader, desc=f"Evaluation of step {iter_count}", disable=not accelerator.is_main_process):
-                    batch = accelerator.prepare(batch)
-                    answers = batch.pop('answers')
-                    outputs = model.module.model.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False)
-                    answers = tokenizer.batch_decode(answers, skip_special_tokens=True)
-                    outputs = outputs[:, batch['input_ids'].size(1):]
-                    outputs = tokenizer.batch_decode(outputs, skip_special_tokens=True)
-                    for i in range(len(answers)):
-                        total_sample_count += 1
-                        accelerator.print({"test/answers": answers[i], "test/outputs": outputs[i]})
-                        if answers[i]==outputs[i]:
-                            accuracy += 1
-                accuracy /= total_sample_count
-                accuracy = torch.tensor(accuracy).to(accelerator.device)
-                accelerator.wait_for_everyone()
-                gathered_accuracy = accelerator.gather(accuracy)
-                accuracy = gathered_accuracy.mean().item()
-                accelerator.print(f"Step {iter_count} | Dataset: {key} | Accuracy: {accuracy:.4f}")
-                accelerator.log({f"test/dataset_{key}/accuracy": accuracy}, step=iter_count)
-                results.append(float(accuracy))
-            mean_accuracy = np.mean(results)
-            accelerator.log({"test/mean_accuracy": mean_accuracy}, step=iter_count)
-            print(f"\033[31mStep {iter_count} | Mean Accuracy: {mean_accuracy:.4f}\033[0m")
-            if accelerator.is_main_process:
-                if mean_accuracy>self.best_accuracy:
-                    self.best_accuracy = mean_accuracy
-                    accelerator.print(f"New best accuracy: {mean_accuracy:.4f}")
-                    accelerator.unwrap_model(model).save_pretrained(f"output/RAG-best/")
-                accelerator.unwrap_model(model).save_pretrained(f"output/RAG-new/")
-            model.train()
+    def pop_unused_keys(self, record):
+        return record
+
 
