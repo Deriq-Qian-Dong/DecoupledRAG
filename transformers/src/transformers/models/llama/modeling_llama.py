@@ -740,6 +740,9 @@ class LinearFusion(nn.Module):
     
     def forward(self, A, B):
         # 计算线性变换后的结果
+        # casting the tensor to the same type as the parameter
+        A = A.to(self.W_A.dtype)
+        B = B.to(self.W_B.dtype)
         C = torch.matmul(A, self.W_A.t()) + torch.matmul(B, self.W_B.t()) + self.b
         return C
     
