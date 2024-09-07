@@ -247,6 +247,7 @@ class LanguageModelTrainer:
         self.setup()
         self.best_perplexity = 1e10
         self.sampler = None
+        self.best_accuracy = 0.0
 
     def run(self):
         self.test()
@@ -540,7 +541,6 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
         RAG_kwargs = config['RAG_kwargs']
         self.config['training'].update(RAG_kwargs)
         super(RAGLanguageModelTrainer, self).__init__(config)
-        self.best_accuracy = 0.0
 
     def setup_model(self, train_config):
         self.model = RAGForCausalLM(train_config)
