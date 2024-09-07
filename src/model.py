@@ -353,7 +353,7 @@ class LanguageModelTrainer:
             print_trainable_params_stats(model)
         if tokenizer.chat_template is None:
             template = tokenizer.chat_template
-            template = '''{% set loop_messages = messages %}{% for message in loop_messages %}{{ message['role'].upper() }}: {{ message['content'] | trim }}\n{% endfor %}\n{% if add_generation_prompt %}\nASSISTANT: {% endif %}'''
+            template = '''{% set loop_messages = messages %}{% for message in loop_messages %}{{ message['content'] | trim }}\n{% endfor %}\n{% if add_generation_prompt %}\n{% endif %}'''
             tokenizer.chat_template = template
         self.tokenizer = tokenizer
         self.epoch = 0
