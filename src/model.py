@@ -330,7 +330,8 @@ class LanguageModelTrainer:
             x = record[key]
             if isinstance(x, torch.Tensor):
                 prepared[key] = x.to(local_rank)
-                prepared[key].requires_grad = True
+                if prepared[key].dtype in [torch.float32, torch.float64, torch.float16]:
+                    prepared[key].requires_grad = True
             elif x is None:
                 prepared[key] = x
             elif isinstance(x, bool):
