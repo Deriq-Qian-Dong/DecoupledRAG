@@ -258,14 +258,14 @@ class LanguageModelTrainer:
             self.test()
 
     def set_epoch_to_dataset(self):
-        number_of_docs_lst = [1,2,3,5,10]
-        number_of_docs = number_of_docs_lst[self.epoch%len(number_of_docs_lst)]
-        for key in self.dataset_config['train']:
-            self.dataset_config['train'][key]['number_of_docs'] = number_of_docs
-        for key in self.dataset_config['test']:
-            self.dataset_config['test'][key]['number_of_docs'] = number_of_docs
-        timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")       
-        self.accelerator.init_trackers(project_name=f"{self.config['training']['project_name']}_number_of_docs_{self.dataset_config['train'][key]['number_of_docs']}_{timestamp}")
+        # number_of_docs_lst = [1,2,3,5,10]
+        # number_of_docs = number_of_docs_lst[self.epoch%len(number_of_docs_lst)]
+        # for key in self.dataset_config['train']:
+            # self.dataset_config['train'][key]['number_of_docs'] = number_of_docs
+        # for key in self.dataset_config['test']:
+            # self.dataset_config['test'][key]['number_of_docs'] = number_of_docs
+        # timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")       
+        # self.accelerator.init_trackers(project_name=f"{self.config['training']['project_name']}_number_of_docs_{self.dataset_config['train'][key]['number_of_docs']}_{timestamp}")
         self.setup_test_dataloader()
         self.setup_train_dataloader()
 
@@ -276,7 +276,10 @@ class LanguageModelTrainer:
             dataloader = self.get_dataloader(dataset_args)
             self.train_dataloaders[key] = dataloader
 
-    def setup_test_dataloader(self):
+    def setup_test_dataloader(self, number_of_docs=None):
+        if number_of_docs is not None:
+            for key in self.dataset_config['test']:
+                self.dataset_config['test'][key]['number_of_docs'] = number_of_docs
         self.test_dataloaders = {}
         for key in self.dataset_config['test']:
             dataset_args = self.dataset_config['test'][key]
@@ -476,37 +479,44 @@ class LanguageModelTrainer:
     def test(self):
         model, tokenizer, optimizer, scheduler, test_dataloaders, accelerator, iter_count = self.model, self.tokenizer, self.optimizer, self.scheduler, self.test_dataloaders, self.accelerator, self.iter_count
         model.eval()
-        results = []
+        accuracy_list = []
         with torch.no_grad():
-            for key in test_dataloaders:
-                accuracy = 0.0
-                total_sample_count = 0
-                print(f"Process {accelerator.process_index} | Dataset: {key} | Number of steps: {len(test_dataloaders[key])}")
-                test_dataloader = test_dataloaders[key]
-                for batch in tqdm(test_dataloader, desc=f"Evaluation of step {iter_count}", disable=not accelerator.is_main_process):
-                    batch = self.pop_unused_keys(batch)
-                    batch = accelerator.prepare(batch)
-                    answers = batch.pop('answers')
-                    # outputs = model.module.model.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False)
-                    outputs = self.generate(batch, key)
-                    answers = tokenizer.batch_decode(answers, skip_special_tokens=True)
-                    outputs = outputs[:, batch['input_ids'].size(1):]
-                    outputs = tokenizer.batch_decode(outputs, skip_special_tokens=True)
-                    for i in range(len(answers)):
-                        total_sample_count += 1
-                        accelerator.print({"test/answers": answers[i], "test/outputs": outputs[i]})
-                        if answers[i]==outputs[i]:
-                            accuracy += 1
-                accuracy /= total_sample_count
-                accuracy = torch.tensor(accuracy).to(accelerator.device)
-                accelerator.wait_for_everyone()
-                gathered_accuracy = accelerator.gather(accuracy)
-                accuracy = gathered_accuracy.mean().item()
-                accelerator.print(f"Step {iter_count} | Dataset: {key} | Accuracy: {accuracy:.4f}")
-                accelerator.log({f"test/dataset_{key}/accuracy": accuracy}, step=iter_count)
-                results.append(float(accuracy))
-            mean_accuracy = np.mean(results)
-            accelerator.log({"test/mean_accuracy": mean_accuracy}, step=iter_count)
+            for number_of_docs in [1,2,3,5,10]:
+                self.setup_test_dataloader(number_of_docs)
+                test_dataloaders = self.test_dataloaders
+                results = []
+                for key in test_dataloaders:
+                    accuracy = 0.0
+                    total_sample_count = 0
+                    print(f"Process {accelerator.process_index} | Dataset: {key} | Number of steps: {len(test_dataloaders[key])}")
+                    test_dataloader = test_dataloaders[key]
+                    for batch in tqdm(test_dataloader, desc=f"Evaluation of step {iter_count}", disable=not accelerator.is_main_process):
+                        batch = self.pop_unused_keys(batch)
+                        batch = accelerator.prepare(batch)
+                        answers = batch.pop('answers')
+                        # outputs = model.module.model.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False)
+                        outputs = self.generate(batch, key)
+                        answers = tokenizer.batch_decode(answers, skip_special_tokens=True)
+                        outputs = outputs[:, batch['input_ids'].size(1):]
+                        outputs = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+                        for i in range(len(answers)):
+                            total_sample_count += 1
+                            accelerator.print({"test/answers": answers[i], "test/outputs": outputs[i]})
+                            if answers[i]==outputs[i]:
+                                accuracy += 1
+                    accuracy /= total_sample_count
+                    accuracy = torch.tensor(accuracy).to(accelerator.device)
+                    accelerator.wait_for_everyone()
+                    gathered_accuracy = accelerator.gather(accuracy)
+                    accuracy = gathered_accuracy.mean().item()
+                    accelerator.print(f"Step {iter_count} | Dataset: {key} | Accuracy: {accuracy:.4f}")
+                    accelerator.log({f"test/dataset_{key}/accuracy": accuracy}, step=iter_count)
+                    results.append(float(accuracy))
+                mean_accuracy = np.mean(results)
+                accelerator.log({f"test/mean_accuracy_{number_of_docs}": mean_accuracy}, step=iter_count)
+                print(f"\033[31mStep {iter_count} | number_of_docs: {number_of_docs} | Mean Accuracy: {mean_accuracy:.4f}\033[0m")
+                accuracy_list.append(mean_accuracy)
+            mean_accuracy = np.mean(accuracy_list)
             print(f"\033[31mStep {iter_count} | Mean Accuracy: {mean_accuracy:.4f}\033[0m")
             if accelerator.is_main_process:
                 if mean_accuracy>self.best_accuracy:
@@ -514,7 +524,7 @@ class LanguageModelTrainer:
                     accelerator.print(f"New best accuracy: {mean_accuracy:.4f}")
                     accelerator.unwrap_model(model).save_pretrained(f"output/RAG-best/")
                 accelerator.unwrap_model(model).save_pretrained(f"output/RAG-new/")
-            model.train()
+        model.train()
 
 @register_class
 class ReGPTLanguageModelTrainer(LanguageModelTrainer):
