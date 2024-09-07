@@ -20,7 +20,7 @@ from typing import List, Optional, Tuple, Union, Dict
 from deepspeed.ops.adam import DeepSpeedCPUAdam, FusedAdam
 from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR
 from registry import registry, register_class
-from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModel, AutoConfig
+from transformers import LlamaForCausalLM, AutoTokenizer, AutoModel, AutoConfig
 try:
     from transformers import GPT2LMandRetrievalHeadsModel, LlamaWithRetrievalHeadForCausalLM, LlamaWithRetrievalHeadForInference, LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM
 except:
@@ -294,7 +294,7 @@ class LanguageModelTrainer:
         return dataloader
 
     def setup_model(self, train_config):
-        model = AutoModelForCausalLM.from_pretrained(train_config['model_name_or_path'], use_cache=not train_config['gradient_checkpointing'])
+        model = LlamaForCausalLM.from_pretrained(train_config['model_name_or_path'], use_cache=not train_config['gradient_checkpointing'])
         freeze_bottom_causal_layers(model.base_model, train_config['num_layers_unfrozen'])
         try:
             # llama2
