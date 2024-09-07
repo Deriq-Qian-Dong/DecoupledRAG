@@ -307,6 +307,7 @@ class LanguageModelTrainer:
         # print_trainable_params_stats(model)
         if train_config['gradient_checkpointing']:
             model.gradient_checkpointing_enable()
+            model.enable_input_require_grads()
         if os.path.exists(os.path.join(train_config['kg_model_name_or_path'], 'adapter_config.json')):
             model.load_adapter(train_config['kg_model_name_or_path'], "finetune")
         else:
