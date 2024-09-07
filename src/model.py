@@ -296,14 +296,14 @@ class LanguageModelTrainer:
 
     def setup_model(self, train_config):
         model = AutoModelForCausalLM.from_pretrained(train_config['model_name_or_path'], use_cache=not train_config['gradient_checkpointing'])
-        freeze_bottom_causal_layers(model.base_model, train_config['num_layers_unfrozen'])
-        try:
-            # llama2
-            model.base_model.embed_tokens.weight.requires_grad = train_config['num_layers_unfrozen']<=0
-        except:
-            # gpt2
-            model.base_model.wte.weight.requires_grad = train_config['num_layers_unfrozen']<=0
-            model.base_model.wpe.weight.requires_grad = train_config['num_layers_unfrozen']<=0
+        # freeze_bottom_causal_layers(model.base_model, train_config['num_layers_unfrozen'])
+        # try:
+        #     # llama2
+        #     model.base_model.embed_tokens.weight.requires_grad = train_config['num_layers_unfrozen']<=0
+        # except:
+        #     # gpt2
+        #     model.base_model.wte.weight.requires_grad = train_config['num_layers_unfrozen']<=0
+        #     model.base_model.wpe.weight.requires_grad = train_config['num_layers_unfrozen']<=0
         # print_trainable_params_stats(model)
         if train_config['gradient_checkpointing']:
             model.gradient_checkpointing_enable()
@@ -330,8 +330,8 @@ class LanguageModelTrainer:
             x = record[key]
             if isinstance(x, torch.Tensor):
                 prepared[key] = x.to(local_rank)
-                if prepared[key].dtype in [torch.float32, torch.float64, torch.float16]:
-                    prepared[key].requires_grad = True
+                # if prepared[key].dtype in [torch.float32, torch.float64, torch.float16]:
+                    # prepared[key].requires_grad = True
             elif x is None:
                 prepared[key] = x
             elif isinstance(x, bool):
