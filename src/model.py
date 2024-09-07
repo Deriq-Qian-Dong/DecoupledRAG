@@ -386,6 +386,9 @@ class LanguageModelTrainer:
         test_dataset = dataset_class(dataset_args['dataset_name'])(self.tokenizer, dataset_args)
         test_dataloader = DataLoader(test_dataset, batch_size=dataset_args['batch_size'], shuffle=False, collate_fn=test_dataset._collate_fn)
         (model, optimizer, _, _) = accelerator.prepare(model, optimizer, test_dataloader, test_dataloader)
+        # Upcasting trainable params to float32.
+        for param in filter(lambda p: p.requires_grad, model.module.parameters()):
+            param.data = param.data.to(torch.float32)
         self.model = model
         self.optimizer = optimizer
         self.scheduler = scheduler
