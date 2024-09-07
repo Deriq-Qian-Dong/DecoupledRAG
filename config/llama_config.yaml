@@ -1,4 +1,4 @@
-trainer: RAGLanguageModelTrainer
+trainer: LanguageModelTrainer
 training:
   model_type: llama
   project_name: RAG_llama3-sft-wiki
