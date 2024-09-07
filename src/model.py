@@ -312,10 +312,10 @@ class LanguageModelTrainer:
             model.load_adapter(train_config['kg_model_name_or_path'], "finetune")
         else:
             peft_config = LoraConfig(
-                lora_alpha=1024,
-                lora_dropout=0.1,
-                r=512,
-                bias='all',
+                lora_alpha=32,
+                lora_dropout=0.0,
+                r=16,
+                bias='none',
                 task_type="CAUSAL_LM"
             )
             model.add_adapter(peft_config, "finetune")
