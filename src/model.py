@@ -237,6 +237,13 @@ class RAGForCausalLM(nn.Module):
 class LanguageModelTrainer:
     def __init__(self, config):
         self.config = config
+        generation_kwargs = config['generation_kwargs']
+        self.config['training'].update(generation_kwargs)
+        for key in self.config['dataset']['test']:
+            self.config['dataset']['test'][key]['number_of_docs'] = self.config['dataset']['number_of_docs']
+            self.config['dataset']['test'][key]['inference_with_explict_docs_for_test'] = self.config['dataset']['inference_with_explict_docs_for_test']
+        for key in self.config['dataset']['train']:
+            self.config['dataset']['train'][key]['number_of_docs'] = self.config['dataset']['number_of_docs']
         self.setup()
         self.best_perplexity = 1e10
         self.sampler = None
@@ -525,14 +532,7 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
     def __init__(self, config):
         self.config = config
         RAG_kwargs = config['RAG_kwargs']
-        generation_kwargs = config['generation_kwargs']
         self.config['training'].update(RAG_kwargs)
-        self.config['training'].update(generation_kwargs)
-        for key in self.config['dataset']['test']:
-            self.config['dataset']['test'][key]['number_of_docs'] = self.config['dataset']['number_of_docs']
-            self.config['dataset']['test'][key]['inference_with_explict_docs_for_test'] = self.config['dataset']['inference_with_explict_docs_for_test']
-        for key in self.config['dataset']['train']:
-            self.config['dataset']['train'][key]['number_of_docs'] = self.config['dataset']['number_of_docs']
         super(RAGLanguageModelTrainer, self).__init__(config)
         self.best_accuracy = 0.0
 
