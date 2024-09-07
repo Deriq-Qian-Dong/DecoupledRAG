@@ -308,7 +308,7 @@ class LanguageModelTrainer:
         if train_config['gradient_checkpointing']:
             model.gradient_checkpointing_enable()
         if os.path.exists(os.path.join(train_config['kg_model_name_or_path'], 'adapter_config.json')):
-            model.load_adapter(train_config['kg_model_name_or_path'], "knowledge_injector")
+            model.load_adapter(train_config['kg_model_name_or_path'], "finetune")
         else:
             peft_config = LoraConfig(
                 lora_alpha=32,
@@ -317,7 +317,7 @@ class LanguageModelTrainer:
                 bias='all',
                 task_type="CAUSAL_LM"
             )
-            model.add_adapter(peft_config, "knowledge_injector")
+            model.add_adapter(peft_config, "finetune")
         self.model = model
 
     def setup_config(self, train_config, dataset_config):
@@ -330,6 +330,7 @@ class LanguageModelTrainer:
             x = record[key]
             if isinstance(x, torch.Tensor):
                 prepared[key] = x.to(local_rank)
+                prepared[key].requires_grad = True
             elif x is None:
                 prepared[key] = x
             elif isinstance(x, bool):
