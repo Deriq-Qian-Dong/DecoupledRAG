@@ -351,6 +351,10 @@ class LanguageModelTrainer:
         accelerator.init_trackers(project_name=f'{train_config["project_name"]}_{timestamp}')
         if accelerator.is_main_process:
             print_trainable_params_stats(model)
+        if tokenizer.chat_template is None:
+            template = tokenizer.chat_template
+            template = '''{% set loop_messages = messages %}{% for message in loop_messages %}{{ message['role'].upper() }}: {{ message['content'] | trim }}\n{% endfor %}\n{% if add_generation_prompt %}\nASSISTANT: {% endif %}'''
+            tokenizer.chat_template = template
         self.tokenizer = tokenizer
         self.epoch = 0
         self.accelerator = accelerator
