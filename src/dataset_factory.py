@@ -390,6 +390,7 @@ class QADataset4Chat(Dataset):
     def __init__(self, tokenizer, args):
         self.args = args
         self.number_of_docs = args['number_of_docs']
+        print('number_of_docs:', self.number_of_docs, 'path:', args['data_name_or_path'])
         self.tokenizer = tokenizer
         self.setup_datasets()
         self.corpus = load_from_disk(args['corpus'])
