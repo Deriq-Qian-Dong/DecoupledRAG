@@ -256,6 +256,8 @@ class LanguageModelTrainer:
             self.dataset_config['train'][key]['number_of_docs'] = number_of_docs
         for key in self.dataset_config['test']:
             self.dataset_config['test'][key]['number_of_docs'] = number_of_docs
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")       
+        self.accelerator.init_trackers(project_name=f'{self.config['training']['project_name']}_number_of_docs_{self.dataset_config['train'][key]['number_of_docs']}_{timestamp}')
         self.setup_test_dataloader()
         self.setup_train_dataloader()
 
@@ -497,7 +499,6 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
         generation_kwargs = config['generation_kwargs']
         self.config['training'].update(RAG_kwargs)
         self.config['training'].update(generation_kwargs)
-        self.config['training']['project_name'] = config['training']['project_name']+f'_number_of_docs_{config["dataset"]["number_of_docs"]}'
         for key in self.config['dataset']['test']:
             self.config['dataset']['test'][key]['number_of_docs'] = self.config['dataset']['number_of_docs']
             self.config['dataset']['test'][key]['inference_with_explict_docs_for_test'] = self.config['dataset']['inference_with_explict_docs_for_test']
