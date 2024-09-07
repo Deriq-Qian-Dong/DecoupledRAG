@@ -307,7 +307,7 @@ class LanguageModelTrainer:
         if train_config['gradient_checkpointing']:
             model.gradient_checkpointing_enable()
         if os.path.exists(os.path.join(train_config['kg_model_name_or_path'], 'adapter_config.json')):
-            model.load_adapter(train_config['kg_model_name_or_path'], "finetune")
+            model.load_adapter(train_config['kg_model_name_or_path'], "knowledge_injector")
         else:
             peft_config = LoraConfig(
                 lora_alpha=32,
@@ -316,7 +316,7 @@ class LanguageModelTrainer:
                 bias='all',
                 task_type="CAUSAL_LM"
             )
-            model.add_adapter(peft_config, "finetune")
+            model.add_adapter(peft_config, "knowledge_injector")
         self.model = model
 
     def setup_config(self, train_config, dataset_config):
