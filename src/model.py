@@ -20,7 +20,7 @@ from typing import List, Optional, Tuple, Union, Dict
 from deepspeed.ops.adam import DeepSpeedCPUAdam, FusedAdam
 from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR
 from registry import registry, register_class
-from transformers import LlamaForCausalLM, AutoTokenizer, AutoModel, AutoConfig
+from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModel, AutoConfig
 try:
     from transformers import GPT2LMandRetrievalHeadsModel, LlamaWithRetrievalHeadForCausalLM, LlamaWithRetrievalHeadForInference, LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM
 except:
@@ -294,7 +294,7 @@ class LanguageModelTrainer:
         return dataloader
 
     def setup_model(self, train_config):
-        model = LlamaForCausalLM.from_pretrained(train_config['model_name_or_path'], use_cache=not train_config['gradient_checkpointing'])
+        model = AutoModelForCausalLM.from_pretrained(train_config['model_name_or_path'], use_cache=not train_config['gradient_checkpointing'])
         freeze_bottom_causal_layers(model.base_model, train_config['num_layers_unfrozen'])
         try:
             # llama2
@@ -461,6 +461,11 @@ class LanguageModelTrainer:
                 accelerator.log(stats, step=self.iter_count)
         pbar.close()
 
+    def generate(self, batch, key):
+        model = self.model
+        outputs = model.module.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False)
+        return outputs
+
     def test(self):
         model, tokenizer, optimizer, scheduler, test_dataloaders, accelerator, iter_count = self.model, self.tokenizer, self.optimizer, self.scheduler, self.test_dataloaders, self.accelerator, self.iter_count
         model.eval()
@@ -475,7 +480,8 @@ class LanguageModelTrainer:
                     batch = self.pop_unused_keys(batch)
                     batch = accelerator.prepare(batch)
                     answers = batch.pop('answers')
-                    outputs = model.module.model.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False)
+                    # outputs = model.module.model.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False)
+                    outputs = self.generate(batch, key)
                     answers = tokenizer.batch_decode(answers, skip_special_tokens=True)
                     outputs = outputs[:, batch['input_ids'].size(1):]
                     outputs = tokenizer.batch_decode(outputs, skip_special_tokens=True)
@@ -554,4 +560,7 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
     def pop_unused_keys(self, record):
         return record
 
-
+    def generate(self, batch, key):
+        model = self.model
+        outputs = model.module.model.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False)
+        return outputs
