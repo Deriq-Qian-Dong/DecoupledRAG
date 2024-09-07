@@ -2,8 +2,8 @@ trainer: LanguageModelTrainer
 training:
   model_type: llama
   project_name: RAG_llama3-sft-wiki
-  model_name_or_path: ../llama3
-  tokenizer_name_or_path: ../llama3
+  model_name_or_path: ../llama3_qa_sft/
+  tokenizer_name_or_path: ../llama3_qa_sft/
   kg_model_name_or_path: ./output/RAG-best
   num_layers_unfrozen: -1
   gradient_checkpointing: true
@@ -34,7 +34,7 @@ training:
   freeze_lm_head: true
 
 dataset:
-  number_of_docs: 1
+  number_of_docs: 10
   inference_with_explict_docs_for_test: false
   train:
     hotpotqa:
