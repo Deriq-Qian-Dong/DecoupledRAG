@@ -553,6 +553,7 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
                 results.append(float(accuracy))
             mean_accuracy = np.mean(results)
             accelerator.log({"test/mean_accuracy": mean_accuracy}, step=iter_count)
+            print(f"\033[31mStep {iter_count} | Mean Accuracy: {mean_accuracy:.4f}\033[0m")
             if accelerator.is_main_process:
                 if mean_accuracy>self.best_accuracy:
                     self.best_accuracy = mean_accuracy
