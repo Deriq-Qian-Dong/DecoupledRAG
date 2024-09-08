@@ -411,8 +411,10 @@ class LlamaAttention(nn.Module):
             if encoder_hidden_states is not None:
                 print("encoder_hidden_states", encoder_hidden_states.shape)
             print('key_states', key_states.shape)
-            print("causal_mask", causal_mask.shape)
+            print("causal_mask", causal_mask.shape, causal_mask)
             print("attn_weights", attn_weights.shape)
+            if attn_weights.shape[-2]==1:
+                exit()
             attn_weights = attn_weights + causal_mask
 
         # upcast attention to fp32
