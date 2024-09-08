@@ -398,6 +398,7 @@ class LlamaAttention(nn.Module):
             encoder_key_states, encoder_value_states = self.encoder_hidden_states_to_kv_states(encoder_hidden_states)
             key_states = torch.cat([encoder_key_states, key_states], dim=2)
             value_states = torch.cat([encoder_value_states, value_states], dim=2)
+            attention_mask = torch.cat([attention_mask, attention_mask], dim=2)
 
         key_states = repeat_kv(key_states, self.num_key_value_groups)
         value_states = repeat_kv(value_states, self.num_key_value_groups)
@@ -408,7 +409,8 @@ class LlamaAttention(nn.Module):
 
         if attention_mask is not None and not is_cross_attention:  # no matter the length, we just slice it
             causal_mask = attention_mask[:, :, :, : key_states.shape[-2]]
-            print("encoder_hidden_states", encoder_hidden_states.shape)
+            if encoder_hidden_states is not None:
+                print("encoder_hidden_states", encoder_hidden_states.shape)
             print('key_states', key_states.shape)
             print("causal_mask", causal_mask.shape)
             print("attn_weights", attn_weights.shape)
