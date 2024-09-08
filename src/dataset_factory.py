@@ -96,7 +96,7 @@ class RAGPretrainDataset(Dataset):
         # recover from the neighbors
         # neighbors = sample['neighbors'][1:]
         # copy itself
-        neighbors = sample['neighbors'][:1]
+        neighbors = sample['neighbors']
         chat = [{'role': 'user', 'content': "Recover the knowledge:"}, {'role': 'assistant', 'content': text}]
         text = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=False)
         neighbor_texts = [self.corpus[neighbor]['text'] for neighbor in neighbors]
@@ -113,9 +113,11 @@ class RAGPretrainDataset(Dataset):
                                 padding=True,
                                 truncation=True,
                                 return_tensors="pt")
+        num_of_elements = random.randint(1, len(neighbor_texts[0]))
+        random_indices = random.sample(range(len(neighbor_texts[0])), num_of_elements)
         all_neighbor_texts = []
         for neighbor_text in neighbor_texts:
-            all_neighbor_texts += neighbor_text
+            all_neighbor_texts += [neighbor_text[i] for i in random_indices]
         neighbor_batch = self.tokenizer(all_neighbor_texts,
                                 max_length=self.args['max_seq_len'],
                                 padding=True,
