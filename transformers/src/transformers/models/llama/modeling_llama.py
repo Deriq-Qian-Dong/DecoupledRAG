@@ -323,6 +323,23 @@ class LlamaAttention(nn.Module):
                 )
             else:
                 raise ValueError(f"Unknown RoPE scaling type {scaling_type}")
+            
+    def encoder_hidden_states_to_kv_states(
+            self, 
+            hidden_states: torch.Tensor, ):
+        bsz, q_len, _ = hidden_states.size()
+        query_states = self.q_proj(hidden_states)
+        key_states = self.k_proj(hidden_states)
+        value_states = self.v_proj(hidden_states)
+
+        query_states = query_states.view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
+        key_states = key_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
+        value_states = value_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
+
+        position_ids = torch.arange(q_len, device=hidden_states.device).unsqueeze(0)
+        cos, sin = self.rotary_emb(value_states, position_ids)
+        query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
+        return key_states, value_states        
 
     def forward(
         self,
@@ -339,11 +356,6 @@ class LlamaAttention(nn.Module):
         **kwargs,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         bsz, q_len, _ = hidden_states.size()
-        encoder_hidden_states = encoder_hidden_states.reshape(bsz, -1, self.hidden_size) if encoder_hidden_states is not None else None
-        if encoder_hidden_states is not None:
-            kv_len = encoder_hidden_states.size(1)
-        else:
-            kv_len = q_len
 
         if self.config.pretraining_tp > 1:
             key_value_slicing = (self.num_key_value_heads * self.head_dim) // self.config.pretraining_tp
@@ -364,40 +376,35 @@ class LlamaAttention(nn.Module):
 
         else:
             query_states = self.q_proj(hidden_states)
-            if is_cross_attention:
-                key_states = self.k_proj(encoder_hidden_states)
-                value_states = self.v_proj(encoder_hidden_states)
-            else:
-                key_states = self.k_proj(hidden_states)
-                value_states = self.v_proj(hidden_states)
+            key_states = self.k_proj(hidden_states)
+            value_states = self.v_proj(hidden_states)
 
         query_states = query_states.view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
-        if is_cross_attention:
-            key_states = key_states.view(bsz, kv_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
-            value_states = value_states.view(bsz, kv_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
-        else:
-            key_states = key_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
-            value_states = value_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
+        key_states = key_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
+        value_states = value_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
 
         past_key_value = getattr(self, "past_key_value", past_key_value)
         cos, sin = self.rotary_emb(value_states, position_ids)
-        if not is_cross_attention:
-            query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
-        else:
-            position_ids = torch.arange(kv_len, device=hidden_states.device).unsqueeze(0)
-            ca_cos, ca_sin = self.rotary_emb(value_states, position_ids)
-            query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin, ca_cos, ca_sin, is_cross_attention=True)
+        query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
+        #     position_ids = torch.arange(kv_len, device=hidden_states.device).unsqueeze(0)
+        #     ca_cos, ca_sin = self.rotary_emb(value_states, position_ids)
+        #     query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin, ca_cos, ca_sin, is_cross_attention=True)
 
         if past_key_value is not None and not is_cross_attention:
             # sin and cos are specific to RoPE models; cache_position needed for the static cache
             cache_kwargs = {"sin": sin, "cos": cos, "cache_position": cache_position}
             key_states, value_states = past_key_value.update(key_states, value_states, self.layer_idx, cache_kwargs)
 
+        encoder_key_states, encoder_value_states = self.encoder_hidden_states_to_kv_states(encoder_hidden_states)
+        key_states = torch.cat([encoder_key_states, key_states], dim=2)
+        value_states = torch.cat([encoder_value_states, value_states], dim=2)
+
         key_states = repeat_kv(key_states, self.num_key_value_groups)
         value_states = repeat_kv(value_states, self.num_key_value_groups)
+        # shape of key_states and value_states is [bsz, num_heads, q_len+klg_len, head_dim]
 
         attn_weights = torch.matmul(query_states, key_states.transpose(2, 3)) / math.sqrt(self.head_dim)
-        # The shape of attn_weights is [bsz, num_heads, q_len, kv_len]
+        # The shape of attn_weights is [bsz, num_heads, q_len, q_len+klg_len]
 
         if attention_mask is not None and not is_cross_attention:  # no matter the length, we just slice it
             causal_mask = attention_mask[:, :, :, : key_states.shape[-2]]
@@ -417,6 +424,7 @@ class LlamaAttention(nn.Module):
         #     mask_value = torch.full([], mask_value, dtype=attn_weights.dtype, device=attn_weights.device)
         #     attn_weights = torch.where(causal_mask_for_cross_attn, attn_weights.to(attn_weights.dtype), mask_value)
         attn_output = torch.matmul(attn_weights, value_states)
+        # shape of attn_output is [bsz, num_heads, q_len, head_dim]
 
         if attn_output.size() != (bsz, self.num_heads, q_len, self.head_dim):
             raise ValueError(
@@ -761,14 +769,14 @@ class LlamaDecoderLayer(nn.Module):
         self.input_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.post_attention_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.add_cross_attention = config.add_cross_attention and layer_idx <= config.add_cross_attention_layer_number
-        if self.add_cross_attention:
-            directory = config.kg_model_name_or_path
-            import os
-            self.gate_crossattention = LinearFusion(config.hidden_size)
-            if os.path.exists(f"{directory}/gate_{layer_idx}.pt"):
-                self.gate_crossattention.load_state_dict(torch.load(f"{directory}/gate_{layer_idx}.pt"), strict=False)
-                print(f"load gate_{layer_idx}.pt from {directory}")
-            self.act = ACT2FN[config.cross_attention_activation_function]
+        # if self.add_cross_attention:
+            # directory = config.kg_model_name_or_path
+            # import os
+            # self.gate_crossattention = LinearFusion(config.hidden_size)
+            # if os.path.exists(f"{directory}/gate_{layer_idx}.pt"):
+                # self.gate_crossattention.load_state_dict(torch.load(f"{directory}/gate_{layer_idx}.pt"), strict=False)
+                # print(f"load gate_{layer_idx}.pt from {directory}")
+            # self.act = ACT2FN[config.cross_attention_activation_function]
 
 
     def forward(
@@ -808,16 +816,29 @@ class LlamaDecoderLayer(nn.Module):
         hidden_states = self.input_layernorm(hidden_states)
 
         # Self Attention
-        hidden_states, self_attn_weights, present_key_value = self.self_attn(
-            hidden_states=hidden_states,
-            attention_mask=attention_mask,
-            position_ids=position_ids,
-            past_key_value=past_key_value,
-            output_attentions=output_attentions,
-            use_cache=use_cache,
-            cache_position=cache_position,
-            **kwargs,
-        )
+        if self.add_cross_attention and encoder_hidden_states is not None:
+            hidden_states, self_attn_weights, present_key_value = self.self_attn(
+                hidden_states=hidden_states,
+                attention_mask=attention_mask,
+                position_ids=position_ids,
+                past_key_value=past_key_value,
+                output_attentions=output_attentions,
+                use_cache=use_cache,
+                cache_position=cache_position,
+                encoder_hidden_states=encoder_hidden_states,
+                **kwargs,
+            )
+        else:
+            hidden_states, self_attn_weights, present_key_value = self.self_attn(
+                hidden_states=hidden_states,
+                attention_mask=attention_mask,
+                position_ids=position_ids,
+                past_key_value=past_key_value,
+                output_attentions=output_attentions,
+                use_cache=use_cache,
+                cache_position=cache_position,
+                **kwargs,
+            )
         hidden_states = residual + hidden_states
 
         # Fully Connected
@@ -825,28 +846,6 @@ class LlamaDecoderLayer(nn.Module):
         hidden_states = self.post_attention_layernorm(hidden_states)
         hidden_states = self.mlp(hidden_states)
         hidden_states = residual + hidden_states
-
-        if self.add_cross_attention and encoder_hidden_states is not None:
-            residual = hidden_states  # output of self-attention
-            encoder_hidden_states = self.input_layernorm(encoder_hidden_states)
-            hidden_states, _, _ = self.self_attn(
-                hidden_states=hidden_states,
-                attention_mask=attention_mask,
-                position_ids=position_ids,
-                output_attentions=output_attentions,
-                use_cache=False,
-                cache_position=cache_position,
-                encoder_hidden_states=encoder_hidden_states,
-                retrieval_position=retrieval_position,
-                is_cross_attention=True,
-                **kwargs,
-            )
-            hidden_states = self.gate_crossattention(residual, hidden_states)
-            # Fully Connected
-            # residual = hidden_states
-            # hidden_states = self.post_attention_layernorm(hidden_states)
-            # hidden_states = self.mlp(hidden_states)
-            # hidden_states = residual + hidden_states
 
         outputs = (hidden_states,)
 
