@@ -408,11 +408,10 @@ class LlamaAttention(nn.Module):
 
         if attention_mask is not None and not is_cross_attention:  # no matter the length, we just slice it
             causal_mask = attention_mask[:, :, :, : key_states.shape[-2]]
-            if encoder_hidden_states is not None:
-                print("encoder_hidden_states", encoder_hidden_states.shape)
-                print('key_states', key_states.shape)
-                print("causal_mask", causal_mask.shape)
-                print("attn_weights", attn_weights.shape)
+            print("encoder_hidden_states", encoder_hidden_states.shape)
+            print('key_states', key_states.shape)
+            print("causal_mask", causal_mask.shape)
+            print("attn_weights", attn_weights.shape)
             attn_weights = attn_weights + causal_mask
 
         # upcast attention to fp32
