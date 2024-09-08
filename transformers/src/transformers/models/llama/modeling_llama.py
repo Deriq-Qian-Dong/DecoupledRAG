@@ -412,6 +412,10 @@ class LlamaAttention(nn.Module):
                 print("encoder_hidden_states", encoder_hidden_states.shape)
             print('key_states', key_states.shape)
             print("causal_mask", causal_mask.shape, causal_mask)
+            if attn_weights.shape[-2]==1:
+                torch.save(causal_mask, "causal_mask1.pt")
+            if attn_weights.shape[-2]!=1:
+                torch.save(causal_mask, "causal_mask2.pt")
             print("attn_weights", attn_weights.shape)
             if attn_weights.shape[-2]==1:
                 exit()
