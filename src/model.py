@@ -194,9 +194,9 @@ class RAGForCausalLM(nn.Module):
             model.model.load_adapter(train_config['kg_model_name_or_path'], "knowledge_injector")
         else:
             peft_config = LoraConfig(
-                lora_alpha=32,
+                lora_alpha=64,
                 lora_dropout=0.0,
-                r=16,
+                r=32,
                 bias='none',
                 task_type="CAUSAL_LM"
             )
@@ -315,9 +315,9 @@ class LanguageModelTrainer:
             model.load_adapter(train_config['kg_model_name_or_path'], "finetune")
         else:
             peft_config = LoraConfig(
-                lora_alpha=32,
+                lora_alpha=64,
                 lora_dropout=0.0,
-                r=16,
+                r=32,
                 bias='none',
                 task_type="CAUSAL_LM"
             )
