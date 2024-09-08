@@ -250,7 +250,7 @@ class LanguageModelTrainer:
         self.best_accuracy = 0.0
 
     def run(self):
-        # self.test()
+        self.test()
         for epoch in range(self.train_config['start_from'], self.train_config['num_epochs']):
             self.epoch = epoch
             self.set_epoch_to_dataset()
@@ -258,14 +258,14 @@ class LanguageModelTrainer:
             self.test()
 
     def set_epoch_to_dataset(self):
-        # number_of_docs_lst = [1,2,3,5,10]
-        # number_of_docs = number_of_docs_lst[self.epoch%len(number_of_docs_lst)]
-        # for key in self.dataset_config['train']:
-            # self.dataset_config['train'][key]['number_of_docs'] = number_of_docs
-        # for key in self.dataset_config['test']:
-            # self.dataset_config['test'][key]['number_of_docs'] = number_of_docs
-        # timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")       
-        # self.accelerator.init_trackers(project_name=f"{self.config['training']['project_name']}_number_of_docs_{self.dataset_config['train'][key]['number_of_docs']}_{timestamp}")
+        number_of_docs_lst = [1,2,3,5,10]
+        number_of_docs = number_of_docs_lst[self.epoch%len(number_of_docs_lst)]
+        for key in self.dataset_config['train']:
+            self.dataset_config['train'][key]['number_of_docs'] = number_of_docs
+        for key in self.dataset_config['test']:
+            self.dataset_config['test'][key]['number_of_docs'] = number_of_docs
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")       
+        self.accelerator.init_trackers(project_name=f"{self.config['training']['project_name']}_number_of_docs_{self.dataset_config['train'][key]['number_of_docs']}_{timestamp}")
         self.setup_test_dataloader()
         self.setup_train_dataloader()
 
@@ -482,11 +482,13 @@ class LanguageModelTrainer:
         model.eval()
         accuracy_list = []
         with torch.no_grad():
-            for number_of_docs in [1,2,3,5,10]:
-                self.setup_test_dataloader(number_of_docs)
+            # for number_of_docs in [1,2,3,5,10]:
+            for _ in range(1):
+                # self.setup_test_dataloader()
                 test_dataloaders = self.test_dataloaders
                 results = []
                 for key in test_dataloaders:
+                    number_of_docs = test_dataloaders[key].dataset.number_of_docs
                     accuracy = 0.0
                     total_sample_count = 0
                     print(f"Process {accelerator.process_index} | Dataset: {key} | Number of steps: {len(test_dataloaders[key])}")

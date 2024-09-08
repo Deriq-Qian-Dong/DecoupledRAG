@@ -444,9 +444,9 @@ class QADataset4Chat(Dataset):
                                 truncation=True,
                                 return_tensors="pt")
         all_retrieved_docs = []
-        number_of_docs = random.randint(1, 10)
+        # number_of_docs = random.randint(1, 10)
         for docs in retrieved_docs:
-            all_retrieved_docs += docs[:number_of_docs]
+            all_retrieved_docs += docs[:self.number_of_docs]
         neighbor_batch = self.tokenizer(all_retrieved_docs,
                                 max_length=self.args['max_seq_len'],
                                 padding=True,
