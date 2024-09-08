@@ -38,7 +38,7 @@ training:
 
 dataset:
   number_of_docs: 10
-  inference_with_explict_docs_for_test: true
+  inference_with_explict_docs_for_test: false
   train:
     hotpotqa:
       data_name_or_path: ../data_of_ReGPT/QA_datasets_WikiEmb/hotpotqa/sorted_datasets_train/

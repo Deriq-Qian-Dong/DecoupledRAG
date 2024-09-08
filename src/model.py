@@ -194,9 +194,9 @@ class RAGForCausalLM(nn.Module):
             model.model.load_adapter(train_config['kg_model_name_or_path'], "knowledge_injector")
         else:
             peft_config = LoraConfig(
-                lora_alpha=64,
+                lora_alpha=128,
                 lora_dropout=0.0,
-                r=32,
+                r=64,
                 bias='none',
                 task_type="CAUSAL_LM"
             )
@@ -251,11 +251,11 @@ class LanguageModelTrainer:
 
     def run(self):
         self.test()
-        # for epoch in range(self.train_config['start_from'], self.train_config['num_epochs']):
-        #     self.epoch = epoch
-        #     self.set_epoch_to_dataset()
-        #     self.train()
-        #     self.test()
+        for epoch in range(self.train_config['start_from'], self.train_config['num_epochs']):
+            self.epoch = epoch
+            self.set_epoch_to_dataset()
+            self.train()
+            self.test()
 
     def set_epoch_to_dataset(self):
         # number_of_docs_lst = [1,2,3,5,10]
@@ -315,9 +315,9 @@ class LanguageModelTrainer:
             model.load_adapter(train_config['kg_model_name_or_path'], "finetune")
         else:
             peft_config = LoraConfig(
-                lora_alpha=64,
+                lora_alpha=128,
                 lora_dropout=0.0,
-                r=32,
+                r=64,
                 bias='none',
                 task_type="CAUSAL_LM"
             )
