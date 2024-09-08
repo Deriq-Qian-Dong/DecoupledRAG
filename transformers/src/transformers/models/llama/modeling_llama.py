@@ -326,7 +326,9 @@ class LlamaAttention(nn.Module):
             
     def encoder_hidden_states_to_kv_states(
             self, 
+            bsz: int,
             hidden_states: torch.Tensor, ):
+        hidden_states = hidden_states.reshape(bsz, -1, self.hidden_size)
         bsz, q_len, _ = hidden_states.size()
         query_states = self.q_proj(hidden_states)
         key_states = self.k_proj(hidden_states)
@@ -353,7 +355,6 @@ class LlamaAttention(nn.Module):
         encoder_hidden_states: Optional[torch.Tensor] = None,
         retrieval_position: Optional[torch.LongTensor] = None,
         is_cross_attention: bool = False,
-        knowledge_causal_mask: Optional[torch.Tensor] = None,
         **kwargs,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         bsz, q_len, _ = hidden_states.size()
@@ -396,12 +397,9 @@ class LlamaAttention(nn.Module):
             cache_kwargs = {"sin": sin, "cos": cos, "cache_position": cache_position}
             key_states, value_states = past_key_value.update(key_states, value_states, self.layer_idx, cache_kwargs)
         if encoder_hidden_states is not None:
-            encoder_key_states, encoder_value_states = self.encoder_hidden_states_to_kv_states(encoder_hidden_states)
+            encoder_key_states, encoder_value_states = self.encoder_hidden_states_to_kv_states(bsz, encoder_hidden_states)
             key_states = torch.cat([encoder_key_states, key_states], dim=2)
             value_states = torch.cat([encoder_value_states, value_states], dim=2)
-            print('attention_mask', attention_mask.shape)
-            print('knowledge_causal_mask', knowledge_causal_mask.shape)
-            attention_mask = torch.cat([knowledge_causal_mask, attention_mask], dim=2)
 
         key_states = repeat_kv(key_states, self.num_key_value_groups)
         value_states = repeat_kv(value_states, self.num_key_value_groups)
@@ -805,7 +803,6 @@ class LlamaDecoderLayer(nn.Module):
         cache_position: Optional[torch.LongTensor] = None,
         encoder_hidden_states: Optional[torch.Tensor] = None,
         retrieval_position: Optional[torch.LongTensor] = None,
-        knowledge_causal_mask: Optional[torch.Tensor] = None,
         **kwargs,
     ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
         """
@@ -842,7 +839,6 @@ class LlamaDecoderLayer(nn.Module):
                 use_cache=use_cache,
                 cache_position=cache_position,
                 encoder_hidden_states=encoder_hidden_states,
-                knowledge_causal_mask=knowledge_causal_mask,
                 **kwargs,
             )
         else:
@@ -1063,7 +1059,7 @@ class LlamaModel(LlamaPreTrainedModel):
         encoder_hidden_states: Optional[torch.Tensor] = None,
         retrieval_position: Optional[torch.LongTensor] = None,
         knowledge_outputs: Optional[Tuple[torch.Tensor]] = None,
-        knowledge_causal_mask: Optional[torch.Tensor] = None,
+        knowledge_attention_mask: Optional[torch.Tensor] = None,
     ) -> Union[Tuple, BaseModelOutputWithPast]:
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
@@ -1102,6 +1098,10 @@ class LlamaModel(LlamaPreTrainedModel):
         if position_ids is None:
             position_ids = cache_position.unsqueeze(0)
 
+        if knowledge_outputs is not None:
+            bsz = attention_mask.shape[0]
+            knowledge_attention_mask = knowledge_attention_mask.reshape(bsz, -1)
+            attention_mask = torch.cat([knowledge_attention_mask, attention_mask], dim=1)
         causal_mask = self._update_causal_mask(attention_mask, inputs_embeds, cache_position, past_seen_tokens)
 
         # embed positions
@@ -1136,7 +1136,6 @@ class LlamaModel(LlamaPreTrainedModel):
                     cache_position,
                     encoder_hidden_states,
                     retrieval_position,
-                    knowledge_causal_mask,
                 )
             else:
                 layer_outputs = decoder_layer(
@@ -1149,7 +1148,6 @@ class LlamaModel(LlamaPreTrainedModel):
                     cache_position=cache_position,
                     encoder_hidden_states=encoder_hidden_states,
                     retrieval_position=retrieval_position,
-                    knowledge_causal_mask=knowledge_causal_mask,
                 )
 
             hidden_states = layer_outputs[0]
@@ -1848,6 +1846,7 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
         p_reps: Optional[torch.Tensor] = None,
         retrieval_position: Optional[torch.LongTensor] = None,
         knowledge_input_ids: Optional[torch.LongTensor] = None,
+        knowledge_attention_mask: Optional[torch.Tensor] = None,
         knowledge_outputs: torch.Tensor = None,
     ) -> Union[Tuple, CausalLMOutputWithPast]:
         r"""
@@ -1885,11 +1884,11 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
         if knowledge_input_ids is not None:
             outputs = self.model(
                 input_ids=knowledge_input_ids,
+                attention_mask=knowledge_attention_mask,
                 output_hidden_states=True,
                 return_dict=True,
             )
             knowledge_outputs = outputs.hidden_states
-            knowledge_causal_mask = outputs.causal_mask
         
         # print(knowledge_input_ids)
         # print(knowledge_outputs)
@@ -1910,7 +1909,7 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
             encoder_hidden_states=encoder_hidden_states,
             retrieval_position=retrieval_position,
             knowledge_outputs=knowledge_outputs,
-            knowledge_causal_mask=knowledge_causal_mask,
+            knowledge_attention_mask=knowledge_attention_mask,
         )
 
         hidden_states = outputs[0]
