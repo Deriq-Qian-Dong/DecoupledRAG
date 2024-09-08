@@ -399,6 +399,8 @@ class LlamaAttention(nn.Module):
             encoder_key_states, encoder_value_states = self.encoder_hidden_states_to_kv_states(encoder_hidden_states)
             key_states = torch.cat([encoder_key_states, key_states], dim=2)
             value_states = torch.cat([encoder_value_states, value_states], dim=2)
+            print('attention_mask', attention_mask.shape)
+            print('knowledge_causal_mask', knowledge_causal_mask.shape)
             attention_mask = torch.cat([knowledge_causal_mask, attention_mask], dim=2)
 
         key_states = repeat_kv(key_states, self.num_key_value_groups)
@@ -410,15 +412,15 @@ class LlamaAttention(nn.Module):
 
         if attention_mask is not None and not is_cross_attention:  # no matter the length, we just slice it
             causal_mask = attention_mask[:, :, :, : key_states.shape[-2]]
-            # if encoder_hidden_states is not None:
-            #     print("encoder_hidden_states", encoder_hidden_states.shape)
-            # print('key_states', key_states.shape)
-            # print("causal_mask", causal_mask.shape, causal_mask)
-            # if attn_weights.shape[-2]==1:
-            #     torch.save(causal_mask, "causal_mask1.pt")
-            # if attn_weights.shape[-2]!=1:
-            #     torch.save(causal_mask, "causal_mask2.pt")
-            # print("attn_weights", attn_weights.shape)
+            if encoder_hidden_states is not None:
+                print("encoder_hidden_states", encoder_hidden_states.shape)
+            print('key_states', key_states.shape)
+            print("causal_mask", causal_mask.shape, causal_mask)
+            if attn_weights.shape[-2]==1:
+                torch.save(causal_mask, "causal_mask1.pt")
+            if attn_weights.shape[-2]!=1:
+                torch.save(causal_mask, "causal_mask2.pt")
+            print("attn_weights", attn_weights.shape)
             # if attn_weights.shape[-2]==1:
             #     exit()
             attn_weights = attn_weights + causal_mask
@@ -1885,7 +1887,7 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
                 input_ids=knowledge_input_ids,
                 output_hidden_states=True,
                 return_dict=True,
-            ).hidden_states
+            )
             knowledge_outputs = outputs.hidden_states
             knowledge_causal_mask = outputs.causal_mask
         
