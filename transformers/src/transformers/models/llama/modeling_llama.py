@@ -408,17 +408,17 @@ class LlamaAttention(nn.Module):
 
         if attention_mask is not None and not is_cross_attention:  # no matter the length, we just slice it
             causal_mask = attention_mask[:, :, :, : key_states.shape[-2]]
-            if encoder_hidden_states is not None:
-                print("encoder_hidden_states", encoder_hidden_states.shape)
-            print('key_states', key_states.shape)
-            print("causal_mask", causal_mask.shape, causal_mask)
-            if attn_weights.shape[-2]==1:
-                torch.save(causal_mask, "causal_mask1.pt")
-            if attn_weights.shape[-2]!=1:
-                torch.save(causal_mask, "causal_mask2.pt")
-            print("attn_weights", attn_weights.shape)
-            if attn_weights.shape[-2]==1:
-                exit()
+            # if encoder_hidden_states is not None:
+            #     print("encoder_hidden_states", encoder_hidden_states.shape)
+            # print('key_states', key_states.shape)
+            # print("causal_mask", causal_mask.shape, causal_mask)
+            # if attn_weights.shape[-2]==1:
+            #     torch.save(causal_mask, "causal_mask1.pt")
+            # if attn_weights.shape[-2]!=1:
+            #     torch.save(causal_mask, "causal_mask2.pt")
+            # print("attn_weights", attn_weights.shape)
+            # if attn_weights.shape[-2]==1:
+            #     exit()
             attn_weights = attn_weights + causal_mask
 
         # upcast attention to fp32
