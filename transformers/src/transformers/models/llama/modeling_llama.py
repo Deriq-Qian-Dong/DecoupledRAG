@@ -353,6 +353,7 @@ class LlamaAttention(nn.Module):
         encoder_hidden_states: Optional[torch.Tensor] = None,
         retrieval_position: Optional[torch.LongTensor] = None,
         is_cross_attention: bool = False,
+        knowledge_causal_mask: Optional[torch.Tensor] = None,
         **kwargs,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         bsz, q_len, _ = hidden_states.size()
@@ -398,6 +399,7 @@ class LlamaAttention(nn.Module):
             encoder_key_states, encoder_value_states = self.encoder_hidden_states_to_kv_states(encoder_hidden_states)
             key_states = torch.cat([encoder_key_states, key_states], dim=2)
             value_states = torch.cat([encoder_value_states, value_states], dim=2)
+            attention_mask = torch.cat([knowledge_causal_mask, attention_mask], dim=2)
 
         key_states = repeat_kv(key_states, self.num_key_value_groups)
         value_states = repeat_kv(value_states, self.num_key_value_groups)
@@ -801,6 +803,7 @@ class LlamaDecoderLayer(nn.Module):
         cache_position: Optional[torch.LongTensor] = None,
         encoder_hidden_states: Optional[torch.Tensor] = None,
         retrieval_position: Optional[torch.LongTensor] = None,
+        knowledge_causal_mask: Optional[torch.Tensor] = None,
         **kwargs,
     ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
         """
@@ -837,6 +840,7 @@ class LlamaDecoderLayer(nn.Module):
                 use_cache=use_cache,
                 cache_position=cache_position,
                 encoder_hidden_states=encoder_hidden_states,
+                knowledge_causal_mask=knowledge_causal_mask,
                 **kwargs,
             )
         else:
@@ -1057,6 +1061,7 @@ class LlamaModel(LlamaPreTrainedModel):
         encoder_hidden_states: Optional[torch.Tensor] = None,
         retrieval_position: Optional[torch.LongTensor] = None,
         knowledge_outputs: Optional[Tuple[torch.Tensor]] = None,
+        knowledge_causal_mask: Optional[torch.Tensor] = None,
     ) -> Union[Tuple, BaseModelOutputWithPast]:
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
@@ -1129,6 +1134,7 @@ class LlamaModel(LlamaPreTrainedModel):
                     cache_position,
                     encoder_hidden_states,
                     retrieval_position,
+                    knowledge_causal_mask,
                 )
             else:
                 layer_outputs = decoder_layer(
@@ -1141,6 +1147,7 @@ class LlamaModel(LlamaPreTrainedModel):
                     cache_position=cache_position,
                     encoder_hidden_states=encoder_hidden_states,
                     retrieval_position=retrieval_position,
+                    knowledge_causal_mask=knowledge_causal_mask,
                 )
 
             hidden_states = layer_outputs[0]
@@ -1169,6 +1176,7 @@ class LlamaModel(LlamaPreTrainedModel):
             past_key_values=next_cache,
             hidden_states=all_hidden_states,
             attentions=all_self_attns,
+            causal_mask=causal_mask,
         )
 
     def _update_causal_mask(
@@ -1873,11 +1881,13 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
 
         self.model.set_adapter("knowledge_injector")
         if knowledge_input_ids is not None:
-            knowledge_outputs = self.model(
+            outputs = self.model(
                 input_ids=knowledge_input_ids,
                 output_hidden_states=True,
                 return_dict=True,
             ).hidden_states
+            knowledge_outputs = outputs.hidden_states
+            knowledge_causal_mask = outputs.causal_mask
         
         # print(knowledge_input_ids)
         # print(knowledge_outputs)
@@ -1898,6 +1908,7 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
             encoder_hidden_states=encoder_hidden_states,
             retrieval_position=retrieval_position,
             knowledge_outputs=knowledge_outputs,
+            knowledge_causal_mask=knowledge_causal_mask,
         )
 
         hidden_states = outputs[0]
