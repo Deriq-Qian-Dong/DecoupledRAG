@@ -408,20 +408,9 @@ class LlamaAttention(nn.Module):
         attn_weights = torch.matmul(query_states, key_states.transpose(2, 3)) / math.sqrt(self.head_dim)
         # The shape of attn_weights is [bsz, num_heads, q_len, q_len+klg_len]
 
-        if attention_mask is not None and not is_cross_attention:  # no matter the length, we just slice it
-            causal_mask = attention_mask[:, :, :, : key_states.shape[-2]]
-            # if encoder_hidden_states is not None:
-                # print("encoder_hidden_states", encoder_hidden_states.shape)
-            # print('key_states', key_states.shape)
-            # print("causal_mask", causal_mask.shape, causal_mask)
-            # if attn_weights.shape[-2]==1:
-                # torch.save(causal_mask, "causal_mask1.pt")
-            # if attn_weights.shape[-2]!=1:
-                # torch.save(causal_mask, "causal_mask2.pt")
-            # print("attn_weights", attn_weights.shape)
-            # if attn_weights.shape[-2]==1:
-            #     exit()
-            attn_weights = attn_weights + causal_mask
+        # if attention_mask is not None and not is_cross_attention:  # no matter the length, we just slice it
+            # causal_mask = attention_mask[:, :, :, : key_states.shape[-2]]
+            # attn_weights = attn_weights + causal_mask
 
         # upcast attention to fp32
         attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query_states.dtype)
