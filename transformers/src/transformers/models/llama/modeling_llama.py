@@ -2063,6 +2063,7 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
                 "attention_mask": attention_mask,
                 "knowledge_outputs": knowledge_outputs,
                 "knowledge_input_ids": knowledge_input_ids,
+                "knowledge_attention_mask": kwargs.get("knowledge_attention_mask", None),
             }
         )
         return model_inputs
