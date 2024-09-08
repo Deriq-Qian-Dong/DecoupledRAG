@@ -40,24 +40,24 @@ dataset:
   number_of_docs: 1
   inference_with_explict_docs_for_test: false
   train:
-    hotpotqa:
-      data_name_or_path: ../data_of_ReGPT/QA_datasets_WikiEmb/hotpotqa/sorted_datasets_train/
-      dataset_name: QADataset4Chat
-      batch_size: 16
-      num_epochs: 805
-      max_seq_len: 512
-      dynamic_sampler: false
-      corpus: ../data_of_ReGPT/Wiki-corpus/train
-      max_tokens: 4096
-    2WikiMultihopQA:
-      data_name_or_path: ../data_of_ReGPT/QA_datasets_WikiEmb/2WikiMultihopQA/sorted_datasets_train/
-      dataset_name: QADataset4Chat
-      batch_size: 16
-      num_epochs: 805
-      max_seq_len: 512
-      dynamic_sampler: false
-      corpus: ../data_of_ReGPT/Wiki-corpus/train
-      max_tokens: 4096
+    # hotpotqa:
+    #   data_name_or_path: ../data_of_ReGPT/QA_datasets_WikiEmb/hotpotqa/sorted_datasets_train/
+    #   dataset_name: QADataset4Chat
+    #   batch_size: 16
+    #   num_epochs: 805
+    #   max_seq_len: 512
+    #   dynamic_sampler: false
+    #   corpus: ../data_of_ReGPT/Wiki-corpus/train
+    #   max_tokens: 4096
+    # 2WikiMultihopQA:
+    #   data_name_or_path: ../data_of_ReGPT/QA_datasets_WikiEmb/2WikiMultihopQA/sorted_datasets_train/
+    #   dataset_name: QADataset4Chat
+    #   batch_size: 16
+    #   num_epochs: 805
+    #   max_seq_len: 512
+    #   dynamic_sampler: false
+    #   corpus: ../data_of_ReGPT/Wiki-corpus/train
+    #   max_tokens: 4096
     # nq:
     #   data_name_or_path: ../data_of_ReGPT/QA_datasets_WikiEmb/nq/sorted_datasets_train
     #   dataset_name: QADataset4Chat
@@ -67,15 +67,15 @@ dataset:
     #   dynamic_sampler: false
     #   corpus: ../data_of_ReGPT/Wiki-corpus/train
     #   max_tokens: 4096
-    # corpus_dataset:
-    #   data_name_or_path: ../data/data_of_ReGPT/Wiki-corpus/sorted_datasets_train/data-{:05d}-of-00805.arrow
-    #   dataset_name: RAGPretrainFromAFSDataset
-    #   batch_size: 24
-    #   num_epochs: 805
-    #   max_seq_len: 512
-    #   dynamic_sampler: true
-    #   corpus: ../data_of_ReGPT/Wiki-corpus/train
-    #   max_tokens: 4096
+    corpus_dataset:
+      data_name_or_path: ../data/data_of_ReGPT/Wiki-corpus/sorted_datasets_train/data-{:05d}-of-00805.arrow
+      dataset_name: RAGPretrainFromAFSDataset
+      batch_size: 24
+      num_epochs: 805
+      max_seq_len: 512
+      dynamic_sampler: true
+      corpus: ../data_of_ReGPT/Wiki-corpus/train
+      max_tokens: 4096
   test:
     # nq:
     #   dataset_name: QADataset4ChatTest
