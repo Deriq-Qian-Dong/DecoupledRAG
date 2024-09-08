@@ -413,6 +413,8 @@ class LlamaAttention(nn.Module):
             print('key_states', key_states.shape)
             print("causal_mask", causal_mask.shape)
             print("attn_weights", attn_weights.shape)
+            if causal_mask.shape[-2]==1:
+                exit()
             attn_weights = attn_weights + causal_mask
 
         # upcast attention to fp32
