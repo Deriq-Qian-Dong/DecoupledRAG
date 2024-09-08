@@ -458,7 +458,6 @@ class QADataset4Chat(Dataset):
         batch['retrieval_position'] = torch.full(shape, ret_pos, dtype=torch.long)
         batch['neighbor_embeddings'] = torch.tensor(neighbor_embeddings)
         batch['knowledge_input_ids'] = neighbor_batch['input_ids']
-        batch['knowledge_attention_mask'] = neighbor_batch['attention_mask']
         return batch
 
     def filter_empty(self, example):
@@ -538,7 +537,6 @@ class QADataset4ChatTest(QADataset4Chat):
                                 padding=True,
                                 truncation=True,
                                 return_tensors="pt")['input_ids']
-        batch['knowledge_attention_mask'] = neighbor_batch['attention_mask']
         return batch
 
     def set_epoch(self, epoch):

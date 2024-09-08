@@ -226,12 +226,12 @@ class RAGForCausalLM(nn.Module):
     
     def save_pretrained(self, directory):
         self.model.model.save_pretrained(directory) 
-        # for i in range(self.train_config['add_cross_attention_layer_snumber']+1):
+        for i in range(self.train_config['add_cross_attention_layer_number']+1):
             # gate_scores.append(float(self.model.model.layers[i].gate_crossattention.cpu().detach().float().numpy()[0]))
-            # state_dict = self.model.model.layers[i].gate_crossattention.state_dict()
+            state_dict = self.model.model.layers[i].gate_crossattention.state_dict()
             # move to cpu
-            # state_dict = {key: value.cpu() for key, value in state_dict.items()}
-            # torch.save(state_dict, f"{directory}/gate_{i}.pt")
+            state_dict = {key: value.cpu() for key, value in state_dict.items()}
+            torch.save(state_dict, f"{directory}/gate_{i}.pt")
 
 @register_class
 class LanguageModelTrainer:
@@ -250,7 +250,7 @@ class LanguageModelTrainer:
         self.best_accuracy = 0.0
 
     def run(self):
-        # self.test()
+        self.test()
         for epoch in range(self.train_config['start_from'], self.train_config['num_epochs']):
             self.epoch = epoch
             self.set_epoch_to_dataset()
@@ -482,7 +482,7 @@ class LanguageModelTrainer:
         model.eval()
         accuracy_list = []
         with torch.no_grad():
-            for number_of_docs in [1,2]:
+            for number_of_docs in [1,2,3,5,10]:
                 self.setup_test_dataloader(number_of_docs)
                 test_dataloaders = self.test_dataloaders
                 results = []

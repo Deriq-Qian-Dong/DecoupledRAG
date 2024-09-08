@@ -1,9 +1,12 @@
 trainer: RAGLanguageModelTrainer
 training:
   model_type: llama
-  project_name: RAG_llama3-chat
-  model_name_or_path: ../llama3-chat
-  tokenizer_name_or_path: ../llama3-chat
+  project_name: RAG_llama3-chat-sft-wiki
+  # model_name_or_path: ../SFT-llama3
+  # tokenizer_name_or_path: ../Llama-2-7b-chat-hf/
+  model_name_or_path: ../llama3_chat_qa_sft
+  tokenizer_name_or_path: ../llama3_chat_qa_sft
+  # kg_model_name_or_path: ../llama3-chat-top8
   kg_model_name_or_path: ./output/RAG-best
   num_layers_unfrozen: -1
   gradient_checkpointing: true
@@ -92,15 +95,15 @@ dataset:
       index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
       corpus: ../data_of_ReGPT/Wiki-corpus/train/
       dynamic_sampler: false
-    # 2WikiMultihopQA:
-    #   dataset_name: QADataset4ChatTest
-    #   batch_size: 32
-    #   data_name_or_path:  ../data_of_ReGPT/QA_datasets_WikiEmb/2WikiMultihopQA/sorted_datasets_dev/
-    #   max_seq_len: 512
-    #   max_new_tokens: 32
-    #   index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
-    #   corpus: ../data_of_ReGPT/Wiki-corpus/train/
-    #   dynamic_sampler: false
+    2WikiMultihopQA:
+      dataset_name: QADataset4ChatTest
+      batch_size: 32
+      data_name_or_path:  ../data_of_ReGPT/QA_datasets_WikiEmb/2WikiMultihopQA/sorted_datasets_dev/
+      max_seq_len: 512
+      max_new_tokens: 32
+      index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
+      corpus: ../data_of_ReGPT/Wiki-corpus/train/
+      dynamic_sampler: false
 
 generation_kwargs:
   min_length: 0
