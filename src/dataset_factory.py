@@ -538,6 +538,7 @@ class QADataset4ChatTest(QADataset4Chat):
                                 padding=True,
                                 truncation=True,
                                 return_tensors="pt")['input_ids']
+        batch['knowledge_attention_mask'] = neighbor_batch['attention_mask']
         return batch
 
     def set_epoch(self, epoch):
