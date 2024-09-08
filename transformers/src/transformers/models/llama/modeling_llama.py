@@ -394,10 +394,10 @@ class LlamaAttention(nn.Module):
             # sin and cos are specific to RoPE models; cache_position needed for the static cache
             cache_kwargs = {"sin": sin, "cos": cos, "cache_position": cache_position}
             key_states, value_states = past_key_value.update(key_states, value_states, self.layer_idx, cache_kwargs)
-
-        encoder_key_states, encoder_value_states = self.encoder_hidden_states_to_kv_states(encoder_hidden_states)
-        key_states = torch.cat([encoder_key_states, key_states], dim=2)
-        value_states = torch.cat([encoder_value_states, value_states], dim=2)
+        if encoder_hidden_states is not None:
+            encoder_key_states, encoder_value_states = self.encoder_hidden_states_to_kv_states(encoder_hidden_states)
+            key_states = torch.cat([encoder_key_states, key_states], dim=2)
+            value_states = torch.cat([encoder_value_states, value_states], dim=2)
 
         key_states = repeat_kv(key_states, self.num_key_value_groups)
         value_states = repeat_kv(value_states, self.num_key_value_groups)
