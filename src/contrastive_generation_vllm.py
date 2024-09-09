@@ -81,6 +81,7 @@ def process_batches(datasets, llm, batch_size, sampling_params, key_name="answer
                 generated = generated[0]
             sample = {'prompt': outputs.prompt, key_name: generated}
             new_data.append(sample)
+        break
     
     return new_data
 
