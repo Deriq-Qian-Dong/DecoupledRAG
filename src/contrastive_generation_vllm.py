@@ -59,7 +59,7 @@ def save_dataset(data, path):
     dataset = HFDataset.from_list(data)
     dataset.save_to_disk(path)
 
-def main(data_name_or_path, output_path):
+def main(data_name_or_path, output_path, llm):
     model_name_or_path = "../llama3-chat"
     dataset_config = {
         "number_of_docs": 1,
@@ -69,9 +69,7 @@ def main(data_name_or_path, output_path):
     }
     tokenizer = initialize_tokenizer(model_name_or_path)
     datasets = QADataset4Chat(tokenizer, dataset_config)
-    batch_size = 4096
-    llm = initialize_llm(model_name_or_path)
-    
+    batch_size = 4096    
     sampling_params = SamplingParams(temperature=1.0, top_p=1.0, top_k=100, n=4, max_tokens=256)
     new_data = process_batches(datasets, llm, batch_size, sampling_params)
     
@@ -79,9 +77,10 @@ def main(data_name_or_path, output_path):
 
 if __name__ == "__main__":
     candidates = ['2WikiMultihopQA/', 'hotpotqa/', 'nq/', 'openbookqa/', 'truthful_qa/']
+    llm = initialize_llm(model_name_or_path)
     for candidate in candidates:
         print(f"Processing {candidate}...")
         data_path = f"../data_of_ReGPT/QA_datasets_woEmb/{candidate}/sorted_datasets_train"
         output_path = data_path.replace("QA_datasets_woEmb", "QA_datasets_contrastive")
-        main(data_path, output_path)
+        main(data_path, output_path, llm)
 
