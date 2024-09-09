@@ -427,7 +427,7 @@ class QADataset4Chat(Dataset):
         # references = "references:\n"
         # for doc in retrieved_docs:
             # references += doc+'\n'
-        query = query+'\nThe answer MUST in ONE OR FEW WORDS.\nRecover the knowledge:'
+        query = query+'\nThe answer MUST in ONE OR FEW WORDS.'
         chat = [{'role': 'user', 'content': query}, {'role': 'assistant', 'content': answer}]
         chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=False)
         neighbor_embeddings = sample.get('neighbor_embeddings')
@@ -510,7 +510,7 @@ class QADataset4ChatTest(QADataset4Chat):
             references += doc+'\n'
         if not self.inference_with_explict_docs_for_test:
             references = ''
-        query = references + query+'\nThe answer MUST in ONE OR FEW WORDS.\nRecover the knowledge:'
+        query = references + query+'\nThe answer MUST in ONE OR FEW WORDS.'
         chat = [{'role': 'user', 'content': query}]
         chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
         neighbor_embeddings = sample.get('neighbor_embeddings')
