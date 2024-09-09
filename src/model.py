@@ -218,9 +218,6 @@ class RAGForCausalLM(nn.Module):
     def forward(self, **kwargs):
         self.dtype = self.model.parameters().__next__().dtype
         neighbor_embeddings = kwargs.pop('neighbor_embeddings', None)
-        kwargs['encoder_hidden_states'] = neighbor_embeddings.to(self.dtype)
-        if 'p_reps' in kwargs and kwargs['p_reps'] is not None:
-            kwargs['p_reps'] = kwargs.pop('p_reps').to(self.dtype)
         outputs = self.model(**kwargs)
         return outputs
     
