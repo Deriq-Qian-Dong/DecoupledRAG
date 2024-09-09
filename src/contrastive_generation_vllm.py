@@ -75,11 +75,12 @@ def process_batches(datasets, llm, batch_size, sampling_params, key_name="answer
         
         for outputs in batch_outputs:
             generated = [out.text for out in outputs.outputs]
+            prompt = outputs.prompt
             if replace_str:
-                generated = [gen.replace(replace_str, '') for gen in generated]
+                prompt = prompt.replace(replace_str, '')
             if len(generated) == 1:
                 generated = generated[0]
-            sample = {'prompt': outputs.prompt, key_name: generated}
+            sample = {'prompt': prompt, key_name: generated}
             new_data.append(sample)
         break
     
