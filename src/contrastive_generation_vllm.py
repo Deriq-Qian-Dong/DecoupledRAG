@@ -118,7 +118,7 @@ def _generate_background_knowledge_for_answers(data_name_or_path, output_path, l
     tokenizer = initialize_tokenizer(model_name_or_path)
     datasets = QADataset4ChatWithBackgroundKnowledge(tokenizer, dataset_config)
     batch_size = 4096    
-    sampling_params = SamplingParams(temperature=1.0, top_p=1.0, top_k=100, n=4, max_tokens=256)
+    sampling_params = SamplingParams(temperature=0.9, n=1, max_tokens=256)
     new_data = process_batches(datasets, llm, batch_size, sampling_params)
     
     save_dataset(new_data, output_path)
