@@ -131,7 +131,7 @@ def _generate_background_knowledge_for_answers(data_name_or_path, output_path, l
     save_dataset(new_data, output_path)
 
 def generate_background_knowledge_for_answers():
-    model_name_or_path = "../llama3-chat"
+    model_name_or_path = "../llama3-test"
     llm = initialize_llm(model_name_or_path)
     candidates = ['nq/', '2WikiMultihopQA', 'hotpotqa/', 'msmarco_qa/']
     for candidate in candidates:
