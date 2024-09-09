@@ -78,6 +78,10 @@ def main(data_name_or_path, output_path):
     save_dataset(new_data, output_path)
 
 if __name__ == "__main__":
-    data_path = "../data_of_ReGPT/QA_datasets_woEmb/msmarco_qa/sorted_datasets_train"
-    output_path = data_path.replace("QA_datasets_woEmb", "QA_datasets_contrastive")
-    main(data_path, output_path)
+    candidates = ['2WikiMultihopQA/', 'hotpotqa/', 'nq/', 'openbookqa/', 'truthful_qa/']
+    for candidate in candidates:
+        print(f"Processing {candidate}...")
+        data_path = f"../data_of_ReGPT/QA_datasets_woEmb/{candidate}/sorted_datasets_train"
+        output_path = data_path.replace("QA_datasets_woEmb", "QA_datasets_contrastive")
+        main(data_path, output_path)
+
