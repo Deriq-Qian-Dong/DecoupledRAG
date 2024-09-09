@@ -217,7 +217,7 @@ class RAGForCausalLM(nn.Module):
         
     def forward(self, **kwargs):
         self.dtype = self.model.parameters().__next__().dtype
-        neighbor_embeddings = kwargs.pop('neighbor_embeddings')
+        neighbor_embeddings = kwargs.pop('neighbor_embeddings', None)
         kwargs['encoder_hidden_states'] = neighbor_embeddings.to(self.dtype)
         if 'p_reps' in kwargs and kwargs['p_reps'] is not None:
             kwargs['p_reps'] = kwargs.pop('p_reps').to(self.dtype)
@@ -250,7 +250,7 @@ class LanguageModelTrainer:
         self.best_accuracy = 0.0
 
     def run(self):
-        self.test()
+        # self.test()
         for epoch in range(self.train_config['start_from'], self.train_config['num_epochs']):
             self.epoch = epoch
             self.set_epoch_to_dataset()
