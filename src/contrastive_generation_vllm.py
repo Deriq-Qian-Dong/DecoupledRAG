@@ -61,7 +61,7 @@ def initialize_tokenizer(model_path):
     return AutoTokenizer.from_pretrained(model_path)
 
 def initialize_llm(model_path):
-    return LLM(model=model_path, tensor_parallel_size=8, max_num_seqs=8192, gpu_memory_utilization=0.99)
+    return LLM(model=model_path, tensor_parallel_size=2, max_num_seqs=8192, gpu_memory_utilization=0.99)
 
 def process_batches(datasets, llm, batch_size, sampling_params, key_name="answers", replace_str=""):
     new_data = []
