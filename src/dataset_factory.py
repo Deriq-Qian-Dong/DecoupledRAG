@@ -430,7 +430,7 @@ class QADataset4Chat(Dataset):
         query = query+'\nThe answer MUST in ONE OR FEW WORDS.'
         chat = [{'role': 'user', 'content': query}, {'role': 'assistant', 'content': answer}]
         chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=False)
-        neighbor_embeddings = sample.get('neighbor_embeddings')
+        neighbor_embeddings = None
         return chat, neighbor_embeddings, retrieved_docs, sample['input_ids_length']
     
     def __len__(self):
@@ -456,10 +456,7 @@ class QADataset4Chat(Dataset):
                                 truncation=True,
                                 return_tensors="pt")
         batch["labels"] = batch['input_ids']
-        ret_pos = 0
-        shape = (batch['input_ids'].size(0), 1)
-        batch['retrieval_position'] = torch.full(shape, ret_pos, dtype=torch.long)
-        batch['neighbor_embeddings'] = torch.tensor(neighbor_embeddings)
+        # batch['neighbor_embeddings'] = torch.tensor(neighbor_embeddings)
         batch['knowledge_input_ids'] = neighbor_batch['input_ids']
         return batch
 
@@ -513,7 +510,7 @@ class QADataset4ChatTest(QADataset4Chat):
         query = references + query+'\nThe answer MUST in ONE OR FEW WORDS.'
         chat = [{'role': 'user', 'content': query}]
         chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
-        neighbor_embeddings = sample.get('neighbor_embeddings')
+        neighbor_embeddings = None
         return chat, answer, retrieved_docs, neighbor_embeddings, sample['input_ids_length']
     
     def _collate_fn(self, elems):
