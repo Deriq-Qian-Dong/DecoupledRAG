@@ -63,7 +63,7 @@ def initialize_tokenizer(model_path):
 def initialize_llm(model_path):
     return LLM(model=model_path, tensor_parallel_size=8, max_num_seqs=8192, gpu_memory_utilization=0.99)
 
-def process_batches(datasets, llm, batch_size, sampling_params):
+def process_batches(datasets, llm, batch_size, sampling_params, key_name="answers", replace_str=""):
     new_data = []
     num_batches = len(datasets) // batch_size + (1 if len(datasets) % batch_size != 0 else 0)
 
@@ -74,7 +74,12 @@ def process_batches(datasets, llm, batch_size, sampling_params):
         batch_outputs = llm.generate(batch, sampling_params, use_tqdm=False)
         
         for outputs in batch_outputs:
-            sample = {'prompt': outputs.prompt, "answers": [out.text for out in outputs.outputs]}
+            generated = [out.text for out in outputs.outputs]
+            if replace_str:
+                generated = [gen.replace(replace_str, '') for gen in generated]
+            if len(generated) == 1:
+                generated = generated[0]
+            sample = {'prompt': outputs.prompt, key_name: generated}
             new_data.append(sample)
     
     return new_data
@@ -119,7 +124,7 @@ def _generate_background_knowledge_for_answers(data_name_or_path, output_path, l
     datasets = QADataset4ChatWithBackgroundKnowledge(tokenizer, dataset_config)
     batch_size = 4096    
     sampling_params = SamplingParams(temperature=0.9, n=1, max_tokens=256)
-    new_data = process_batches(datasets, llm, batch_size, sampling_params)
+    new_data = process_batches(datasets, llm, batch_size, sampling_params, "background_knowledge", "<|start_header_id|>user<|end_header_id|>\n\nPlease provide the background knowledge for the answer. The background knowledge MUST be within 256 tokens.<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n")
     
     save_dataset(new_data, output_path)
 
