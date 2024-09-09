@@ -113,8 +113,9 @@ class RAGPretrainDataset(Dataset):
                                 padding=True,
                                 truncation=True,
                                 return_tensors="pt")
-        num_of_elements = random.randint(1, len(neighbor_texts[0]))
-        random_indices = random.sample(range(len(neighbor_texts[0])), num_of_elements)
+        # num_of_elements = random.randint(1, len(neighbor_texts[0]))
+        # random_indices = random.sample(range(len(neighbor_texts[0])), num_of_elements)
+        random_indices = [0]
         all_neighbor_texts = []
         for neighbor_text in neighbor_texts:
             all_neighbor_texts += [neighbor_text[i] for i in random_indices]
