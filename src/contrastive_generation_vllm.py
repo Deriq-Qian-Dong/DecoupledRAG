@@ -69,7 +69,7 @@ def main(data_name_or_path, output_path):
     }
     tokenizer = initialize_tokenizer(model_name_or_path)
     datasets = QADataset4Chat(tokenizer, dataset_config)
-    batch_size = 10240
+    batch_size = 5120
     llm = initialize_llm(model_name_or_path, tensor_parallel_size=8, batch_size=batch_size)
     
     sampling_params = SamplingParams(temperature=1.0, top_p=1.0, top_k=100, n=4, max_tokens=256)
