@@ -59,8 +59,7 @@ def save_dataset(data, path):
     dataset = HFDataset.from_list(data)
     dataset.save_to_disk(path)
 
-def main(data_name_or_path, output_path, llm):
-    model_name_or_path = "../llama3-chat"
+def main(data_name_or_path, output_path, llm, model_name_or_path):
     dataset_config = {
         "number_of_docs": 1,
         "data_name_or_path": data_name_or_path,
@@ -76,11 +75,12 @@ def main(data_name_or_path, output_path, llm):
     save_dataset(new_data, output_path)
 
 if __name__ == "__main__":
-    candidates = ['2WikiMultihopQA/', 'hotpotqa/', 'nq/', 'openbookqa/', 'truthful_qa/']
+    candidates = ['hotpotqa/', 'nq/', 'openbookqa/', 'truthful_qa/']
+    model_name_or_path = "../llama3-chat"
     llm = initialize_llm(model_name_or_path)
     for candidate in candidates:
         print(f"Processing {candidate}...")
         data_path = f"../data_of_ReGPT/QA_datasets_woEmb/{candidate}/sorted_datasets_train"
         output_path = data_path.replace("QA_datasets_woEmb", "QA_datasets_contrastive")
-        main(data_path, output_path, llm)
+        main(data_path, output_path, llm, model_name_or_path)
 
