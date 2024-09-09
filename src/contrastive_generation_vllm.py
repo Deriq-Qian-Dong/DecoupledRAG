@@ -37,7 +37,7 @@ def initialize_tokenizer(model_path):
     return AutoTokenizer.from_pretrained(model_path)
 
 def initialize_llm(model_path, tensor_parallel_size, batch_size):
-    return LLM(model=model_path, tensor_parallel_size=tensor_parallel_size, max_num_seqs=8192, disable_custom_allreduce=True)
+    return LLM(model=model_path, tensor_parallel_size=tensor_parallel_size, max_num_seqs=8192)
 
 def process_batches(datasets, llm, batch_size, sampling_params):
     new_data = []
@@ -69,7 +69,7 @@ def main(data_name_or_path, output_path):
     }
     tokenizer = initialize_tokenizer(model_name_or_path)
     datasets = QADataset4Chat(tokenizer, dataset_config)
-    batch_size = 512
+    batch_size = 128
     llm = initialize_llm(model_name_or_path, tensor_parallel_size=8, batch_size=batch_size)
     
     sampling_params = SamplingParams(temperature=1.0, top_p=1.0, top_k=100, n=4, max_tokens=256)
