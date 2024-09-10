@@ -108,15 +108,15 @@ def _generate_contrastive_answers(data_name_or_path, output_path, llm, model_nam
     
     save_dataset(new_data, output_path)
 
-def generate_contrastive_answers():
-    candidates = ['hotpotqa/', 'nq/']
-    model_name_or_path = "../llama3-chat"
+def generate_contrastive_answers(num_gpu=8, local_rank=0):
+    candidates = ['hotpotqa/', '2WikiMultihopQA/']
+    model_name_or_path = "../llama3_chat_qa_sft"
     llm = initialize_llm(model_name_or_path)
     for candidate in candidates:
         print(f"Processing {candidate}...")
         data_path = f"../data_of_ReGPT/QA_datasets_woEmb/{candidate}/sorted_datasets_train"
         output_path = data_path.replace("QA_datasets_woEmb", "QA_datasets_contrastive")
-        _generate_contrastive_answers(data_path, output_path, llm, model_name_or_path)
+        _generate_contrastive_answers(data_path, output_path, llm, model_name_or_path, num_gpu, local_rank)
 
 def _generate_background_knowledge_for_answers(data_name_or_path, output_path, llm, model_name_or_path, num_gpu=8, local_rank=0):
     dataset_config = {
@@ -137,7 +137,7 @@ def _generate_background_knowledge_for_answers(data_name_or_path, output_path, l
 def generate_background_knowledge_for_answers(num_gpu=8, local_rank=0):
     model_name_or_path = "../llama3-chat"
     llm = initialize_llm(model_name_or_path)
-    candidates = ['nq/', '2WikiMultihopQA', 'hotpotqa/', 'msmarco_qa/']
+    candidates = ['2WikiMultihopQA', 'hotpotqa/']
     for candidate in candidates:
         print(f"Processing {candidate}...")
         data_path = f"../data_of_ReGPT/QA_datasets_contrastive/{candidate}/sorted_datasets_train"
@@ -167,13 +167,13 @@ def merge_datasets(base_dir, datasets_names, gpu_ids):
     return merged_datasets
 
 if __name__ == "__main__":
-    # generate_contrastive_answers()
     import sys
     num_gpu = int(sys.argv[1])
     local_rank = int(sys.argv[2])
     import os
     os.environ["CUDA_VISIBLE_DEVICES"] = f"{local_rank}"
-    generate_background_knowledge_for_answers(num_gpu, local_rank)
+    generate_contrastive_answers(num_gpu, local_rank)
+    # generate_background_knowledge_for_answers(num_gpu, local_rank)
 
     # # 示例调用
     # base_dir = '../data_of_ReGPT/QA_datasets_contrastive_with_background_knowledge_'  # 定义基础路径
