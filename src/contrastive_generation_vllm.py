@@ -150,4 +150,6 @@ if __name__ == "__main__":
     import sys
     num_gpu = int(sys.argv[1])
     local_rank = int(sys.argv[2])
+    import os
+    os.environ["CUDA_VISIBLE_DEVICES"] = f"{local_rank}"
     generate_background_knowledge_for_answers(num_gpu, local_rank)
