@@ -542,6 +542,53 @@ class QADataset4ChatTest(QADataset4Chat):
     def set_epoch(self, epoch):
         pass
 
+
+@register_class
+class QADataset4Contrastive(Dataset):
+    def __init__(self, tokenizer, args):
+        self.args = args
+        self.tokenizer = tokenizer
+        self.setup_datasets()
+    
+    def setup_datasets(self):
+        self.datasets = load_from_disk(self.args['data_name_or_path'])
+        self.num_samples = len(self.datasets)
+    
+    def __getitem__(self, idx):
+        sample = self.datasets[idx]
+        chat = sample['prompt']
+        retrieved_docs = [sample['background_knowledge']]
+        return chat, retrieved_docs
+    
+    def __len__(self):
+        return self.num_samples
+    
+    def _collate_fn(self, elems):
+        texts, retrieved_docs = zip(*elems)
+        self.tokenizer.padding_side = 'left'
+        self.tokenizer.truncation_side = 'left'
+        batch = self.tokenizer(texts,
+                                add_special_tokens=False,
+                                max_length=self.args['max_seq_len'],
+                                padding=True,
+                                truncation=True,
+                                return_tensors="pt")
+        all_retrieved_docs = []
+        for docs in retrieved_docs:
+            all_retrieved_docs += docs
+        neighbor_batch = self.tokenizer(all_retrieved_docs,
+                                max_length=self.args['max_seq_len'],
+                                padding=True,
+                                truncation=True,
+                                return_tensors="pt")
+        batch["labels"] = batch['input_ids']
+        batch['knowledge_input_ids'] = neighbor_batch['input_ids']
+        return batch
+    
+    def set_epoch(self, epoch):
+        self.epoch = epoch
+        print_rank_0(f'[!] set epoch to {epoch}')
+
 @register_class
 class QASFTDataset(QADataset):
     def __init__(self, tokenizer, args):

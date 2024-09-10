@@ -1,5 +1,5 @@
 from torch.utils.data import DataLoader, Dataset
-from datasets import load_from_disk, Dataset as HFDataset
+from datasets import concatenate_datasets, load_from_disk, Dataset as HFDataset
 from transformers import AutoTokenizer
 from vllm import LLM, SamplingParams
 import pandas as pd
@@ -144,6 +144,28 @@ def generate_background_knowledge_for_answers(num_gpu=8, local_rank=0):
         output_path = data_path.replace("QA_datasets_contrastive", f"QA_datasets_contrastive_with_background_knowledge_{local_rank}GPU")
         _generate_background_knowledge_for_answers(data_path, output_path, llm, model_name_or_path, num_gpu, local_rank)
 
+
+# 函数：合并单个数据集的多个GPU数据
+def merge_single_dataset(base_dir, dataset_name, gpu_ids):
+    datasets = []
+    for gpu_id in gpu_ids:
+        path = f'{base_dir}{gpu_id}/{dataset_name}/sorted_datasets_train/'
+        dataset = load_from_disk(path)
+        datasets.append(dataset)
+    # 合并所有数据集，并扁平化索引
+    merged_dataset = concatenate_datasets(datasets).flatten_indices()
+    # 保存合并后的数据集
+    merged_dataset.save_to_disk(f'{base_dir[:-1]}/{dataset_name}/sorted_datasets_train/')
+    return merged_dataset
+
+# 函数：合并多个数据集
+def merge_datasets(base_dir, datasets_names, gpu_ids):
+    merged_datasets = {}
+    for dataset_name in datasets_names:
+        print(f"正在合并 {dataset_name} 数据集...")
+        merged_datasets[dataset_name] = merge_single_dataset(base_dir, dataset_name, gpu_ids)
+    return merged_datasets
+
 if __name__ == "__main__":
     # generate_contrastive_answers()
     import sys
@@ -152,3 +174,15 @@ if __name__ == "__main__":
     import os
     os.environ["CUDA_VISIBLE_DEVICES"] = f"{local_rank}"
     generate_background_knowledge_for_answers(num_gpu, local_rank)
+
+    # # 示例调用
+    # base_dir = '../data_of_ReGPT/QA_datasets_contrastive_with_background_knowledge_'  # 定义基础路径
+    # gpu_ids = ['0GPU', '1GPU', '2GPU', '3GPU']  # 定义GPU数目
+    # datasets_names = ['nq', '2WikiMultihopQA', 'hotpotqa']  # 定义要合并的数据集名称
+
+    # # 调用函数合并多个数据集
+    # merged_datasets = merge_datasets(base_dir, datasets_names, gpu_ids)
+
+    # # 输出查看合并后的结果
+    # for dataset_name, dataset in merged_datasets.items():
+    #     print(f"Merged {dataset_name} dataset:", dataset)
