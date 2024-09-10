@@ -190,8 +190,9 @@ class RAGForCausalLM(nn.Module):
         config.freeze_retrieval_head = train_config['freeze_retrieval_head']
         model = MODEL_CLASS[train_config['model_type']].from_pretrained(train_config['model_name_or_path'], config=config)          
         import os
-        if os.path.exists(os.path.join(train_config['kg_model_name_or_path'], 'adapter_config.json')):
-            model.model.load_adapter(train_config['kg_model_name_or_path'], "knowledge_injector")
+        if os.path.exists(os.path.join(train_config['kg_model_name_or_path'], 'knowledge_injector', 'adapter_config.json')) and os.path.exists(os.path.join(train_config['kg_model_name_or_path'], 'finetune', 'adapter_config.json')):
+            model.model.load_adapter(os.path.join(train_config['kg_model_name_or_path'], 'knowledge_injector'), "knowledge_injector")
+            model.model.load_adapter(os.path.join(train_config['kg_model_name_or_path'], 'finetune'), "finetune")
         else:
             peft_config = LoraConfig(
                 lora_alpha=128,
@@ -201,6 +202,7 @@ class RAGForCausalLM(nn.Module):
                 task_type="CAUSAL_LM"
             )
             model.model.add_adapter(peft_config, "knowledge_injector")
+            model.model.add_adapter(peft_config, "finetune")
         freeze_non_crossattention_parameters(model, train_config['freeze_retrieval_head'], train_config['freeze_lm_head'])
         if train_config['gradient_checkpointing']:
             model.gradient_checkpointing_enable()
@@ -222,7 +224,10 @@ class RAGForCausalLM(nn.Module):
         return outputs
     
     def save_pretrained(self, directory):
-        self.model.model.save_pretrained(directory) 
+        self.model.model.set_adapter("knowledge_injector")
+        self.model.model.save_pretrained(os.path.join(directory, "knowledge_injector"))
+        self.model.model.set_adapter("finetune")
+        self.model.model.save_pretrained(os.path.join(directory, "finetune")) 
         for i in range(self.train_config['add_cross_attention_layer_number']+1):
             # gate_scores.append(float(self.model.model.layers[i].gate_crossattention.cpu().detach().float().numpy()[0]))
             state_dict = self.model.model.layers[i].gate_crossattention.state_dict()
