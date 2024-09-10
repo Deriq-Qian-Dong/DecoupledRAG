@@ -11,6 +11,7 @@ for local_rank in $(seq 0 $((num_processes - 1)))
 do
     echo "Running process on GPU $local_rank"
     python src/contrastive_generation_vllm.py $num_processes $local_rank > logs/log_gpu_${local_rank}.log 2>&1 &
+    sleep 10s
 done
 
 # Wait for all background processes to finish
