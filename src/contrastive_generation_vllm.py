@@ -68,11 +68,10 @@ def process_batches(datasets, llm, batch_size, sampling_params, key_name="answer
     num_batches = len(datasets) // batch_size + (1 if len(datasets) % batch_size != 0 else 0)
 
     # Split datasets for each GPU
-    gpu_batch_size = num_batches // num_gpu
-    start_gpu_idx = local_rank * gpu_batch_size
-    end_gpu_idx = min((local_rank + 1) * gpu_batch_size, num_batches)
+    gpu_batch_indices = [i for i in range(local_rank, num_batches, num_gpu)]
 
-    for batch_idx in tqdm(range(start_gpu_idx, end_gpu_idx)):
+
+    for batch_idx in tqdm(gpu_batch_indices):
         start_idx = batch_idx * batch_size
         end_idx = min((batch_idx + 1) * batch_size, len(datasets))
         batch = datasets.get_batch(range(start_idx, end_idx))
