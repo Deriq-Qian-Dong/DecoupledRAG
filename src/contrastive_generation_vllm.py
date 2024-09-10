@@ -61,7 +61,7 @@ def initialize_tokenizer(model_path):
     return AutoTokenizer.from_pretrained(model_path)
 
 def initialize_llm(model_path):
-    return LLM(model=model_path, tensor_parallel_size=1, max_num_seqs=8192, gpu_memory_utilization=0.99, swap_space=128)
+    return LLM(model=model_path, tensor_parallel_size=1, max_num_seqs=8192, gpu_memory_utilization=0.99, swap_space=512)
 
 def process_batches(datasets, llm, batch_size, sampling_params, key_name="answers", replace_str="", num_gpu=8, local_rank=0):
     new_data = []
@@ -102,7 +102,7 @@ def _generate_contrastive_answers(data_name_or_path, output_path, llm, model_nam
     }
     tokenizer = initialize_tokenizer(model_name_or_path)
     datasets = QADataset4Chat(tokenizer, dataset_config)
-    batch_size = 4096    
+    batch_size = 1024    
     sampling_params = SamplingParams(temperature=1.0, top_p=1.0, top_k=100, n=4, max_tokens=256)
     new_data = process_batches(datasets, llm, batch_size, sampling_params, "answers", "", num_gpu, local_rank)
     
