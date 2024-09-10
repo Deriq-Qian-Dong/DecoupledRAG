@@ -142,7 +142,7 @@ def generate_background_knowledge_for_answers(num_gpu=8, local_rank=0):
     for candidate in candidates:
         print(f"Processing {candidate}...")
         data_path = f"../data_of_ReGPT/QA_datasets_contrastive/{candidate}/sorted_datasets_train"
-        output_path = data_path.replace("QA_datasets_contrastive", "QA_datasets_contrastive_with_background_knowledge")
+        output_path = data_path.replace("QA_datasets_contrastive", f"QA_datasets_contrastive_with_background_knowledge_{num_gpu}GPU")
         _generate_background_knowledge_for_answers(data_path, output_path, llm, model_name_or_path, num_gpu, local_rank)
 
 if __name__ == "__main__":
