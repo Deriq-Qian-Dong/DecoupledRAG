@@ -133,7 +133,6 @@ def _generate_background_knowledge_for_answers(data_name_or_path, output_path, l
 
 def generate_background_knowledge_for_answers(num_gpu=8, local_rank=0, model_name_or_path="../llama3-chat", candidates=['2WikiMultihopQA', 'hotpotqa/']):
     llm = initialize_llm(model_name_or_path)
-    candidates = ['2WikiMultihopQA', 'hotpotqa/']
     for candidate in candidates:
         print(f"Processing {candidate}...")
         data_path = f"../data_of_ReGPT/QA_datasets_contrastive/{candidate}/sorted_datasets_train"
