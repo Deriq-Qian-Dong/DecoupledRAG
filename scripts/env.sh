@@ -30,13 +30,14 @@ mkdir -p output
 mkdir -p ../data_of_ReGPT/Wiki-corpus
 cp -r ../data/data_of_ReGPT/Wiki-corpus/train ../data_of_ReGPT/Wiki-corpus/
 # cp -r ../data/data_of_ReGPT/Wiki-corpus/phrases_embeddings.npy ../data_of_ReGPT/Wiki-corpus/
-cp -r ../data/data_of_ReGPT/QA_datasets_WikiEmb ../data_of_ReGPT/
+cp -r ../data/data_of_ReGPT/QA_datasets_woEmb ../data_of_ReGPT/
+cp -r ../data/data_of_ReGPT/QA_datasets_contrastive ../data_of_ReGPT/
 # cp -r ../data/rag_llama2/24_wiki_qa/ ../
 cp -r ../data/llama3-chat ../
 cp -r ../data/llama3-chat-top8 ../
 cp ../data/anserini.tar.gz ../
 cp ../data/jdk-11.0.13.zip ../
-cp -r ../data/data_of_ReGPT/Wiki-corpus/bm25_index/ ../data_of_ReGPT/Wiki-corpus/
+# cp -r ../data/data_of_ReGPT/Wiki-corpus/bm25_index/ ../data_of_ReGPT/Wiki-corpus/
 cd ../
 tar -xzvf anserini.tar.gz
 unzip jdk-11.0.13.zip
