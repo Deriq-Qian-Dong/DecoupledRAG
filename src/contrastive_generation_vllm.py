@@ -108,9 +108,7 @@ def _generate_contrastive_answers(data_name_or_path, output_path, llm, model_nam
     
     save_dataset(new_data, output_path)
 
-def generate_contrastive_answers(num_gpu=8, local_rank=0):
-    candidates = ['hotpotqa/', '2WikiMultihopQA/']
-    model_name_or_path = "../llama3_chat_qa_sft"
+def generate_contrastive_answers(num_gpu=8, local_rank=0, model_name_or_path="../llama3_chat_qa_sft", candidates=['hotpotqa/', '2WikiMultihopQA/']):
     llm = initialize_llm(model_name_or_path)
     for candidate in candidates:
         print(f"Processing {candidate}...")
@@ -133,8 +131,7 @@ def _generate_background_knowledge_for_answers(data_name_or_path, output_path, l
     
     save_dataset(new_data, output_path)
 
-def generate_background_knowledge_for_answers(num_gpu=8, local_rank=0):
-    model_name_or_path = "../llama3-chat"
+def generate_background_knowledge_for_answers(num_gpu=8, local_rank=0, model_name_or_path="../llama3-chat", candidates=['2WikiMultihopQA', 'hotpotqa/']):
     llm = initialize_llm(model_name_or_path)
     candidates = ['2WikiMultihopQA', 'hotpotqa/']
     for candidate in candidates:
@@ -171,8 +168,8 @@ if __name__ == "__main__":
     local_rank = int(sys.argv[2])
     import os
     os.environ["CUDA_VISIBLE_DEVICES"] = f"{local_rank}"
-    generate_contrastive_answers(num_gpu, local_rank)
-    # generate_background_knowledge_for_answers(num_gpu, local_rank)
+    # generate_contrastive_answers(num_gpu, local_rank, model_name_or_path="../llama3_chat_qa_sft", candidates=['hotpotqa/', '2WikiMultihopQA/'])
+    generate_background_knowledge_for_answers(num_gpu, local_rank, model_name_or_path="../llama3-chat", candidates=['2WikiMultihopQA', 'hotpotqa/'])
 
     # # 示例调用
     # base_dir = '../data_of_ReGPT/QA_datasets_contrastive_with_background_knowledge_'  # 定义基础路径
