@@ -61,13 +61,18 @@ def initialize_tokenizer(model_path):
     return AutoTokenizer.from_pretrained(model_path)
 
 def initialize_llm(model_path):
-    return LLM(model=model_path, tensor_parallel_size=2, max_num_seqs=8192, gpu_memory_utilization=0.99)
+    return LLM(model=model_path, tensor_parallel_size=1, max_num_seqs=8192, gpu_memory_utilization=0.99)
 
-def process_batches(datasets, llm, batch_size, sampling_params, key_name="answers", replace_str=""):
+def process_batches(datasets, llm, batch_size, sampling_params, key_name="answers", replace_str="", num_gpu=8, local_rank=0):
     new_data = []
     num_batches = len(datasets) // batch_size + (1 if len(datasets) % batch_size != 0 else 0)
 
-    for batch_idx in tqdm(range(num_batches)):
+    # Split datasets for each GPU
+    gpu_batch_size = num_batches // num_gpu
+    start_gpu_idx = local_rank * gpu_batch_size
+    end_gpu_idx = min((local_rank + 1) * gpu_batch_size, num_batches)
+
+    for batch_idx in tqdm(range(start_gpu_idx, end_gpu_idx)):
         start_idx = batch_idx * batch_size
         end_idx = min((batch_idx + 1) * batch_size, len(datasets))
         batch = datasets.get_batch(range(start_idx, end_idx))
@@ -89,7 +94,7 @@ def save_dataset(data, path):
     dataset = HFDataset.from_list(data)
     dataset.save_to_disk(path)
 
-def _generate_contrastive_answers(data_name_or_path, output_path, llm, model_name_or_path):
+def _generate_contrastive_answers(data_name_or_path, output_path, llm, model_name_or_path, num_gpu=8, local_rank=0):
     dataset_config = {
         "number_of_docs": 1,
         "data_name_or_path": data_name_or_path,
@@ -100,7 +105,7 @@ def _generate_contrastive_answers(data_name_or_path, output_path, llm, model_nam
     datasets = QADataset4Chat(tokenizer, dataset_config)
     batch_size = 4096    
     sampling_params = SamplingParams(temperature=1.0, top_p=1.0, top_k=100, n=4, max_tokens=256)
-    new_data = process_batches(datasets, llm, batch_size, sampling_params)
+    new_data = process_batches(datasets, llm, batch_size, sampling_params, "answers", "", num_gpu, local_rank)
     
     save_dataset(new_data, output_path)
 
@@ -114,7 +119,7 @@ def generate_contrastive_answers():
         output_path = data_path.replace("QA_datasets_woEmb", "QA_datasets_contrastive")
         _generate_contrastive_answers(data_path, output_path, llm, model_name_or_path)
 
-def _generate_background_knowledge_for_answers(data_name_or_path, output_path, llm, model_name_or_path):
+def _generate_background_knowledge_for_answers(data_name_or_path, output_path, llm, model_name_or_path, num_gpu=8, local_rank=0):
     dataset_config = {
         "number_of_docs": 1,
         "data_name_or_path": data_name_or_path,
@@ -124,13 +129,13 @@ def _generate_background_knowledge_for_answers(data_name_or_path, output_path, l
     tokenizer = initialize_tokenizer(model_name_or_path)
     datasets = QADataset4ChatWithBackgroundKnowledge(tokenizer, dataset_config)
     # batch_size = 512
-    batch_size = 256
+    batch_size = 128
     sampling_params = SamplingParams(temperature=0.9, n=1, max_tokens=256)
-    new_data = process_batches(datasets, llm, batch_size, sampling_params, "background_knowledge", "<|start_header_id|>user<|end_header_id|>\n\nPlease provide the background knowledge for the answer. The background knowledge MUST be within 256 tokens.<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n")
+    new_data = process_batches(datasets, llm, batch_size, sampling_params, "background_knowledge", "<|start_header_id|>user<|end_header_id|>\n\nPlease provide the background knowledge for the answer. The background knowledge MUST be within 256 tokens.<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n", num_gpu, local_rank)
     
     save_dataset(new_data, output_path)
 
-def generate_background_knowledge_for_answers():
+def generate_background_knowledge_for_answers(num_gpu=8, local_rank=0):
     model_name_or_path = "../llama3-chat"
     llm = initialize_llm(model_name_or_path)
     candidates = ['nq/', '2WikiMultihopQA', 'hotpotqa/', 'msmarco_qa/']
@@ -138,8 +143,11 @@ def generate_background_knowledge_for_answers():
         print(f"Processing {candidate}...")
         data_path = f"../data_of_ReGPT/QA_datasets_contrastive/{candidate}/sorted_datasets_train"
         output_path = data_path.replace("QA_datasets_contrastive", "QA_datasets_contrastive_with_background_knowledge")
-        _generate_background_knowledge_for_answers(data_path, output_path, llm, model_name_or_path)
+        _generate_background_knowledge_for_answers(data_path, output_path, llm, model_name_or_path, num_gpu, local_rank)
 
 if __name__ == "__main__":
     # generate_contrastive_answers()
-    generate_background_knowledge_for_answers()
+    import sys
+    num_gpu = int(sys.argv[1])
+    local_rank = int(sys.argv[2])
+    generate_background_knowledge_for_answers(num_gpu, local_rank)
