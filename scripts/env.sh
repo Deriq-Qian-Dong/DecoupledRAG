@@ -33,8 +33,9 @@ cp -r ../data/data_of_ReGPT/Wiki-corpus/train ../data_of_ReGPT/Wiki-corpus/
 cp -r ../data/data_of_ReGPT/QA_datasets_woEmb ../data_of_ReGPT/
 cp -r ../data/data_of_ReGPT/QA_datasets_contrastive ../data_of_ReGPT/
 # cp -r ../data/rag_llama2/24_wiki_qa/ ../
-cp -r ../data/llama3-chat ../
-cp -r ../data/llama3-chat-top8 ../
+# cp -r ../data/llama3-chat ../
+cp -r ../data/llama3_chat_qa_sft ../
+# cp -r ../data/llama3-chat-top8 ../
 cp ../data/anserini.tar.gz ../
 cp ../data/jdk-11.0.13.zip ../
 # cp -r ../data/data_of_ReGPT/Wiki-corpus/bm25_index/ ../data_of_ReGPT/Wiki-corpus/
