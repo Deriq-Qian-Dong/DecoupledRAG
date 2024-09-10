@@ -172,8 +172,8 @@ if __name__ == "__main__":
     local_rank = int(sys.argv[2])
     import os
     os.environ["CUDA_VISIBLE_DEVICES"] = f"{local_rank}"
-    generate_contrastive_answers(num_gpu, local_rank)
-    # generate_background_knowledge_for_answers(num_gpu, local_rank)
+    # generate_contrastive_answers(num_gpu, local_rank)
+    generate_background_knowledge_for_answers(num_gpu, local_rank)
 
     # # 示例调用
     # base_dir = '../data_of_ReGPT/QA_datasets_contrastive_with_background_knowledge_'  # 定义基础路径
