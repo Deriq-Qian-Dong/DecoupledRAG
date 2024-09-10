@@ -115,7 +115,7 @@ def generate_contrastive_answers(num_gpu=8, local_rank=0):
     for candidate in candidates:
         print(f"Processing {candidate}...")
         data_path = f"../data_of_ReGPT/QA_datasets_woEmb/{candidate}/sorted_datasets_train"
-        output_path = data_path.replace("QA_datasets_woEmb", "QA_datasets_contrastive")
+        output_path = data_path.replace("QA_datasets_woEmb", f"QA_datasets_contrastive_{local_rank}GPU")
         _generate_contrastive_answers(data_path, output_path, llm, model_name_or_path, num_gpu, local_rank)
 
 def _generate_background_knowledge_for_answers(data_name_or_path, output_path, llm, model_name_or_path, num_gpu=8, local_rank=0):
@@ -171,8 +171,8 @@ if __name__ == "__main__":
     local_rank = int(sys.argv[2])
     import os
     os.environ["CUDA_VISIBLE_DEVICES"] = f"{local_rank}"
-    # generate_contrastive_answers(num_gpu, local_rank)
-    generate_background_knowledge_for_answers(num_gpu, local_rank)
+    generate_contrastive_answers(num_gpu, local_rank)
+    # generate_background_knowledge_for_answers(num_gpu, local_rank)
 
     # # 示例调用
     # base_dir = '../data_of_ReGPT/QA_datasets_contrastive_with_background_knowledge_'  # 定义基础路径
