@@ -102,7 +102,7 @@ def _generate_contrastive_answers(data_name_or_path, output_path, llm, model_nam
     }
     tokenizer = initialize_tokenizer(model_name_or_path)
     datasets = QADataset4Chat(tokenizer, dataset_config)
-    batch_size = 1024    
+    batch_size = 2048    
     sampling_params = SamplingParams(temperature=1.0, top_p=1.0, top_k=100, n=4, max_tokens=256)
     new_data = process_batches(datasets, llm, batch_size, sampling_params, "answers", "", num_gpu, local_rank)
     
