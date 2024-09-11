@@ -1872,7 +1872,7 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
         # print(knowledge_input_ids)
         # print(knowledge_outputs)
 
-        self.model.set_adapter('finetune')
+        self.model.disable_adapters()
         # decoder outputs consists of (dec_features, layer_state, dec_hidden, dec_attn)
         outputs = self.model(
             input_ids=input_ids,
