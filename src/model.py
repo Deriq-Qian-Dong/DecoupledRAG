@@ -255,15 +255,13 @@ class LanguageModelTrainer:
             self.test()
 
     def set_epoch_to_dataset(self):
-        # number_of_docs_lst = [1,2,3,5,10]
-        number_of_docs_lst = [1]
+        number_of_docs_lst = [1,2,3,5,10]
+        # number_of_docs_lst = [1]
         number_of_docs = number_of_docs_lst[self.epoch%len(number_of_docs_lst)]
         for key in self.dataset_config['train']:
             self.dataset_config['train'][key]['number_of_docs'] = number_of_docs
-        # for key in self.dataset_config['test']:
-            # self.dataset_config['test'][key]['number_of_docs'] = number_of_docs
-        # timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")       
-        # self.accelerator.init_trackers(project_name=f"{self.config['training']['project_name']}_number_of_docs_{self.dataset_config['test'][key]['number_of_docs']}_{timestamp}")
+        for key in self.dataset_config['test']:
+            self.dataset_config['test'][key]['number_of_docs'] = number_of_docs
         self.setup_test_dataloader()
         self.setup_train_dataloader()
 
