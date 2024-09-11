@@ -1,5 +1,4 @@
 unset https_proxy
-
 # pip install -r requirements.txt
 cp ../data/packs_torch.tar ./
 tar xvf packs_torch.tar
