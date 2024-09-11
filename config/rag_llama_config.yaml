@@ -2,11 +2,10 @@ trainer: RAGLanguageModelTrainer
 training:
   model_type: llama
   project_name: RAG_llama3-chat
-  # model_name_or_path: ../SFT-llama3
-  # tokenizer_name_or_path: ../Llama-2-7b-chat-hf/
+  # model_name_or_path: ../llama3-chat
+  # tokenizer_name_or_path: ../llama3-chat
   model_name_or_path: ../llama3_chat_qa_sft/
   tokenizer_name_or_path: ../llama3_chat_qa_sft/
-  # kg_model_name_or_path: ../llama3-chat-top8
   kg_model_name_or_path: ./output/RAG-new
   num_layers_unfrozen: -1
   gradient_checkpointing: true
