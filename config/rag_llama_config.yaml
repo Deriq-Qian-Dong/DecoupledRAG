@@ -27,7 +27,7 @@ training:
   negatives_x_device: true
   predict_from_last: 10000
   eval_step: 100
-  start_from: 4
+  start_from: 1
   skip_steps: 0
   cross_attention_activation_function: silu
   add_cross_attention_layer_number: 31
@@ -78,7 +78,7 @@ dataset:
     hotpotqa:
       data_name_or_path: ../data_of_ReGPT/QA_datasets_woEmb/hotpotqa/sorted_datasets_train/
       dataset_name: QADataset4Chat
-      batch_size: 32
+      batch_size: 16
       num_epochs: 805
       max_seq_len: 512
       dynamic_sampler: false
