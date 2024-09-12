@@ -89,7 +89,7 @@ dataset:
       dataset_name: QADataset4Chat
       batch_size: 1
       num_epochs: 805
-      max_seq_len: 128
+      max_seq_len: 80
       dynamic_sampler: false
       corpus: ../data_of_ReGPT/Wiki-corpus/train
       max_tokens: 4096
