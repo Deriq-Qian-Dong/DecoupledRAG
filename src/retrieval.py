@@ -165,7 +165,10 @@ def main_cli(config_path):
     corpus_embeddings = None
     if args.corpus_embeddings:
         corpus_embeddings = np.load(args.corpus_embeddings)
-    main_multi(args, model, optimizer, writer, corpus_embeddings)
+    for dev_query, corpus_name in zip(args.dev_querys, args.corpus_names):
+        args.dev_query = dev_query
+        args.corpus_name = corpus_name
+        main_multi(args, model, optimizer, writer, corpus_embeddings)
 
 if __name__ == '__main__':
     config_path = sys.argv[1]
