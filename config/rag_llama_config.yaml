@@ -36,7 +36,7 @@ training:
   freeze_lm_head: true
 
 dataset:
-  number_of_docs: 30
+  number_of_docs: 20
   inference_with_explict_docs_for_test: false
   train:
     # msmarco_qa:
