@@ -16,7 +16,7 @@ base_dir = f'../data_of_ReGPT/Wiki-corpus'
 os.makedirs(base_dir, exist_ok=True)
 
 phrase_embeddings = []
-batch_size = 1024
+batch_size = 256
 
 phrases = []
 data = load_from_disk(f"{base_dir}/train")
