@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# srun --nodelist=fu5l6puknblo9-0 --time=00:10:00 --pty /bin/bash
 # 提示用户输入节点编号
 echo "请输入节点编号 (1-3):"
 read n
@@ -26,6 +26,7 @@ cat <<EOT > $slurm_script
 #SBATCH --nodelist=$node
 
 # 在选定的节点上执行命令
+source ~/.bashrc
 sh scripts/computing_embeddings.sh
 EOT
 
