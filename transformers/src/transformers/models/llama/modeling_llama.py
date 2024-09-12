@@ -737,9 +737,7 @@ class LinearFusion(nn.Module):
         self.W_B = nn.Parameter(torch.zeros(hidden_dim, hidden_dim))
         # 初始化偏置项
         self.b = nn.Parameter(torch.zeros(hidden_dim))
-        
-        # 添加 Dropout 层
-        self.dropout = nn.Dropout(dropout_prob)
+        self.dropout_prob = dropout_prob
     
     def forward(self, A, B):
         # 记录输入的数据类型
@@ -753,7 +751,7 @@ class LinearFusion(nn.Module):
         C = torch.matmul(A, self.W_A.t()) + torch.matmul(B, self.W_B.t()) + self.b
         
         # Apply dropout
-        C = self.dropout(C, training=self.training)
+        C = nn.functional.dropout(C, p=self.dropout_prob, training=self.training)
         # 将结果转换回输入的数据类型
         C = C.to(dtype)
         
