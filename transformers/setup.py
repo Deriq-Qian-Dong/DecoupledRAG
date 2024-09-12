@@ -424,7 +424,7 @@ install_requires = [
     deps["regex"],  # for OpenAI GPT
     deps["requests"],  # for downloading models over HTTPS
     deps["tokenizers"],
-    deps["safetensors"],
+    # deps["safetensors"],
     deps["tqdm"],  # progress bars in model download and training scripts
 ]
 
