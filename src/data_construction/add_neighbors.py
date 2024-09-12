@@ -31,7 +31,7 @@ def add_neighbors_to_dataset(dataset_path, neighbors_file_path):
 if __name__ == '__main__':
     dataset_paths = ['../data_of_ReGPT/QA_datasets_woEmb/2WikiMultihopQA/sorted_datasets_train/', '../data_of_ReGPT/QA_datasets_woEmb/2WikiMultihopQA/sorted_datasets_dev/', '../data_of_ReGPT/QA_datasets_woEmb/nq/sorted_datasets_train/', '../data_of_ReGPT/QA_datasets_woEmb/nq/sorted_datasets_test/']
     corpus_names = ['2WikiMultihopQA-train', '2WikiMultihopQA-dev', 'nq-train', 'nq-test']
-    for dataset_path, corpus_name in dataset_paths, corpus_names:
+    for dataset_path, corpus_name in zip(dataset_paths, corpus_names):
         # 调用函数
         neighbors_file_path = f'./output/res.top50.step0.{corpus_name}'
         query_with_neighbors = add_neighbors_to_dataset(dataset_path, neighbors_file_path)
