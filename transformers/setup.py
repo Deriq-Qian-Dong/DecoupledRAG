@@ -158,7 +158,7 @@ _deps = [
     "ruff==0.1.5",
     "sacrebleu>=1.4.12,<2.0.0",
     "sacremoses",
-    "safetensors>=0.4.1",
+    # "safetensors>=0.4.1",
     "sagemaker>=2.31.0",
     "scikit-learn",
     "scipy<1.13.0",  # SciPy >= 1.13.0 is not supported with the current jax pin (`jax>=0.4.1,<=0.4.13`)
