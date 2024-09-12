@@ -730,26 +730,35 @@ LLAMA_ATTENTION_CLASSES = {
 }
 
 class LinearFusion(nn.Module):
-    def __init__(self, hidden_dim):
+    def __init__(self, hidden_dim, dropout_prob=0.2):
         super(LinearFusion, self).__init__()
         # 初始化权重矩阵
         self.W_A = nn.Parameter(torch.eye(hidden_dim, hidden_dim))
         self.W_B = nn.Parameter(torch.zeros(hidden_dim, hidden_dim))
         # 初始化偏置项
         self.b = nn.Parameter(torch.zeros(hidden_dim))
+        
+        # 添加 Dropout 层
+        self.dropout = nn.Dropout(dropout_prob)
     
     def forward(self, A, B):
         # 记录输入的数据类型
         dtype = A.dtype
+        
         # 计算线性变换后的结果
-        # casting the tensor to the same type as the parameter
         A = A.to(self.W_A.dtype)
         B = B.to(self.W_B.dtype)
+        
+        # 线性变换
         C = torch.matmul(A, self.W_A.t()) + torch.matmul(B, self.W_B.t()) + self.b
-        # casting the tensor back to the original type
+        
+        # Apply dropout
+        C = self.dropout(C, training=self.training)
+        # 将结果转换回输入的数据类型
         C = C.to(dtype)
+        
         return C
-    
+
 class LlamaDecoderLayer(nn.Module):
     def __init__(self, config: LlamaConfig, layer_idx: int):
         super().__init__()
