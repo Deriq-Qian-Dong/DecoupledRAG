@@ -1,4 +1,4 @@
 git pull
 cd transformers
-pip install .
+pip install . --no-build-isolation
 cd ..

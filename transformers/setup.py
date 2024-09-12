@@ -177,14 +177,14 @@ _deps = [
     "timm",
     "tokenizers>=0.19,<0.20",
     "torch",
-    "torchaudio",
-    "torchvision",
-    "pyctcdecode>=0.4.0",
-    "tqdm>=4.27",
-    "unidic>=1.0.2",
-    "unidic_lite>=1.0.7",
-    "urllib3<2.0.0",
-    "uvicorn",
+    # "torchaudio",
+    # "torchvision",
+    # "pyctcdecode>=0.4.0",
+    # "tqdm>=4.27",
+    # "unidic>=1.0.2",
+    # "unidic_lite>=1.0.7",
+    # "urllib3<2.0.0",
+    # "uvicorn",
 ]
 
 
