@@ -22,13 +22,17 @@ warm_start_from: ''
 top_k: 50
 corpus_embeddings: ../data_of_ReGPT/Wiki-corpus/phrases_embeddings.npy
 dev_querys: 
-  - ../data_of_ReGPT/QA_datasets_woEmb/2WikiMultihopQA/sorted_datasets_train/
-  - ../data_of_ReGPT/QA_datasets_woEmb/2WikiMultihopQA/sorted_datasets_dev/
-  - ../data_of_ReGPT/QA_datasets_woEmb/nq/sorted_datasets_train/
-  - ../data_of_ReGPT/QA_datasets_woEmb/nq/sorted_datasets_test/
+  - ../data_of_ReGPT/QA_datasets_wTop10/hotpotqa/sorted_datasets_train
+  - ../data_of_ReGPT/QA_datasets_wTop10/hotpotqa/sorted_datasets_validation
+  # - ../data_of_ReGPT/QA_datasets_woEmb/2WikiMultihopQA/sorted_datasets_train/
+  # - ../data_of_ReGPT/QA_datasets_woEmb/2WikiMultihopQA/sorted_datasets_dev/
+  # - ../data_of_ReGPT/QA_datasets_woEmb/nq/sorted_datasets_train/
+  # - ../data_of_ReGPT/QA_datasets_woEmb/nq/sorted_datasets_test/
 corpus_names: 
-  - 2WikiMultihopQA-train
-  - 2WikiMultihopQA-dev
-  - nq-train
-  - nq-test
+  - hotpotqa-train
+  - hotpotqa-validation
+  # - 2WikiMultihopQA-train
+  # - 2WikiMultihopQA-dev
+  # - nq-train
+  # - nq-test
 
