@@ -1,11 +1,11 @@
 #!/bin/bash
 
+# 提示用户输入节点编号
+echo "请输入节点编号 (1-3):"
+read n
+
 # 节点列表
 nodes=("1pdijpn14trqa-0" "d4ofqnu7t5ab9-0" "fu5l6puknblo9-0")
-
-# 提示用户输入节点编号
-echo "请输入节点编号 (1-${#nodes[@]}):"
-read n
 
 # 检查输入是否有效
 if [[ $n -lt 1 || $n -gt ${#nodes[@]} ]]; then
