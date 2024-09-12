@@ -27,7 +27,7 @@ cat <<EOT > $slurm_script
 
 # 在选定的节点上执行命令
 source ~/.bashrc
-sh scripts/retrieval.sh
+sh scripts/rag_llama_run.sh
 EOT
 
 # 提交 SLURM 作业
