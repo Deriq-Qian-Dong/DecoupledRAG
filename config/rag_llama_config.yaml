@@ -6,7 +6,7 @@ training:
   tokenizer_name_or_path: ../llama3-chat
   # model_name_or_path: ../llama3_chat_qa_sft/
   # tokenizer_name_or_path: ../llama3_chat_qa_sft/
-  kg_model_name_or_path: ./output/RAG-new
+  kg_model_name_or_path: ./output/RAG-best
   num_layers_unfrozen: -1
   gradient_checkpointing: true
   optimizer: 
@@ -89,7 +89,7 @@ dataset:
       dataset_name: QADataset4Chat
       batch_size: 1
       num_epochs: 805
-      max_seq_len: 80
+      max_seq_len: 64
       dynamic_sampler: false
       corpus: ../data_of_ReGPT/Wiki-corpus/train
       max_tokens: 4096
