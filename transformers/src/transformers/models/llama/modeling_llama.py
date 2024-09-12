@@ -746,12 +746,11 @@ class LinearFusion(nn.Module):
         # 计算线性变换后的结果
         A = A.to(self.W_A.dtype)
         B = B.to(self.W_B.dtype)
-        
+        # Apply dropout
+        B = nn.functional.dropout(B, p=self.dropout_prob, training=self.training)
         # 线性变换
         C = torch.matmul(A, self.W_A.t()) + torch.matmul(B, self.W_B.t()) + self.b
         
-        # Apply dropout
-        C = nn.functional.dropout(C, p=self.dropout_prob, training=self.training)
         # 将结果转换回输入的数据类型
         C = C.to(dtype)
         
