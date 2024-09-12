@@ -19,7 +19,7 @@ project_dir: output/
 project_name: dense_retrieval_pretrain_with_query_generation
 dataset_class_name: CorpusPretrainDatasetByQueryGeneration
 warm_start_from: ''
-top_k: 10
+top_k: 50
 corpus_embeddings: ../data_of_ReGPT/Wiki-corpus/phrases_embeddings.npy
 dev_querys: 
   - ../data_of_ReGPT/QA_datasets_woEmb/2WikiMultihopQA/sorted_datasets_train/
