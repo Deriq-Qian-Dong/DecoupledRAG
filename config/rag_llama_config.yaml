@@ -27,7 +27,7 @@ training:
   negatives_x_device: true
   predict_from_last: 10000
   eval_step: 100
-  start_from: 4
+  start_from: 0
   skip_steps: 0
   cross_attention_activation_function: silu
   add_cross_attention_layer_number: 31
@@ -36,7 +36,7 @@ training:
   freeze_lm_head: true
 
 dataset:
-  number_of_docs: 1
+  number_of_docs: 50
   inference_with_explict_docs_for_test: false
   train:
     # msmarco_qa:
@@ -85,9 +85,9 @@ dataset:
     #   corpus: ../data_of_ReGPT/Wiki-corpus/train
     #   max_tokens: 4096
     2WikiMultihopQA:
-      data_name_or_path: ../data_of_ReGPT/QA_datasets_woEmb/2WikiMultihopQA/sorted_datasets_train/
+      data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/2WikiMultihopQA/sorted_datasets_train/
       dataset_name: QADataset4Chat
-      batch_size: 16
+      batch_size: 1
       num_epochs: 805
       max_seq_len: 256
       dynamic_sampler: false
@@ -124,9 +124,9 @@ dataset:
     #   dynamic_sampler: false
     2WikiMultihopQA:
       dataset_name: QADataset4ChatTest
-      batch_size: 16
-      data_name_or_path:  ../data_of_ReGPT/QA_datasets_woEmb/2WikiMultihopQA/sorted_datasets_dev/
-      max_seq_len: 512
+      batch_size: 1
+      data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/2WikiMultihopQA/sorted_datasets_dev/
+      max_seq_len: 256
       max_new_tokens: 32
       index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
       corpus: ../data_of_ReGPT/Wiki-corpus/train/
