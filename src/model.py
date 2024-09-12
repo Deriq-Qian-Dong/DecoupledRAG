@@ -289,7 +289,7 @@ class LanguageModelTrainer:
             sampler = DynamicBatchSampler(dataset, dataset_args['max_tokens'], num_replicas=self.accelerator.num_processes, rank=self.accelerator.process_index)            
             dataloader = DataLoader(dataset, batch_sampler=sampler, shuffle=False, collate_fn=dataset._collate_fn)
         else:
-            dataloader = DataLoader(dataset, batch_size=dataset_args['batch_size'], shuffle=False, collate_fn=dataset._collate_fn)
+            dataloader = DataLoader(dataset, batch_size=dataset_args['batch_size'], shuffle=True, collate_fn=dataset._collate_fn)
             dataloader = self.accelerator.prepare_data_loader(dataloader)
         return dataloader
 
