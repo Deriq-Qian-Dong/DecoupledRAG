@@ -20,16 +20,11 @@ batch_size = 256
 
 phrases = []
 data = load_from_disk(f"{base_dir}/train")
-data = data.shard(num_shards=8, index=0, contiguous=True)
 torch.distributed.init_process_group(backend="nccl", init_method='env://')
 local_rank = torch.distributed.get_rank()
 world_size = torch.distributed.get_world_size()
 data = data.shard(num_shards=world_size, index=local_rank, contiguous=True)
 print('local_rank', local_rank, 'world_size', world_size, 'data size', len(data))
-# with open("../data_of_ReGPT/marco/collection.tsv") as f:
-    # lines = f.readlines()
-# for line in lines:
-    # phrases.append(line.split("\t")[1].strip())
 print('load model from', encoder_model_name_or_path)
 torch.cuda.set_device(local_rank)
 device = torch.device("cuda", local_rank)
