@@ -15,4 +15,4 @@ fi
 
 # 获取对应的节点
 node=${nodes[$((n-1))]}
-srun --gpus=4 --nodelist=$node --time=10:00:00 --pty /bin/bash
+srun --gpus-per-task=2 --nodelist=$node --time=10:00:00 --pty /bin/bash
