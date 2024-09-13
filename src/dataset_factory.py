@@ -532,6 +532,8 @@ class QADataset4ChatTest(QADataset4Chat):
                                 truncation=True,
                                 return_tensors="pt")
         batch['knowledge_input_ids'] = neighbor_batch['input_ids']
+        if self.inference_with_explict_docs_for_test:
+            batch['knowledge_input_ids'] = None
         batch['answers'] = self.tokenizer(answers,
                                 max_length=self.args['max_seq_len'],
                                 padding=True,
