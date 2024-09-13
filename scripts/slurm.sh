@@ -24,7 +24,6 @@ cat <<EOT > $slurm_script
 #SBATCH --job-name=compute_embeddings
 #SBATCH --output=output_%j.txt
 #SBATCH --nodelist=$node
-#SBATCH --gres=gpu:6
 
 # 在选定的节点上执行命令
 source ~/.bashrc
