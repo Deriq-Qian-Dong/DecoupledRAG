@@ -106,7 +106,7 @@ dataset:
   test:
     nq:
       dataset_name: QADataset4ChatTest
-      batch_size: 32
+      batch_size: 1
       data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/nq/sorted_datasets_test
       max_seq_len: 64
       max_new_tokens: 32
@@ -115,7 +115,7 @@ dataset:
       dynamic_sampler: false
     hotpotqa:
       dataset_name: QADataset4ChatTest
-      batch_size: 32
+      batch_size: 1
       data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/hotpotqa/sorted_datasets_validation/
       max_seq_len: 64
       max_new_tokens: 32
