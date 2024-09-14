@@ -29,8 +29,10 @@ def add_neighbors_to_dataset(dataset_path, neighbors_file_path):
     return query
 
 if __name__ == '__main__':
-    dataset_paths = ['../data_of_ReGPT/QA_datasets_wTop10/hotpotqa/sorted_datasets_train/', '../data_of_ReGPT/QA_datasets_wTop10/hotpotqa/sorted_datasets_validation/']
-    corpus_names = ['hotpotqa-train', 'hotpotqa-validation']
+    dataset_paths = ['../data_of_ReGPT/QA_datasets_wTop10/nq/sorted_datasets_train/', '../data_of_ReGPT/QA_datasets_wTop10/nq/sorted_datasets_test/',
+                     '../data_of_ReGPT/QA_datasets_wTop10/eli5/sorted_datasets_train/', '../data_of_ReGPT/QA_datasets_wTop10/eli5/sorted_datasets_test/',
+                     '../data_of_ReGPT/QA_datasets_wTop10/msmarco_qa/sorted_datasets_train/', '../data_of_ReGPT/QA_datasets_wTop10/msmarco_qa/sorted_datasets_test/']
+    corpus_names = ['nq-train', 'nq-test', 'eli5-train', 'eli5-test', 'msmarco_qa-train', 'msmarco_qa-test']
     for dataset_path, corpus_name in zip(dataset_paths, corpus_names):
         print(f'Processing {corpus_name}...')
         # 调用函数
