@@ -478,7 +478,7 @@ class LanguageModelTrainer:
         model.eval()
         accuracy_list = []
         with torch.no_grad():
-            for number_of_docs in [1,2,3,5,10,20]:
+            for number_of_docs in [10,20,50]:
             # for _ in range(1):
                 self.setup_test_dataloader(number_of_docs=number_of_docs)
                 test_dataloaders = self.test_dataloaders
