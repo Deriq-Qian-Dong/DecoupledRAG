@@ -104,24 +104,24 @@ dataset:
     #   max_tokens: 4096
     #   start_from: 23
   test:
-    # nq:
-    #   dataset_name: QADataset4ChatTest
-    #   batch_size: 32
-    #   data_name_or_path:  ../data_of_ReGPT/QA_datasets_woEmb/nq/sorted_datasets_test
-    #   max_seq_len: 512
-    #   max_new_tokens: 32
-    #   index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
-    #   corpus: ../data_of_ReGPT/Wiki-corpus/train/
-    #   dynamic_sampler: false
-    # hotpotqa:
-    #   dataset_name: QADataset4ChatTest
-    #   batch_size: 32
-    #   data_name_or_path:  ../data_of_ReGPT/QA_datasets_woEmb/hotpotqa/sorted_datasets_validation/
-    #   max_seq_len: 512
-    #   max_new_tokens: 32
-    #   index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
-    #   corpus: ../data_of_ReGPT/Wiki-corpus/train/
-    #   dynamic_sampler: false
+    nq:
+      dataset_name: QADataset4ChatTest
+      batch_size: 32
+      data_name_or_path:  ../data_of_ReGPT/QA_datasets_woEmb/nq/sorted_datasets_test
+      max_seq_len: 512
+      max_new_tokens: 32
+      index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
+      corpus: ../data_of_ReGPT/Wiki-corpus/train/
+      dynamic_sampler: false
+    hotpotqa:
+      dataset_name: QADataset4ChatTest
+      batch_size: 32
+      data_name_or_path:  ../data_of_ReGPT/QA_datasets_woEmb/hotpotqa/sorted_datasets_validation/
+      max_seq_len: 512
+      max_new_tokens: 32
+      index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
+      corpus: ../data_of_ReGPT/Wiki-corpus/train/
+      dynamic_sampler: false
     2WikiMultihopQA:
       dataset_name: QADataset4ChatTest
       batch_size: 1
