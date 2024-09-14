@@ -528,7 +528,7 @@ class LanguageModelTrainer:
                     gathered_accuracy = accelerator.gather(accuracy)
                     accuracy = gathered_accuracy.mean().item()
                     accelerator.print(f"Step {iter_count} | Dataset: {key} | Accuracy: {accuracy:.4f}")
-                    accelerator.log({f"test/{key}/number_of_docs_{number_of_docs}/accuracy": accuracy}, step=iter_count)
+                    accelerator.log({f"test/{key}/{number_of_docs}/accuracy": accuracy}, step=iter_count)
                     results.append(float(accuracy))
                 mean_accuracy = np.mean(results)
                 accelerator.log({f"test/mean_accuracy_{number_of_docs}": mean_accuracy}, step=iter_count)
