@@ -12,7 +12,7 @@ training:
   optimizer: 
     name: Lamb
     kwargs:
-      lr: 1e-3
+      lr: 5e-4
       weight_decay: 0.0
       betas: [0.9, 0.999]
       eps: 1e-08
