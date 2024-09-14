@@ -39,24 +39,24 @@ dataset:
   number_of_docs: 50
   inference_with_explict_docs_for_test: false
   train:
-    # msmarco_qa:
-    #   data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/msmarco_qa/sorted_datasets_train
-    #   dataset_name: QADataset4Chat
-    #   batch_size: 16
-    #   num_epochs: 805
-    #   max_seq_len: 512
-    #   dynamic_sampler: false
-    #   corpus: ../data_of_ReGPT/Wiki-corpus/train
-    #   max_tokens: 4096
-    # nq:
-    #   data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/nq/sorted_datasets_train
-    #   dataset_name: QADataset4Chat
-    #   batch_size: 16
-    #   num_epochs: 805
-    #   max_seq_len: 512
-    #   dynamic_sampler: false
-    #   corpus: ../data_of_ReGPT/Wiki-corpus/train
-    #   max_tokens: 4096
+    msmarco_qa:
+      data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/msmarco_qa/sorted_datasets_train
+      dataset_name: QADataset4Chat
+      batch_size: 1
+      num_epochs: 805
+      max_seq_len: 64
+      dynamic_sampler: false
+      corpus: ../data_of_ReGPT/Wiki-corpus/train
+      max_tokens: 4096
+    nq:
+      data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/nq/sorted_datasets_train
+      dataset_name: QADataset4Chat
+      batch_size: 1
+      num_epochs: 805
+      max_seq_len: 64
+      dynamic_sampler: false
+      corpus: ../data_of_ReGPT/Wiki-corpus/train
+      max_tokens: 4096
     # hotpotqa_contrastive:
     #   data_name_or_path: ../data_of_ReGPT/QA_datasets_contrastive_with_background_knowledge/hotpotqa/sorted_datasets_train/
     #   dataset_name: QADataset4Contrastive
@@ -75,15 +75,15 @@ dataset:
     #   dynamic_sampler: false
     #   corpus: ../data_of_ReGPT/Wiki-corpus/train
     #   max_tokens: 4096
-    # hotpotqa:
-    #   data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/hotpotqa/sorted_datasets_train/
-    #   dataset_name: QADataset4Chat
-    #   batch_size: 16
-    #   num_epochs: 805
-    #   max_seq_len: 512
-    #   dynamic_sampler: false
-    #   corpus: ../data_of_ReGPT/Wiki-corpus/train
-    #   max_tokens: 4096
+    hotpotqa:
+      data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/hotpotqa/sorted_datasets_train/
+      dataset_name: QADataset4Chat
+      batch_size: 1
+      num_epochs: 805
+      max_seq_len: 64
+      dynamic_sampler: false
+      corpus: ../data_of_ReGPT/Wiki-corpus/train
+      max_tokens: 4096
     2WikiMultihopQA:
       data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/2WikiMultihopQA/sorted_datasets_train/
       dataset_name: QADataset4Chat
@@ -108,6 +108,15 @@ dataset:
       dataset_name: QADataset4ChatTest
       batch_size: 1
       data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/nq/sorted_datasets_test
+      max_seq_len: 64
+      max_new_tokens: 32
+      index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
+      corpus: ../data_of_ReGPT/Wiki-corpus/train/
+      dynamic_sampler: false
+    msmarco_qa:
+      dataset_name: QADataset4ChatTest
+      batch_size: 1
+      data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/msmarco_qa/sorted_datasets_test
       max_seq_len: 64
       max_new_tokens: 32
       index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/

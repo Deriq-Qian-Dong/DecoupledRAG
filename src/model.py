@@ -3,6 +3,7 @@ import sys
 import torch
 import random
 import datetime
+import itertools
 import numpy as np
 from utils import *
 from tqdm import tqdm
@@ -248,11 +249,11 @@ class LanguageModelTrainer:
 
     def run(self):
         self.test()
-        # for epoch in range(self.train_config['start_from'], self.train_config['num_epochs']):
-        #     self.epoch = epoch
-        #     self.set_epoch_to_dataset()
-        #     self.train()
-        #     self.test()
+        for epoch in range(self.train_config['start_from'], self.train_config['num_epochs']):
+            self.epoch = epoch
+            self.set_epoch_to_dataset()
+            self.train()
+            self.test()
 
     def set_epoch_to_dataset(self):
         number_of_docs_lst = [50]
@@ -409,6 +410,22 @@ class LanguageModelTrainer:
         record.pop('retrieval_position', None)
         record.pop('neighbor_embeddings', None)
         return record
+    
+    def create_combined_loader(self, train_dataloaders):
+        # 创建一个无限循环的迭代器，包含所有 DataLoader 的名称和迭代器
+        loaders = {name: iter(loader) for name, loader in train_dataloaders.items()}
+        keys = itertools.cycle(loaders.keys())
+        
+        while True:
+            key = next(keys)
+            try:
+                batch = next(loaders[key])
+                yield key, batch
+            except StopIteration:
+                # 如果某个 DataLoader 遍历完了，就重新创建它的迭代器
+                loaders[key] = iter(train_dataloaders[key])
+                batch = next(loaders[key])
+                yield key, batch
 
     def train(self):
         model, optimizer, train_dataloaders, scheduler, accelerator, epoch = self.model, self.optimizer, self.train_dataloaders, self.scheduler, self.accelerator, self.epoch
@@ -419,53 +436,55 @@ class LanguageModelTrainer:
         local_rank = accelerator.process_index
         print(f"Number of steps of process {local_rank}: {number_of_steps}")
         step = 0
-        for key in train_dataloaders:
-            print(f"\033[31mProcess {local_rank} | Dataset: {key} | Number of steps: {len(train_dataloaders[key])}\033[0m")
-            for batch in train_dataloaders[key]:
-                if self.iter_count==0 and step<self.train_config['skip_steps']:
-                    step+=1
-                    if accelerator.is_main_process:
-                        pbar.update(1)
-                        pbar.set_description(f"Epoch {epoch} | Skiping {step}/{self.train_config['skip_steps']}")
-                    continue
-                self.iter_count += 1
-                total_time = time()
-                batch = self.pop_unused_keys(batch)
-                seq_len = batch['input_ids'].size(1)
-                batch_size = batch.input_ids.shape[0]
-                batch = self._prepare_inputs(batch)
-                batch = accelerator.prepare(batch)
-                forward_time = time()
-                outputs = model(**batch)
-                forward_time = time() - forward_time
-                loss, stats = self.compute_loss(outputs)
-                stats["training/seq_len"] = seq_len
-                stats["training/batch_size"] = batch_size
-                stats = self.task_specific_stats(stats, model)
-                backward_time = time()
-                accelerator.backward(loss)
-                backward_time = time() - backward_time
-                stats["time/forward"] = forward_time
-                stats["time/backward"] = backward_time
-                opt_time = time()
-                for group_number, lr in enumerate(scheduler.get_last_lr()):
-                    stats[f"training/learning_rate"] = lr
-                optimizer.step()
-                scheduler.step()
-                optimizer.zero_grad()
-                if accelerator.is_main_process:
-                    pbar.update(1)
-                    pbar.set_description(f"Epoch {epoch} | Step {step} | Loss: {loss.cpu().detach().float().numpy():.4f}")
-                    step += 1
-                if self.iter_count%self.train_config['eval_step']==0:
-                    self.test()
-                opt_time = time() - opt_time
-                stats["time/optimization"] = opt_time
-                total_time = time() - total_time
-                stats["time/total"] = total_time
-                data_loading_time = total_time - forward_time - backward_time - opt_time
-                stats["time/data_loading"] = data_loading_time
-                accelerator.log(stats, step=self.iter_count)
+        combined_loader = self.create_combined_loader(train_dataloaders)
+        # for key in train_dataloaders:
+            # print(f"\033[31mProcess {local_rank} | Dataset: {key} | Number of steps: {len(train_dataloaders[key])}\033[0m")
+        # for batch in train_dataloaders[key]:
+        for (dataset_name, batch) in combined_loader:
+            # if self.iter_count==0 and step<self.train_config['skip_steps']:
+            #     step+=1
+            #     if accelerator.is_main_process:
+            #         pbar.update(1)
+            #         pbar.set_description(f"Epoch {epoch} | Skiping {step}/{self.train_config['skip_steps']}")
+            #     continue
+            self.iter_count += 1
+            total_time = time()
+            batch = self.pop_unused_keys(batch)
+            seq_len = batch['input_ids'].size(1)
+            batch_size = batch.input_ids.shape[0]
+            batch = self._prepare_inputs(batch)
+            batch = accelerator.prepare(batch)
+            forward_time = time()
+            outputs = model(**batch)
+            forward_time = time() - forward_time
+            loss, stats = self.compute_loss(outputs)
+            stats["training/seq_len"] = seq_len
+            stats["training/batch_size"] = batch_size
+            stats = self.task_specific_stats(stats, model)
+            backward_time = time()
+            accelerator.backward(loss)
+            backward_time = time() - backward_time
+            stats["time/forward"] = forward_time
+            stats["time/backward"] = backward_time
+            opt_time = time()
+            for group_number, lr in enumerate(scheduler.get_last_lr()):
+                stats[f"training/learning_rate"] = lr
+            optimizer.step()
+            scheduler.step()
+            optimizer.zero_grad()
+            if accelerator.is_main_process:
+                pbar.update(1)
+                pbar.set_description(f"Epoch {epoch} | Step {step} | Loss: {loss.cpu().detach().float().numpy():.4f} | Dataset_name: {dataset_name}")
+                step += 1
+            if self.iter_count%self.train_config['eval_step']==0:
+                self.test()
+            opt_time = time() - opt_time
+            stats["time/optimization"] = opt_time
+            total_time = time() - total_time
+            stats["time/total"] = total_time
+            data_loading_time = total_time - forward_time - backward_time - opt_time
+            stats["time/data_loading"] = data_loading_time
+            accelerator.log(stats, step=self.iter_count)
         pbar.close()
 
     def generate(self, batch, key):
