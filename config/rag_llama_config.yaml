@@ -10,7 +10,7 @@ training:
   num_layers_unfrozen: -1
   gradient_checkpointing: true
   optimizer: 
-    name: Lamb
+    name: AdamW
     kwargs:
       lr: 1e-3
       weight_decay: 0.0
