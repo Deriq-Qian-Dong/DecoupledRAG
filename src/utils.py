@@ -104,8 +104,6 @@ def hf_get_decoder_blocks(model: nn.Module) -> Tuple[nn.Module]:
     """
     hidden_layers_attrs = (
         "h",
-        "norm",
-        "model.norm",
         "layers",
         "embed_tokens",
         "model.layers",
