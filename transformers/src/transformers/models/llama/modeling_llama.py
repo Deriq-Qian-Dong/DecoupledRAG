@@ -730,26 +730,29 @@ LLAMA_ATTENTION_CLASSES = {
 }
 
 class LinearFusion(nn.Module):
-    def __init__(self, hidden_dim, dropout_prob=0.2):
+    def __init__(self, hidden_dim, rank=16, alpha=32, dropout_prob=0.2):
         super(LinearFusion, self).__init__()
         # 初始化权重矩阵
-        self.W_A = nn.Parameter(torch.eye(hidden_dim, hidden_dim))
-        self.W_B = nn.Parameter(torch.zeros(hidden_dim, hidden_dim))
-        # 初始化偏置项
-        self.b = nn.Parameter(torch.zeros(hidden_dim))
+        self.W_C = nn.Parameter(torch.eye(hidden_dim, hidden_dim))
+        self.W_A = nn.Parameter(torch.empty(hidden_dim, rank)) # LoRA权重A
+        self.W_B = nn.Parameter(torch.empty(rank, hidden_dim)) # LoRA权重B
+        torch.nn.init.kaiming_uniform_(self.W_A, a=math.sqrt(5))
+        torch.nn.init.zeros_(self.W_B)
         self.dropout_prob = dropout_prob
+        self.rank = rank
+        self.alpha = alpha
     
     def forward(self, A, B):
         # 记录输入的数据类型
         dtype = A.dtype
         
         # 计算线性变换后的结果
-        A = A.to(self.W_A.dtype)
-        B = B.to(self.W_B.dtype)
+        A = A.to(self.W_C.dtype)
+        B = B.to(self.W_A.dtype)
         # Apply dropout
         B = nn.functional.dropout(B, p=self.dropout_prob, training=self.training)
         # 线性变换
-        C = torch.matmul(A, self.W_A.t()) + torch.matmul(B, self.W_B.t()) + self.b
+        C = torch.matmul(A, self.W_C.t()) + self.alpha * torch.matmul(torch.matmul(B, self.W_A), self.W_B)
         
         # 将结果转换回输入的数据类型
         C = C.to(dtype)
@@ -1867,7 +1870,7 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
         )
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-        self.model.set_adapter("knowledge_injector")
+        # self.model.set_adapter("knowledge_injector")
         if knowledge_input_ids is not None:
             knowledge_outputs = self.model(
                 input_ids=knowledge_input_ids,
@@ -1878,7 +1881,7 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
         # print(knowledge_input_ids)
         # print(knowledge_outputs)
 
-        self.model.disable_adapters()
+        # self.model.disable_adapters()
         # decoder outputs consists of (dec_features, layer_state, dec_hidden, dec_attn)
         outputs = self.model(
             input_ids=input_ids,
