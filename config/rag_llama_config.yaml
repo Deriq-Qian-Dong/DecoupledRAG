@@ -26,7 +26,7 @@ training:
   negatives_in_device: true
   negatives_x_device: true
   predict_from_last: 10000
-  eval_step: 500
+  eval_step: 100
   start_from: 0
   skip_steps: 0
   cross_attention_activation_function: silu
@@ -36,7 +36,7 @@ training:
   freeze_lm_head: true
 
 dataset:
-  number_of_docs: 50
+  number_of_docs: 20
   inference_with_explict_docs_for_test: false
   train:
     # nq:

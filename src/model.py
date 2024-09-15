@@ -256,7 +256,7 @@ class LanguageModelTrainer:
             self.test()
 
     def set_epoch_to_dataset(self):
-        number_of_docs_lst = [50]
+        number_of_docs_lst = [20]
         # number_of_docs_lst = [1]
         number_of_docs = number_of_docs_lst[self.epoch%len(number_of_docs_lst)]
         for key in self.dataset_config['train']:
@@ -497,7 +497,7 @@ class LanguageModelTrainer:
         model.eval()
         accuracy_list = []
         with torch.no_grad():
-            for number_of_docs in [10,20,50]:
+            for number_of_docs in [1,5,10,20]:
             # for _ in range(1):
                 self.setup_test_dataloader(number_of_docs=number_of_docs)
                 test_dataloaders = self.test_dataloaders
