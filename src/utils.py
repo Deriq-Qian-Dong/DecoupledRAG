@@ -141,6 +141,7 @@ def freeze_non_crossattention_parameters(model: nn.Module, freeze_retrieval_head
             hidden_layers_to_processing.append(findattr(model, ("retrieval_head", "model.retrieval_head")))
         except:
             pass
+    hidden_layers_to_processing.append(findattr(model, ("model.norm",)))
     for layer in hidden_layers_to_processing:
         for para_name, para in layer.named_parameters():
             if "crossattention" not in para_name:
