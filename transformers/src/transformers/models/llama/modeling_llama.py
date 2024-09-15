@@ -748,7 +748,7 @@ class LinearFusion(nn.Module):
         
         # 计算线性变换后的结果
         A = A.to(self.W_C.dtype)
-        B = B.to(self.W_A.dtype)
+        B = B.to(self.W_C.dtype)
         # Apply dropout
         B = nn.functional.dropout(B, p=self.dropout_prob, training=self.training)
         # 线性变换
