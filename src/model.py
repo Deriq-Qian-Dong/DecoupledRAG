@@ -509,7 +509,7 @@ class LanguageModelTrainer:
                     total_sample_count = 0
                     print(f"Process {accelerator.process_index} | Dataset: {key} | Number of steps: {len(test_dataloaders[key])}")
                     test_dataloader = test_dataloaders[key]
-                    for batch in tqdm(test_dataloader, desc=f"Evaluation of step {iter_count}", disable=not accelerator.is_main_process):
+                    for batch in tqdm(test_dataloader, desc=f"dataset: {key} | number_of_docs: {number_of_docs}", disable=not accelerator.is_main_process):
                         batch = self.pop_unused_keys(batch)
                         batch = accelerator.prepare(batch)
                         answers = batch.pop('answers')
