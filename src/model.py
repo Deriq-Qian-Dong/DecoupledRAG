@@ -497,6 +497,7 @@ class LanguageModelTrainer:
         model, tokenizer, optimizer, scheduler, test_dataloaders, accelerator, iter_count = self.model, self.tokenizer, self.optimizer, self.scheduler, self.test_dataloaders, self.accelerator, self.iter_count
         model.eval()
         accuracy_list = []
+        accuracy_dict = {}
         with torch.no_grad():
             for number_of_docs in [1,5,10,20]:
             # for _ in range(1):
@@ -536,7 +537,8 @@ class LanguageModelTrainer:
                 accelerator.log({f"test/mean_accuracy_{number_of_docs}": mean_accuracy}, step=iter_count)
                 print(f"\033[31mStep {iter_count} | number_of_docs: {number_of_docs} | Mean Accuracy: {mean_accuracy:.4f}\033[0m")
                 accuracy_list.append(mean_accuracy)
-            mean_accuracy = np.mean(accuracy_list)
+                accuracy_dict[number_of_docs] = mean_accuracy
+            mean_accuracy = accuracy_dict[20]
             print(f"\033[31mStep {iter_count} | Mean Accuracy: {mean_accuracy:.4f}\033[0m")
             accelerator.log({f"test/mean_accuracy": mean_accuracy}, step=iter_count)
             if accelerator.is_main_process:
