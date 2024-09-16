@@ -5,10 +5,7 @@ def add_neighbors_to_dataset(dataset_path, neighbors_file_path):
     # 加载数据集
     query = load_from_disk(dataset_path)
     # add query_id to examples
-    def add_query_id(example):
-        example['query_id'] = example['id']
-        return example
-    query = query.map(add_query_id)
+    query = query.map(lambda x, idx: {'query_id': idx}, with_indices=True)
     
     # 读取 neighbors 文件并构建 qid2pids 字典
     with open(neighbors_file_path, 'r') as f:
