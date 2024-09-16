@@ -4,6 +4,8 @@ import numpy as np
 def add_neighbors_to_dataset(dataset_path, neighbors_file_path):
     # 加载数据集
     query = load_from_disk(dataset_path)
+    # add query_id to examples
+    query['query_id'] = np.arange(len(query))
     
     # 读取 neighbors 文件并构建 qid2pids 字典
     with open(neighbors_file_path, 'r') as f:
