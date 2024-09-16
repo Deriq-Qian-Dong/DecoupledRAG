@@ -508,7 +508,7 @@ class LanguageModelTrainer:
                     number_of_docs = test_dataloaders[key].dataset.number_of_docs
                     accuracy = 0.0
                     total_sample_count = 0
-                    print(f"Process {accelerator.process_index} | Dataset: {key} | Number of steps: {len(test_dataloaders[key])}")
+                    accelerator.print(f"Dataset: {key} | Number of steps: {len(test_dataloaders[key])}")
                     test_dataloader = test_dataloaders[key]
                     for batch in tqdm(test_dataloader, desc=f"dataset: {key} | number_of_docs: {number_of_docs}", disable=not accelerator.is_main_process):
                         batch = self.pop_unused_keys(batch)
@@ -535,11 +535,11 @@ class LanguageModelTrainer:
                     results.append(float(accuracy))
                 mean_accuracy = np.mean(results)
                 accelerator.log({f"test/mean_accuracy_{number_of_docs}": mean_accuracy}, step=iter_count)
-                print(f"\033[31mStep {iter_count} | number_of_docs: {number_of_docs} | Mean Accuracy: {mean_accuracy:.4f}\033[0m")
+                accelerator.print(f"\033[31mStep {iter_count} | number_of_docs: {number_of_docs} | Mean Accuracy: {mean_accuracy:.4f}\033[0m")
                 accuracy_list.append(mean_accuracy)
                 accuracy_dict[number_of_docs] = mean_accuracy
             mean_accuracy = accuracy_dict[20]
-            print(f"\033[31mStep {iter_count} | Mean Accuracy: {mean_accuracy:.4f}\033[0m")
+            accelerator.print(f"\033[31mStep {iter_count} | Mean Accuracy: {mean_accuracy:.4f}\033[0m")
             accelerator.log({f"test/mean_accuracy": mean_accuracy}, step=iter_count)
             if accelerator.is_main_process:
                 if mean_accuracy>self.best_accuracy:
