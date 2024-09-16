@@ -511,19 +511,19 @@ class LanguageModelTrainer:
                     test_dataloader = test_dataloaders[key]
                     for batch in tqdm(test_dataloader, desc=f"dataset: {key} | number_of_docs: {number_of_docs}", disable=not accelerator.is_main_process):
                         batch = self.pop_unused_keys(batch)
-                        batch = accelerator.prepare(batch)
                         answers = batch.pop('answers')
+                        batch = accelerator.prepare(batch)
                         # outputs = model.module.model.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False)
                         outputs = self.generate(batch, key)
-                        answers = tokenizer.batch_decode(answers, skip_special_tokens=True)
                         outputs = outputs[:, batch['input_ids'].size(1):]
                         outputs = tokenizer.batch_decode(outputs, skip_special_tokens=True)
                         inputs = tokenizer.batch_decode(batch['input_ids'], skip_special_tokens=True)
-                        for i in range(len(answers)):
+                        for i in range(len(outputs)):
                             total_sample_count += 1
-                            # accelerator.print({"test/answers": answers[i], "test/outputs": outputs[i], "test/inputs": inputs[i]})
-                            if answers[i]==outputs[i]:
-                                accuracy += 1
+                            for answer in answers[i]:
+                                if answer == outputs[i]:
+                                    accuracy += 1
+                                    break
                     accuracy /= total_sample_count
                     accuracy = torch.tensor(accuracy).to(accelerator.device)
                     accelerator.wait_for_everyone()

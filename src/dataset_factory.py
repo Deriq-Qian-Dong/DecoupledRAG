@@ -497,9 +497,9 @@ class QADataset4ChatTest(QADataset4Chat):
         else:
             query = sample['question']
         if 'answers' in sample:
-            answer = sample['answers'][0]
+            answers = sample['answers']
         else:
-            answer = sample['answer']
+            answers = [sample['answer']]
         # hits = self.searcher.search(query, 5)
         retrieved_docs = self.corpus[sample['neighbors']]['text'][:self.number_of_docs]
         references = "References:\n"
@@ -511,7 +511,7 @@ class QADataset4ChatTest(QADataset4Chat):
         chat = [{'role': 'user', 'content': query}]
         chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
         neighbor_embeddings = None
-        return chat, answer, retrieved_docs, neighbor_embeddings, 0
+        return chat, answers, retrieved_docs, neighbor_embeddings, 0
     
     def _collate_fn(self, elems):
         texts, answers, retrieved_docs, neighbor_embeddings, _ = zip(*elems)
@@ -534,11 +534,7 @@ class QADataset4ChatTest(QADataset4Chat):
         batch['knowledge_input_ids'] = neighbor_batch['input_ids']
         if self.inference_with_explict_docs_for_test:
             batch['knowledge_input_ids'] = None
-        batch['answers'] = self.tokenizer(answers,
-                                max_length=self.args['max_seq_len'],
-                                padding=True,
-                                truncation=True,
-                                return_tensors="pt")['input_ids']
+        batch['answers'] = answers
         return batch
 
     def set_epoch(self, epoch):
