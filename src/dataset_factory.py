@@ -408,9 +408,9 @@ class QADataset4Chat(Dataset):
         # # flantten the datasets
         # self.datasets = self.datasets.flatten_indices()
         self.num_samples = len(self.datasets)
-        input_ids_lengths = self.datasets['input_ids_length']
-        input_ids_lengths = [min(self.args['max_seq_len'], length) for length in input_ids_lengths]
-        self.total_tokens = sum(input_ids_lengths)
+        # input_ids_lengths = self.datasets['input_ids_length']
+        # input_ids_lengths = [min(self.args['max_seq_len'], length) for length in input_ids_lengths]
+        # self.total_tokens = sum(input_ids_lengths)
     
     def __getitem__(self, idx):
         sample = self.datasets[idx]
@@ -431,7 +431,7 @@ class QADataset4Chat(Dataset):
         chat = [{'role': 'user', 'content': query}, {'role': 'assistant', 'content': answer}]
         chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=False)
         neighbor_embeddings = None
-        return chat, neighbor_embeddings, retrieved_docs, sample['input_ids_length']
+        return chat, neighbor_embeddings, retrieved_docs, 0
     
     def __len__(self):
         return self.num_samples
@@ -486,9 +486,9 @@ class QADataset4ChatTest(QADataset4Chat):
         # flantten the datasets
         self.datasets = self.datasets.flatten_indices()
         self.num_samples = len(self.datasets)
-        input_ids_lengths = self.datasets['input_ids_length']
-        input_ids_lengths = [min(self.args['max_seq_len'], length) for length in input_ids_lengths]
-        self.total_tokens = sum(input_ids_lengths)
+        # input_ids_lengths = self.datasets['input_ids_length']
+        # input_ids_lengths = [min(self.args['max_seq_len'], length) for length in input_ids_lengths]
+        # self.total_tokens = sum(input_ids_lengths)
     
     def __getitem__(self, idx):
         sample = self.datasets[idx]
@@ -511,7 +511,7 @@ class QADataset4ChatTest(QADataset4Chat):
         chat = [{'role': 'user', 'content': query}]
         chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
         neighbor_embeddings = None
-        return chat, answer, retrieved_docs, neighbor_embeddings, sample['input_ids_length']
+        return chat, answer, retrieved_docs, neighbor_embeddings, 0
     
     def _collate_fn(self, elems):
         texts, answers, retrieved_docs, neighbor_embeddings, _ = zip(*elems)
