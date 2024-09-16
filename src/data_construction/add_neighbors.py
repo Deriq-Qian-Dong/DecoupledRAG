@@ -29,10 +29,21 @@ def add_neighbors_to_dataset(dataset_path, neighbors_file_path):
     return query
 
 if __name__ == '__main__':
-    dataset_paths = ['../data_of_ReGPT/QA_datasets_wTop10/nq/sorted_datasets_train/', '../data_of_ReGPT/QA_datasets_wTop10/nq/sorted_datasets_test/',
-                     '../data_of_ReGPT/QA_datasets_wTop10/eli5/sorted_datasets_train/', '../data_of_ReGPT/QA_datasets_wTop10/eli5/sorted_datasets_test/',
-                     '../data_of_ReGPT/QA_datasets_wTop10/msmarco_qa/sorted_datasets_train/', '../data_of_ReGPT/QA_datasets_wTop10/msmarco_qa/sorted_datasets_test/']
-    corpus_names = ['nq-train', 'nq-test', 'eli5-train', 'eli5-test', 'msmarco_qa-train', 'msmarco_qa-test']
+    # dev_querys: 
+    #     - ../data_of_ReGPT/new_qa_datasets/MuSiQue/train
+    #     - ../data_of_ReGPT/new_qa_datasets/MuSiQue/validation
+    #     - ../data_of_ReGPT/new_qa_datasets/complex_web_questions/train
+    #     - ../data_of_ReGPT/new_qa_datasets/complex_web_questions/validation
+    #     - ../data_of_ReGPT/new_qa_datasets/metaqa/train
+    #     - ../data_of_ReGPT/new_qa_datasets/metaqa/test
+    # dataset_paths = ['../data_of_ReGPT/QA_datasets_wTop10/nq/sorted_datasets_train/', '../data_of_ReGPT/QA_datasets_wTop10/nq/sorted_datasets_test/',
+    #                  '../data_of_ReGPT/QA_datasets_wTop10/eli5/sorted_datasets_train/', '../data_of_ReGPT/QA_datasets_wTop10/eli5/sorted_datasets_test/',
+    #                  '../data_of_ReGPT/QA_datasets_wTop10/msmarco_qa/sorted_datasets_train/', '../data_of_ReGPT/QA_datasets_wTop10/msmarco_qa/sorted_datasets_test/']
+    dataset_paths = ['../data_of_ReGPT/new_qa_datasets/MuSiQue/train', '../data_of_ReGPT/new_qa_datasets/MuSiQue/validation',
+                        '../data_of_ReGPT/new_qa_datasets/complex_web_questions/train', '../data_of_ReGPT/new_qa_datasets/complex_web_questions/validation',
+                        '../data_of_ReGPT/new_qa_datasets/metaqa/train', '../data_of_ReGPT/new_qa_datasets/metaqa/test']
+    # corpus_names = ['nq-train', 'nq-test', 'eli5-train', 'eli5-test', 'msmarco_qa-train', 'msmarco_qa-test']
+    corpus_names = ['MuSiQue-train', 'MuSiQue-validation', 'complex_web_questions-train', 'complex_web_questions-validation', 'metaqa-train', 'metaqa-test']
     for dataset_path, corpus_name in zip(dataset_paths, corpus_names):
         print(f'Processing {corpus_name}...')
         # 调用函数
