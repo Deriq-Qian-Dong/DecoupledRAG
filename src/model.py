@@ -521,7 +521,7 @@ class LanguageModelTrainer:
                         inputs = tokenizer.batch_decode(batch['input_ids'], skip_special_tokens=True)
                         for i in range(len(answers)):
                             total_sample_count += 1
-                            accelerator.print({"test/answers": answers[i], "test/outputs": outputs[i], "test/inputs": inputs[i]})
+                            # accelerator.print({"test/answers": answers[i], "test/outputs": outputs[i], "test/inputs": inputs[i]})
                             if answers[i]==outputs[i]:
                                 accuracy += 1
                     accuracy /= total_sample_count
