@@ -51,5 +51,5 @@ if __name__ == '__main__':
         # 调用函数
         neighbors_file_path = f'./output/res.top50.step0.{corpus_name}'
         query_with_neighbors = add_neighbors_to_dataset(dataset_path, neighbors_file_path)
-        query_with_neighbors.save_to_disk(dataset_path.replace('QA_datasets_wTop10', 'QA_datasets_wTop50'))
+        query_with_neighbors.save_to_disk(dataset_path.replace('new_qa_datasets', 'QA_datasets_wTop50'))
 
