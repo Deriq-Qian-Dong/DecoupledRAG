@@ -446,6 +446,7 @@ class LanguageModelTrainer:
                             knowledge_outputs, compute_time = self.compute_hidden_states(batch)
                             batch['knowledge_outputs'] = knowledge_outputs
                             hidden_states_time += compute_time
+                            batch.pop('knowledge_input_ids')
                         # Generate model predictions
                         outputs = self.generate(batch, key)
                         outputs = outputs[:, batch['input_ids'].size(1):]

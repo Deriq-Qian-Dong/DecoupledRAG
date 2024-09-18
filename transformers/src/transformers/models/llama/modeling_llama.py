@@ -1871,7 +1871,6 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         # self.model.set_adapter("knowledge_injector")
-        print(knowledge_outputs)
         if knowledge_input_ids is not None and knowledge_outputs is None:
             knowledge_outputs = self.model(
                 input_ids=knowledge_input_ids,
