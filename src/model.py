@@ -394,7 +394,6 @@ class LanguageModelTrainer:
         return 0.0
 
     def test(self):
-        start_time = time()
         model, tokenizer, optimizer, scheduler, test_dataloaders, accelerator, iter_count = (
             self.model, self.tokenizer, self.optimizer, self.scheduler, 
             self.test_dataloaders, self.accelerator, self.iter_count
@@ -418,7 +417,7 @@ class LanguageModelTrainer:
             for number_of_docs in [20, 10, 5, 1]:
                 self.setup_test_dataloader(number_of_docs=number_of_docs)
                 test_dataloaders = self.test_dataloaders
-
+                start_time = time()
                 for key in test_dataloaders:
                     accelerator.print(f"Dataset: {key} | Number of steps: {len(test_dataloaders[key])}")
                     test_dataloader = test_dataloaders[key]
@@ -457,7 +456,9 @@ class LanguageModelTrainer:
                         # Log the metric results
                         accelerator.log({f"test/{key}/{number_of_docs}/{metric}": metric_result}, step=iter_count)
                         accelerator.print(f"Step {iter_count} | Dataset: {key} | {metric.capitalize()}: {metric_result:.4f}")
-
+                end_time = time()
+                gpu_time = (end_time - start_time)*self.accelerator.num_processes
+                accelerator.log({f"test/{number_of_docs}/gpu_time": gpu_time}, step=iter_count)
                 # Log overall mean for each metric
                 for metric in metrics:
                     mean_metric = np.mean(metrics_results_dict[metric])
@@ -479,10 +480,6 @@ class LanguageModelTrainer:
                 accelerator.unwrap_model(model).save_pretrained(f"{self.config['training']['project_dir']}/RAG-new/")
         
         model.train()
-        end_time = time()
-        gpu_time = (end_time - start_time)*self.accelerator.num_processes
-        accelerator.log({"test/gpu_time": gpu_time}, step=iter_count)
-
 @register_class
 class RAGLanguageModelTrainer(LanguageModelTrainer):
     def __init__(self, config):
