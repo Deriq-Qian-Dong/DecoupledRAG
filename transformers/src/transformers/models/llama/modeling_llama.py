@@ -736,6 +736,7 @@ class LinearFusion(nn.Module):
         # self.W_C = nn.Parameter(torch.eye(hidden_dim, hidden_dim))
         self.W_A = nn.Parameter(torch.randn(hidden_dim, rank) * 0.01)  # 高斯初始化的矩阵
         self.W_B = nn.Parameter(torch.zeros(rank, hidden_dim))  # 零矩阵
+        self.W_AB = torch.matmul(self.W_A, self.W_B)
         # torch.nn.init.kaiming_uniform_(self.W_A, a=math.sqrt(5))
         # torch.nn.init.zeros_(self.W_B)
         self.dropout_prob = dropout_prob
@@ -751,8 +752,12 @@ class LinearFusion(nn.Module):
         B = B.to(self.W_A.dtype)
         # Apply dropout
         B = nn.functional.dropout(B, p=self.dropout_prob, training=self.training)
+        if self.training:
+            knowledge = torch.matmul(torch.matmul(B, self.W_A), self.W_B)
+        else:
+            knowledge = torch.matmul(B, self.W_AB)
         # 线性变换
-        C = A + self.alpha * torch.matmul(torch.matmul(B, self.W_A), self.W_B)
+        C = A + self.alpha * knowledge
         
         # 将结果转换回输入的数据类型
         C = C.to(dtype)
