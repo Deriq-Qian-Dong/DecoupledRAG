@@ -9,7 +9,7 @@ training:
   project_dir: output/
   kg_model_name_or_path: RAG-best
   num_layers_unfrozen: -1
-  gradient_checkpointing: true
+  gradient_checkpointing: false
   optimizer: 
     name: Lamb
     kwargs:

@@ -400,13 +400,13 @@ class LanguageModelTrainer:
     def compute_hidden_states(self, batch):
         model = self.model
         start_time = time()
-        model.model.gradient_checkpointing_disable()
+        # model.model.gradient_checkpointing_disable()
         outputs = model.model(input_ids=batch['knowledge_input_ids'],
             output_hidden_states=True,
             return_dict=True,
         )
         hidden_states = outputs.past_key_values
-        model.model.gradient_checkpointing_enable()
+        # model.model.gradient_checkpointing_enable()
         return hidden_states, time() - start_time
 
 
