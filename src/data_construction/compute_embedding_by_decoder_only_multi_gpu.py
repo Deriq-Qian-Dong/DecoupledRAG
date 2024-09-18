@@ -28,7 +28,7 @@ def get_hidden_states(text_list, model, tokenizer):
                 **inputs,
                 output_hidden_states=True,
                 return_dict=True,
-            ).hidden_states
+            ).hidden_states[0]
         for idx in range(len(knowledge_outputs)):
             knowledge_outputs[idx] = knowledge_outputs[idx].detach().cpu().numpy()
         knowledge_outputs = np.concatenate(knowledge_outputs, axis=0)
@@ -54,6 +54,12 @@ model = model.to("cuda")
 model.eval()
 for dataset_name in config['dataset']['test']:
     dataset = load_from_disk(config['dataset']['test'][dataset_name]['data_name_or_path'])
+    num_samples = len(dataset)
+    # 1000 samples per shard
+    num_shards = max(num_samples//1000, 1)
+    dataset = dataset.shard(num_shards=num_shards, index=0)
+    # flantten the datasets
+    dataset = dataset.flatten_indices()
     corpus = load_from_disk(config['dataset']['test'][dataset_name]['corpus'])
     # 对数据集进行处理，计算每个样本中 neighbors 列的 hidden states
     def add_hidden_states_to_dataset(example):
