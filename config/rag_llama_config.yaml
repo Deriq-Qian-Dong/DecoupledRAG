@@ -140,7 +140,7 @@ dataset:
     #   dynamic_sampler: false
     hotpotqa:
       dataset_name: QADataset4ChatTest
-      batch_size: 4
+      batch_size: 1
       data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/hotpotqa/sorted_datasets_validation/
       max_seq_len: 64
       knowledge_max_seq_len: 256
@@ -150,7 +150,7 @@ dataset:
       dynamic_sampler: false
     complex_web_questions:
       dataset_name: QADataset4ChatTest
-      batch_size: 4
+      batch_size: 1
       data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/complex_web_questions/validation/
       max_seq_len: 64
       knowledge_max_seq_len: 256
@@ -160,7 +160,7 @@ dataset:
       dynamic_sampler: false
     metaqa:
       dataset_name: QADataset4ChatTest
-      batch_size: 4
+      batch_size: 1
       data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/metaqa/test/
       max_seq_len: 64
       knowledge_max_seq_len: 256
