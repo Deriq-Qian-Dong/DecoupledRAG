@@ -393,6 +393,7 @@ class QADataset(Dataset):
 class QADataset4Chat(Dataset):
     def __init__(self, tokenizer, args):
         self.args = args
+        self.inference_with_explict_docs_for_test = args['inference_with_explict_docs_for_test']
         self.number_of_docs = args['number_of_docs']
         print('number_of_docs:', self.number_of_docs, 'path:', args['data_name_or_path'])
         self.tokenizer = tokenizer
@@ -424,10 +425,12 @@ class QADataset4Chat(Dataset):
             answer = sample['answer']
         # hits = self.searcher.search(query, 5)
         retrieved_docs = self.corpus[sample['neighbors']]['text']
-        # references = "references:\n"
-        # for doc in retrieved_docs:
-            # references += doc+'\n'
-        query = query+'\nThe answer MUST in ONE OR FEW WORDS.'
+        references = "References:\n"
+        for doc in retrieved_docs:
+            references += doc+'\n'
+        if not self.inference_with_explict_docs_for_test:
+            references = ''
+        query = references + query + '\nThe answer MUST in ONE OR FEW WORDS.'
         chat = [{'role': 'user', 'content': query}, {'role': 'assistant', 'content': answer}]
         chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=False)
         neighbor_embeddings = None
@@ -458,6 +461,8 @@ class QADataset4Chat(Dataset):
         batch["labels"] = batch['input_ids']
         # batch['neighbor_embeddings'] = torch.tensor(neighbor_embeddings)
         batch['knowledge_input_ids'] = neighbor_batch['input_ids']
+        if self.inference_with_explict_docs_for_test:
+            batch['knowledge_input_ids'] = None
         return batch
 
     def filter_empty(self, example):
@@ -476,7 +481,6 @@ class QADataset4Chat(Dataset):
 @register_class
 class QADataset4ChatTest(QADataset4Chat):
     def __init__(self, tokenizer, args):
-        self.inference_with_explict_docs_for_test = args['inference_with_explict_docs_for_test']
         super().__init__(tokenizer, args)
 
     def setup_datasets(self):
