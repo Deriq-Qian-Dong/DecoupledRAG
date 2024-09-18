@@ -333,7 +333,7 @@ class LlamaAttention(nn.Module):
         output_attentions: bool = False,
         use_cache: bool = False,
         cache_position: Optional[torch.LongTensor] = None,
-        encoder_hidden_states: Optional[torch.Tensor] = None,
+        encoder_hidden_states: Optional[Tuple[torch.Tensor]] = None,
         retrieval_position: Optional[torch.LongTensor] = None,
         is_cross_attention: bool = False,
         **kwargs,
