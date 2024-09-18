@@ -42,7 +42,7 @@ dataset:
       dataset_name: QADataset4Chat
       batch_size: 1
       num_epochs: 805
-      max_seq_len: 8192
+      max_seq_len: 4096
       dynamic_sampler: false
       corpus: ../data_of_ReGPT/Wiki-corpus/train
       max_tokens: 4096
@@ -51,7 +51,7 @@ dataset:
       dataset_name: QADataset4Chat
       batch_size: 1
       num_epochs: 805
-      max_seq_len: 8192
+      max_seq_len: 4096
       dynamic_sampler: false
       corpus: ../data_of_ReGPT/Wiki-corpus/train
       max_tokens: 4096
@@ -60,7 +60,7 @@ dataset:
       dataset_name: QADataset4Chat
       batch_size: 1
       num_epochs: 805
-      max_seq_len: 8192
+      max_seq_len: 4096
       dynamic_sampler: false
       corpus: ../data_of_ReGPT/Wiki-corpus/train
       max_tokens: 4096
