@@ -421,7 +421,7 @@ class LlamaAttention(nn.Module):
         attn_output = torch.matmul(attn_weights, value_states)
         if is_cross_attention:
             # mean pooling
-            num_docs = attn_output.size(1)//bsz
+            num_docs = attn_output.size(0)//bsz
             attn_output = attn_output.view(bsz, num_docs, self.num_heads, q_len, self.head_dim)
             attn_output = attn_output.mean(dim=1)
 
