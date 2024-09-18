@@ -414,6 +414,8 @@ class QADataset4Chat(Dataset):
         # self.total_tokens = sum(input_ids_lengths)
     
     def __getitem__(self, idx):
+        self.tokenizer.padding_side = 'left'
+        self.tokenizer.truncation_side = 'left'
         sample = self.datasets[idx]
         if 'query' in sample:
             query = sample['query']
@@ -425,6 +427,11 @@ class QADataset4Chat(Dataset):
             answer = sample['answer']
         # hits = self.searcher.search(query, 5)
         retrieved_docs = self.corpus[sample['neighbors']]['text'][:self.number_of_docs]
+        neighbor_batch_input_ids = self.tokenizer(retrieved_docs,
+                                max_length=64,
+                                padding=True,
+                                truncation=True).input_ids
+        retrieved_docs = [self.tokenizer.decode(input_ids, skip_special_tokens=True) for input_ids in neighbor_batch_input_ids]
         references = "References:\n"
         for doc in retrieved_docs:
             references += doc+'\n'
@@ -509,6 +516,11 @@ class QADataset4ChatTest(QADataset4Chat):
             answers = [sample['answer']]
         # hits = self.searcher.search(query, 5)
         retrieved_docs = self.corpus[sample['neighbors']]['text'][:self.number_of_docs]
+        neighbor_batch_input_ids = self.tokenizer(retrieved_docs,
+                                max_length=64,
+                                padding=True,
+                                truncation=True).input_ids
+        retrieved_docs = [self.tokenizer.decode(input_ids, skip_special_tokens=True) for input_ids in neighbor_batch_input_ids]
         references = "References:\n"
         for doc in retrieved_docs:
             references += doc+'\n'
