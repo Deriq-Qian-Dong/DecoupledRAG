@@ -34,6 +34,10 @@ training:
   kb_path: ../data_of_ReGPT/En-Wiki/phrases_embeddings.npy
   freeze_retrieval_head: true
   freeze_lm_head: true
+  metrics:
+    - f1
+    - accuracy
+  target_metric: accuracy
 
 dataset:
   number_of_docs: 20
