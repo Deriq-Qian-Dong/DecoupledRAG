@@ -392,6 +392,17 @@ class LanguageModelTrainer:
             if answer == prediction:
                 return 1.0
         return 0.0
+    
+    def compute_hidden_states(self, batch):
+        model = self.model
+        start_time = time()
+        outputs = model.model(input_ids=batch['knowledge_input_ids'],
+            output_hidden_states=True,
+            return_dict=True,
+        )
+        hidden_states = outputs.hidden_states
+        return hidden_states, time() - start_time
+
 
     def test(self):
         model, tokenizer, optimizer, scheduler, test_dataloaders, accelerator, iter_count = (
@@ -418,6 +429,7 @@ class LanguageModelTrainer:
                 self.setup_test_dataloader(number_of_docs=number_of_docs)
                 test_dataloaders = self.test_dataloaders
                 start_time = time()
+                hidden_states_time = 0
                 for key in test_dataloaders:
                     accelerator.print(f"Dataset: {key} | Number of steps: {len(test_dataloaders[key])}")
                     test_dataloader = test_dataloaders[key]
@@ -430,7 +442,10 @@ class LanguageModelTrainer:
                         batch = self.pop_unused_keys(batch)
                         answers = batch.pop('answers')
                         batch = accelerator.prepare(batch)
-
+                        if 'knowledge_input_ids' in batch:
+                            knowledge_outputs, compute_time = self.compute_hidden_states(batch)
+                            batch['knowledge_outputs'] = knowledge_outputs
+                            hidden_states_time += compute_time
                         # Generate model predictions
                         outputs = self.generate(batch, key)
                         outputs = outputs[:, batch['input_ids'].size(1):]
@@ -457,7 +472,7 @@ class LanguageModelTrainer:
                         accelerator.log({f"test/{key}/{number_of_docs}/{metric}": metric_result}, step=iter_count)
                         accelerator.print(f"Step {iter_count} | Dataset: {key} | {metric.capitalize()}: {metric_result:.4f}")
                 end_time = time()
-                gpu_time = (end_time - start_time)*self.accelerator.num_processes
+                gpu_time = (end_time - start_time - hidden_states_time)*self.accelerator.num_processes
                 accelerator.log({f"test/{number_of_docs}/gpu_time": gpu_time}, step=iter_count)
                 # Log overall mean for each metric
                 for metric in metrics:

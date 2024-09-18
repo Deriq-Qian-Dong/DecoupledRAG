@@ -1838,7 +1838,6 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
         retrieval_position: Optional[torch.LongTensor] = None,
         knowledge_input_ids: Optional[torch.LongTensor] = None,
         knowledge_outputs: torch.Tensor = None,
-        neighbor_embeddings: torch.Tensor = None,
     ) -> Union[Tuple, CausalLMOutputWithPast]:
         r"""
         Args:
@@ -1872,15 +1871,12 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         # self.model.set_adapter("knowledge_injector")
-        if knowledge_input_ids is not None and neighbor_embeddings is None:
+        if knowledge_input_ids is not None and knowledge_outputs is None:
             knowledge_outputs = self.model(
                 input_ids=knowledge_input_ids,
                 output_hidden_states=True,
                 return_dict=True,
             ).hidden_states
-        if neighbor_embeddings is not None:
-            knowledge_outputs = neighbor_embeddings
-        
         # print(knowledge_input_ids)
         # print(knowledge_outputs)
 
