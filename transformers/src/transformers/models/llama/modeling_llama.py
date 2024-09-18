@@ -339,10 +339,10 @@ class LlamaAttention(nn.Module):
         **kwargs,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         bsz, q_len, _ = hidden_states.size()
+        print(encoder_hidden_states)
         # encoder_hidden_states = encoder_hidden_states.reshape(bsz, -1, self.hidden_size) if encoder_hidden_states is not None else None
         if encoder_hidden_states is not None:
             kv_len = encoder_hidden_states[0].size(2)
-            print(encoder_hidden_states[0].size())
         else:
             kv_len = q_len
 
