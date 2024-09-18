@@ -54,7 +54,7 @@ for dataset_name in config['dataset']['test']:
     dataset = load_from_disk(config['dataset']['test'][dataset_name]['data_name_or_path'])
     num_samples = len(dataset)
     # 1000 samples per shard
-    num_shards = max(num_samples//1000, 1)
+    num_shards = max(num_samples//100, 1)
     dataset = dataset.shard(num_shards=num_shards, index=0)
     # flantten the datasets
     dataset = dataset.flatten_indices()
