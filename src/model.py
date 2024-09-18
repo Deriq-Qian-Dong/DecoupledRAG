@@ -328,6 +328,7 @@ class LanguageModelTrainer:
             if 'knowledge_input_ids' in batch:
                 knowledge_outputs, _ = self.compute_hidden_states(batch)
                 batch['knowledge_outputs'] = knowledge_outputs
+                print(knowledge_outputs)
                 batch.pop('knowledge_input_ids')
             forward_time = time()
             outputs = model(**batch)
