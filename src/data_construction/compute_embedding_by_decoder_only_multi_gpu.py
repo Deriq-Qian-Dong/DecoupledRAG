@@ -29,6 +29,7 @@ def get_hidden_states(text_list, model, tokenizer):
                 output_hidden_states=True,
                 return_dict=True,
             ).hidden_states[0]
+        print(knowledge_outputs)
         for idx in range(len(knowledge_outputs)):
             knowledge_outputs[idx] = knowledge_outputs[idx].detach().cpu().numpy()
         knowledge_outputs = np.concatenate(knowledge_outputs, axis=0)
