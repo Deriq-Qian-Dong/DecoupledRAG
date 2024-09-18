@@ -73,7 +73,7 @@ dataset:
     hotpotqa:
       data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/hotpotqa/sorted_datasets_train/
       dataset_name: QADataset4Chat
-      batch_size: 4
+      batch_size: 2
       num_epochs: 805
       max_seq_len: 64
       knowledge_max_seq_len: 256
@@ -83,7 +83,7 @@ dataset:
     complex_web_questions:
       data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/complex_web_questions/train/
       dataset_name: QADataset4Chat
-      batch_size: 4
+      batch_size: 2
       num_epochs: 805
       max_seq_len: 64
       knowledge_max_seq_len: 256
@@ -93,7 +93,7 @@ dataset:
     metaqa:
       data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/metaqa/train/
       dataset_name: QADataset4Chat
-      batch_size: 4
+      batch_size: 2
       num_epochs: 805
       max_seq_len: 64
       knowledge_max_seq_len: 256
