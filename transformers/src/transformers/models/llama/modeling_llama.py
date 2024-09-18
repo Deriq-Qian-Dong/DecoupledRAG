@@ -365,7 +365,7 @@ class LlamaAttention(nn.Module):
         else:
             query_states = self.q_proj(hidden_states)
             if is_cross_attention:
-                key_states = encoder_hidden_states[0]
+                key_states = encoder_hidden_states[0]  # shape: [bsz*doc, num_key_value_heads, kv_len, head_dim]
                 value_states = encoder_hidden_states[1]
             else:
                 key_states = self.k_proj(hidden_states)
@@ -396,7 +396,8 @@ class LlamaAttention(nn.Module):
 
         key_states = repeat_kv(key_states, self.num_key_value_groups)
         value_states = repeat_kv(value_states, self.num_key_value_groups)
-
+        # key_states shape: [bsz*doc, num_key_value_heads*self.num_key_value_groups, kv_len, head_dim]
+        # query_states shape: [bsz, num_heads, q_len, head_dim]
         attn_weights = torch.matmul(query_states, key_states.transpose(2, 3)) / math.sqrt(self.head_dim)
         # The shape of attn_weights is [bsz, num_heads, q_len, kv_len]
 
@@ -418,6 +419,11 @@ class LlamaAttention(nn.Module):
         #     mask_value = torch.full([], mask_value, dtype=attn_weights.dtype, device=attn_weights.device)
         #     attn_weights = torch.where(causal_mask_for_cross_attn, attn_weights.to(attn_weights.dtype), mask_value)
         attn_output = torch.matmul(attn_weights, value_states)
+        if is_cross_attention:
+            # mean pooling
+            num_docs = attn_output.size(1)//bsz
+            attn_output = attn_output.view(bsz, num_docs, self.num_heads, q_len, self.head_dim)
+            attn_output = attn_output.mean(dim=1)
 
         if attn_output.size() != (bsz, self.num_heads, q_len, self.head_dim):
             raise ValueError(
