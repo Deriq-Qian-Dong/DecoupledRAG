@@ -424,7 +424,7 @@ class QADataset4Chat(Dataset):
         else:
             answer = sample['answer']
         # hits = self.searcher.search(query, 5)
-        retrieved_docs = self.corpus[sample['neighbors']]['text']
+        retrieved_docs = self.corpus[sample['neighbors']]['text'][:self.number_of_docs]
         references = "References:\n"
         for doc in retrieved_docs:
             references += doc+'\n'
