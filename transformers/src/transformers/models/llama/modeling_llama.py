@@ -341,7 +341,7 @@ class LlamaAttention(nn.Module):
         bsz, q_len, _ = hidden_states.size()
         # encoder_hidden_states = encoder_hidden_states.reshape(bsz, -1, self.hidden_size) if encoder_hidden_states is not None else None
         if encoder_hidden_states is not None:
-            kv_len = encoder_hidden_states[2].size(1)
+            kv_len = encoder_hidden_states[0].size(2)
         else:
             kv_len = q_len
 
