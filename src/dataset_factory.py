@@ -395,6 +395,7 @@ class QADataset4Chat(Dataset):
         self.args = args
         self.inference_with_explict_docs_for_test = args['inference_with_explict_docs_for_test']
         self.number_of_docs = args['number_of_docs']
+        self.knowledge_max_seq_len = args['knowledge_max_seq_len']
         print('number_of_docs:', self.number_of_docs, 'path:', args['data_name_or_path'])
         self.tokenizer = tokenizer
         self.setup_datasets()
@@ -428,7 +429,7 @@ class QADataset4Chat(Dataset):
         # hits = self.searcher.search(query, 5)
         retrieved_docs = self.corpus[sample['neighbors']]['text'][:self.number_of_docs]
         neighbor_batch_input_ids = self.tokenizer(retrieved_docs,
-                                max_length=256,
+                                max_length=self.knowledge_max_seq_len,
                                 padding=True,
                                 truncation=True).input_ids
         retrieved_docs = [self.tokenizer.decode(input_ids, skip_special_tokens=True) for input_ids in neighbor_batch_input_ids]
@@ -461,7 +462,7 @@ class QADataset4Chat(Dataset):
         for docs in retrieved_docs:
             all_retrieved_docs += docs[:self.number_of_docs]
         neighbor_batch = self.tokenizer(all_retrieved_docs,
-                                max_length=self.args['max_seq_len'],
+                                max_length=self.self.knowledge_max_seq_len,
                                 padding=True,
                                 truncation=True,
                                 return_tensors="pt")
@@ -517,7 +518,7 @@ class QADataset4ChatTest(QADataset4Chat):
         # hits = self.searcher.search(query, 5)
         retrieved_docs = self.corpus[sample['neighbors']]['text'][:self.number_of_docs]
         neighbor_batch_input_ids = self.tokenizer(retrieved_docs,
-                                max_length=256,
+                                max_length=self.knowledge_max_seq_len,
                                 padding=True,
                                 truncation=True).input_ids
         retrieved_docs = [self.tokenizer.decode(input_ids, skip_special_tokens=True) for input_ids in neighbor_batch_input_ids]
@@ -546,7 +547,7 @@ class QADataset4ChatTest(QADataset4Chat):
         for docs in retrieved_docs:
             all_retrieved_docs += docs
         neighbor_batch = self.tokenizer(all_retrieved_docs,
-                                max_length=self.args['max_seq_len'],
+                                max_length=self.knowledge_max_seq_len,
                                 padding=True,
                                 truncation=True,
                                 return_tensors="pt")
