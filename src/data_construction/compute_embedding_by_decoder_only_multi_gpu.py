@@ -19,21 +19,18 @@ def get_config(path="config/llama_config.yaml"):
 # 定义函数来计算 hidden states
 def get_hidden_states(text_list, model, tokenizer):
     hidden_states = []
-    for text in text_list:
-        inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=64)
-        # move inputs to cuda
-        inputs = {k: v.to("cuda") for k, v in inputs.items()}
-        with torch.no_grad():
-            knowledge_outputs = model(
-                **inputs,
-                output_hidden_states=True,
-                return_dict=True,
-            ).hidden_states
-        print(knowledge_outputs)
-        for idx in range(len(knowledge_outputs)):
-            knowledge_outputs[idx] = knowledge_outputs[idx].detach().cpu().numpy()
-        knowledge_outputs = np.concatenate(knowledge_outputs, axis=0)
-        hidden_states.append(knowledge_outputs)
+    inputs = tokenizer(text_list, return_tensors="pt", padding=True, truncation=True, max_length=64)
+    # move inputs to cuda
+    inputs = {k: v.to("cuda") for k, v in inputs.items()}
+    with torch.no_grad():
+        knowledge_outputs = model(
+            **inputs,
+            output_hidden_states=True,
+            return_dict=True,
+        ).hidden_states
+    for idx in range(len(knowledge_outputs)):
+        hidden_states.append(knowledge_outputs[idx].detach().cpu().numpy())
+    hidden_states = np.concatenate(hidden_states, axis=0)
     return hidden_states
 
 
