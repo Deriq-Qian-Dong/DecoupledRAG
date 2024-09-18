@@ -325,6 +325,10 @@ class LanguageModelTrainer:
             batch_size = batch.input_ids.shape[0]
             batch = self._prepare_inputs(batch)
             batch = accelerator.prepare(batch)
+            if 'knowledge_input_ids' in batch:
+                knowledge_outputs, _ = self.compute_hidden_states(batch)
+                batch['knowledge_outputs'] = knowledge_outputs
+                batch.pop('knowledge_input_ids')
             forward_time = time()
             outputs = model(**batch)
             forward_time = time() - forward_time
