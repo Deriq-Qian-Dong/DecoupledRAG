@@ -367,6 +367,9 @@ class LlamaAttention(nn.Module):
             if is_cross_attention:
                 key_states = encoder_hidden_states[0]  # shape: [bsz*doc, num_key_value_heads, kv_len, head_dim]
                 value_states = encoder_hidden_states[1]
+                num_docs = key_states.size(0)//bsz
+                key_states = key_states.view(bsz, num_docs, self.num_key_value_heads, kv_len, self.head_dim).transpose(1, 2).view(bsz, self.num_key_value_heads, num_docs*kv_len, self.head_dim)
+                value_states = value_states.view(bsz, num_docs, self.num_key_value_heads, kv_len, self.head_dim).transpose(1, 2).view(bsz, self.num_key_value_heads, num_docs*kv_len, self.head_dim)
             else:
                 key_states = self.k_proj(hidden_states)
                 value_states = self.v_proj(hidden_states)
@@ -419,11 +422,11 @@ class LlamaAttention(nn.Module):
         #     mask_value = torch.full([], mask_value, dtype=attn_weights.dtype, device=attn_weights.device)
         #     attn_weights = torch.where(causal_mask_for_cross_attn, attn_weights.to(attn_weights.dtype), mask_value)
         attn_output = torch.matmul(attn_weights, value_states)
-        if is_cross_attention:
-            # mean pooling
-            num_docs = attn_output.size(0)//bsz
-            attn_output = attn_output.view(bsz, num_docs, self.num_heads, q_len, self.head_dim)
-            attn_output = attn_output.mean(dim=1)
+        # if is_cross_attention:
+        #     # mean pooling
+        #     num_docs = attn_output.size(0)//bsz
+        #     attn_output = attn_output.view(bsz, num_docs, self.num_heads, q_len, self.head_dim)
+        #     attn_output = attn_output.mean(dim=1)
 
         if attn_output.size() != (bsz, self.num_heads, q_len, self.head_dim):
             raise ValueError(
@@ -737,7 +740,7 @@ LLAMA_ATTENTION_CLASSES = {
 }
 
 class LinearFusion(nn.Module):
-    def __init__(self, hidden_dim, rank=16, alpha=32, dropout_prob=0.2):
+    def __init__(self, hidden_dim, rank=16, alpha=32, dropout_prob=0.0):
         super(LinearFusion, self).__init__()
         # 初始化权重矩阵
         # self.W_C = nn.Parameter(torch.eye(hidden_dim, hidden_dim))
