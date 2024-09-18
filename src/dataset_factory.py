@@ -559,6 +559,80 @@ class QADataset4ChatTest(QADataset4Chat):
     def set_epoch(self, epoch):
         pass
 
+@register_class
+class QADataset4ChatTestwHiddenStates(QADataset4Chat):
+    def __init__(self, tokenizer, args):
+        super().__init__(tokenizer, args)
+
+    def setup_datasets(self):
+        self.datasets = load_from_disk(self.args['data_name_or_path'])
+        # 将datasets shard
+        num_samples = len(self.datasets)
+        # 1000 samples per shard
+        num_shards = max(num_samples//1000, 1)
+        self.datasets = self.datasets.shard(num_shards=num_shards, index=0)
+        # flantten the datasets
+        self.datasets = self.datasets.flatten_indices()
+        self.num_samples = len(self.datasets)
+        # input_ids_lengths = self.datasets['input_ids_length']
+        # input_ids_lengths = [min(self.args['max_seq_len'], length) for length in input_ids_lengths]
+        # self.total_tokens = sum(input_ids_lengths)
+    
+    def __getitem__(self, idx):
+        sample = self.datasets[idx]
+        if 'query' in sample:
+            query = sample['query']
+        else:
+            query = sample['question']
+        if 'answers' in sample:
+            answers = sample['answers']
+        else:
+            answers = [sample['answer']]
+        # hits = self.searcher.search(query, 5)
+        retrieved_docs = self.corpus[sample['neighbors']]['text'][:self.number_of_docs]
+        neighbor_batch_input_ids = self.tokenizer(retrieved_docs,
+                                max_length=64,
+                                padding=True,
+                                truncation=True).input_ids
+        retrieved_docs = [self.tokenizer.decode(input_ids, skip_special_tokens=True) for input_ids in neighbor_batch_input_ids]
+        references = "References:\n"
+        for doc in retrieved_docs:
+            references += doc+'\n'
+        if not self.inference_with_explict_docs_for_test:
+            references = ''
+        query = references + query+'\nThe answer MUST in ONE OR FEW WORDS.'
+        chat = [{'role': 'user', 'content': query}]
+        chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
+        neighbor_embeddings = np.array(sample['neighbors_hidden_states'])
+        return chat, answers, retrieved_docs, neighbor_embeddings, 0
+    
+    def _collate_fn(self, elems):
+        texts, answers, retrieved_docs, neighbor_embeddings, _ = zip(*elems)
+        self.tokenizer.padding_side = 'left'
+        self.tokenizer.truncation_side = 'left'
+        batch = self.tokenizer(texts,
+                                add_special_tokens=False,
+                                max_length=self.args['max_seq_len'],
+                                padding=True,
+                                truncation=True,
+                                return_tensors="pt")
+        all_retrieved_docs = []
+        for docs in retrieved_docs:
+            all_retrieved_docs += docs
+        neighbor_batch = self.tokenizer(all_retrieved_docs,
+                                max_length=self.args['max_seq_len'],
+                                padding=True,
+                                truncation=True,
+                                return_tensors="pt")
+        batch['knowledge_input_ids'] = neighbor_batch['input_ids']
+        if self.inference_with_explict_docs_for_test:
+            batch['knowledge_input_ids'] = None
+        batch['answers'] = answers
+        batch['neighbor_embeddings'] = torch.tensor(neighbor_embeddings)
+        return batch
+
+    def set_epoch(self, epoch):
+        pass
 
 @register_class
 class QADataset4Contrastive(Dataset):

@@ -31,7 +31,6 @@ def get_hidden_states(text_list, model, tokenizer):
     for idx in range(len(knowledge_outputs)):
         hidden_states.append(knowledge_outputs[idx].detach().cpu().numpy())
     hidden_states = np.stack(hidden_states, axis=0)
-    print(hidden_states.shape)
     return hidden_states
 
 
