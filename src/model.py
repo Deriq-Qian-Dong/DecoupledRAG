@@ -394,6 +394,7 @@ class LanguageModelTrainer:
         return 0.0
 
     def test(self):
+        start_time = time()
         model, tokenizer, optimizer, scheduler, test_dataloaders, accelerator, iter_count = (
             self.model, self.tokenizer, self.optimizer, self.scheduler, 
             self.test_dataloaders, self.accelerator, self.iter_count
@@ -478,6 +479,9 @@ class LanguageModelTrainer:
                 accelerator.unwrap_model(model).save_pretrained(f"{self.config['training']['project_dir']}/RAG-new/")
         
         model.train()
+        end_time = time()
+        gpu_time = (end_time - start_time)*self.accelerator.num_processes
+        accelerator.log({"test/gpu_time": gpu_time}, step=iter_count)
 
 @register_class
 class RAGLanguageModelTrainer(LanguageModelTrainer):
