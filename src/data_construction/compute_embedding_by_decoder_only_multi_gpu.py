@@ -30,7 +30,7 @@ def get_hidden_states(text_list, model, tokenizer):
         ).hidden_states
     for idx in range(len(knowledge_outputs)):
         hidden_states.append(knowledge_outputs[idx].detach().cpu().numpy())
-    hidden_states = np.stack(hidden_states, axis=1)
+    hidden_states = np.stack(hidden_states, axis=0)
     print(hidden_states.shape)
     return hidden_states
 
@@ -65,5 +65,5 @@ for dataset_name in config['dataset']['test']:
         neighbors = corpus[example['neighbors'][:20]]['text']  # 获取 neighbors 列
         example['neighbors_hidden_states'] = get_hidden_states(neighbors, model, tokenizer)  # 计算 hidden states 并存入新列
         return example
-    dataset = dataset.map(add_hidden_states_to_dataset, writer_batch_size=1)
+    dataset = dataset.map(add_hidden_states_to_dataset, writer_batch_size=10)
     dataset.save_to_disk(config['dataset']['test'][dataset_name]['data_name_or_path'].replace("QA_datasets_wTop50", "QA_datasets_wTop50wHiddenStates"))  # 保存处理后的数据集
