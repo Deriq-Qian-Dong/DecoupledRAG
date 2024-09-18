@@ -462,7 +462,7 @@ class QADataset4Chat(Dataset):
         for docs in retrieved_docs:
             all_retrieved_docs += docs[:self.number_of_docs]
         neighbor_batch = self.tokenizer(all_retrieved_docs,
-                                max_length=self.self.knowledge_max_seq_len,
+                                max_length=self.knowledge_max_seq_len,
                                 padding=True,
                                 truncation=True,
                                 return_tensors="pt")
