@@ -387,10 +387,11 @@ class LlamaAttention(nn.Module):
         cos, sin = self.rotary_emb(value_states, position_ids)
         if not is_cross_attention:
             query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
-        # else:
-            # position_ids = torch.arange(kv_len, device=hidden_states.device).unsqueeze(0)
-            # ca_cos, ca_sin = self.rotary_emb(value_states, position_ids)
-            # query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin, ca_cos, ca_sin, is_cross_attention=True)
+        else:
+            kv_len = key_states.size(2)
+            position_ids = torch.arange(kv_len, device=hidden_states.device).unsqueeze(0)
+            ca_cos, ca_sin = self.rotary_emb(value_states, position_ids)
+            query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin, ca_cos, ca_sin, is_cross_attention=True)
 
         if past_key_value is not None and not is_cross_attention:
             # sin and cos are specific to RoPE models; cache_position needed for the static cache
