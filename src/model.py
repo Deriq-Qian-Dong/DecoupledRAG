@@ -474,6 +474,9 @@ class LanguageModelTrainer:
                 end_time = time()
                 gpu_time = (end_time - start_time - hidden_states_time)*self.accelerator.num_processes
                 accelerator.log({f"test/{number_of_docs}/gpu_time": gpu_time}, step=iter_count)
+                accelerator.log({f"test/{number_of_docs}/hidden_states_time": hidden_states_time*self.accelerator.num_processes}, step=iter_count)
+                total_time = (end_time - start_time)*self.accelerator.num_processes
+                accelerator.log({f"test/{number_of_docs}/total_time": total_time}, step=iter_count)
                 # Log overall mean for each metric
                 for metric in metrics:
                     mean_metric = np.mean(metrics_results_dict[metric])
