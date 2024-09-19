@@ -63,9 +63,9 @@ class RAGForCausalLM(nn.Module):
             model.model.load_adapter(train_config['kg_model_name_or_path'], "sa_finetune")
         else:
             peft_config = LoraConfig(
-                lora_alpha=16,
+                lora_alpha=32,
                 lora_dropout=0.1,
-                r=8,
+                r=16,
                 bias='none',
                 task_type="CAUSAL_LM"
             )
@@ -261,8 +261,8 @@ class LanguageModelTrainer:
         test_dataloader = DataLoader(test_dataset, batch_size=dataset_args['batch_size'], shuffle=False, collate_fn=test_dataset._collate_fn)
         (model, optimizer, _, _) = accelerator.prepare(model, optimizer, test_dataloader, test_dataloader)
         # Upcasting trainable params to float32.
-        for param in filter(lambda p: p.requires_grad, model.module.parameters()):
-            param.data = param.data.to(torch.float32)
+        # for param in filter(lambda p: p.requires_grad, model.module.parameters()):
+            # param.data = param.data.to(torch.float32)
         self.model = model
         self.optimizer = optimizer
         self.scheduler = scheduler
