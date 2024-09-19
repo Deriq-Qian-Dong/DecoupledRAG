@@ -399,10 +399,11 @@ class LanguageModelTrainer:
                 return 1.0
         return 0.0
     
+    @torch.no_grad()
     def compute_hidden_states(self, batch):
         model = self.model
         start_time = time()
-        model.model.gradient_checkpointing_disable()
+        # model.model.gradient_checkpointing_disable()
         outputs = model.model(input_ids=batch['knowledge_input_ids'],
             output_hidden_states=True,
             return_dict=True,
@@ -415,7 +416,7 @@ class LanguageModelTrainer:
         hidden_states = tuple(
             tuple(p.detach() for p in layer) for layer in hidden_states
         )
-        model.model.gradient_checkpointing_enable()
+        # model.model.gradient_checkpointing_enable()
         return hidden_states, time() - start_time
 
 
