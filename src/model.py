@@ -431,7 +431,8 @@ class LanguageModelTrainer:
         metrics_dict = {metric: {} for metric in metrics}
 
         with torch.no_grad():
-            for number_of_docs in [20, 10, 5, 1]:
+            # for number_of_docs in [20, 10, 5, 1]:
+            for number_of_docs in [20]:
                 self.setup_test_dataloader(number_of_docs=number_of_docs)
                 test_dataloaders = self.test_dataloaders
                 start_time = time()
