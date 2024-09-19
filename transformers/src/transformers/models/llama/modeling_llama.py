@@ -740,7 +740,7 @@ LLAMA_ATTENTION_CLASSES = {
 }
 
 class LinearFusion(nn.Module):
-    def __init__(self, hidden_dim, rank=8, alpha=16, dropout_prob=0.0):
+    def __init__(self, hidden_dim, rank=16, alpha=32, dropout_prob=0.0):
         super(LinearFusion, self).__init__()
         # 初始化权重矩阵
         # self.W_C = nn.Parameter(torch.eye(hidden_dim, hidden_dim))
