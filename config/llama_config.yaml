@@ -39,14 +39,14 @@ training:
 
 dataset:
   number_of_docs: 20
-  inference_with_explict_docs_for_test: false
+  inference_with_explict_docs_for_test: true
   train:
-    hotpotqa:
-      data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/hotpotqa/sorted_datasets_train/
+    nq:
+      data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/nq/sorted_datasets_train
       dataset_name: QADataset4Chat
-      batch_size: 1
+      batch_size: 2
       num_epochs: 805
-      max_seq_len: 8192
+      max_seq_len: 64
       knowledge_max_seq_len: 256
       dynamic_sampler: false
       corpus: ../data_of_ReGPT/Wiki-corpus/train
@@ -54,51 +54,51 @@ dataset:
     complex_web_questions:
       data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/complex_web_questions/train/
       dataset_name: QADataset4Chat
-      batch_size: 1
+      batch_size: 2
       num_epochs: 805
-      max_seq_len: 8192
+      max_seq_len: 64
       knowledge_max_seq_len: 256
       dynamic_sampler: false
       corpus: ../data_of_ReGPT/Wiki-corpus/train
       max_tokens: 4096
-    metaqa:
-      data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/metaqa/train/
+    2WikiMultihopQA:
+      data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/2WikiMultihopQA/sorted_datasets_train/
       dataset_name: QADataset4Chat
-      batch_size: 1
+      batch_size: 2
       num_epochs: 805
-      max_seq_len: 8192
+      max_seq_len: 64
       knowledge_max_seq_len: 256
       dynamic_sampler: false
       corpus: ../data_of_ReGPT/Wiki-corpus/train
       max_tokens: 4096
   test:
-    hotpotqa:
+    nq:
       dataset_name: QADataset4ChatTest
-      batch_size: 1
-      data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/hotpotqa/sorted_datasets_validation/
-      max_seq_len: 8192
-      knowledge_max_seq_len: 256
+      batch_size: 2
+      data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/nq/sorted_datasets_test
+      max_seq_len: 64
       max_new_tokens: 32
+      knowledge_max_seq_len: 256
       index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
       corpus: ../data_of_ReGPT/Wiki-corpus/train/
       dynamic_sampler: false
     complex_web_questions:
       dataset_name: QADataset4ChatTest
-      batch_size: 1
+      batch_size: 2
       data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/complex_web_questions/validation/
-      max_seq_len: 8192
+      max_seq_len: 64
       knowledge_max_seq_len: 256
       max_new_tokens: 32
       index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
       corpus: ../data_of_ReGPT/Wiki-corpus/train/
       dynamic_sampler: false
-    metaqa:
+    2WikiMultihopQA:
       dataset_name: QADataset4ChatTest
-      batch_size: 1
-      data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/metaqa/test/
-      max_seq_len: 8192
-      knowledge_max_seq_len: 256
+      batch_size: 2
+      data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/2WikiMultihopQA/sorted_datasets_dev/
+      max_seq_len: 64
       max_new_tokens: 32
+      knowledge_max_seq_len: 256
       index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
       corpus: ../data_of_ReGPT/Wiki-corpus/train/
       dynamic_sampler: false
