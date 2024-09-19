@@ -49,7 +49,7 @@ dataset:
       batch_size: 1
       num_epochs: 805
       max_seq_len: 64
-      knowledge_max_seq_len: 200
+      knowledge_max_seq_len: 256
       dynamic_sampler: false
       corpus: ../data_of_ReGPT/Wiki-corpus/train
       max_tokens: 4096
@@ -59,7 +59,7 @@ dataset:
       batch_size: 1
       num_epochs: 805
       max_seq_len: 64
-      knowledge_max_seq_len: 200
+      knowledge_max_seq_len: 256
       dynamic_sampler: false
       corpus: ../data_of_ReGPT/Wiki-corpus/train
       max_tokens: 4096
@@ -69,7 +69,7 @@ dataset:
       batch_size: 1
       num_epochs: 805
       max_seq_len: 64
-      knowledge_max_seq_len: 200
+      knowledge_max_seq_len: 256
       dynamic_sampler: false
       corpus: ../data_of_ReGPT/Wiki-corpus/train
       max_tokens: 4096
@@ -80,7 +80,7 @@ dataset:
       data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/nq/sorted_datasets_test
       max_seq_len: 64
       max_new_tokens: 32
-      knowledge_max_seq_len: 200
+      knowledge_max_seq_len: 256
       index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
       corpus: ../data_of_ReGPT/Wiki-corpus/train/
       dynamic_sampler: false
@@ -89,7 +89,7 @@ dataset:
       batch_size: 2
       data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/complex_web_questions/validation/
       max_seq_len: 64
-      knowledge_max_seq_len: 200
+      knowledge_max_seq_len: 256
       max_new_tokens: 32
       index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
       corpus: ../data_of_ReGPT/Wiki-corpus/train/
@@ -100,7 +100,7 @@ dataset:
       data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/2WikiMultihopQA/sorted_datasets_dev/
       max_seq_len: 64
       max_new_tokens: 32
-      knowledge_max_seq_len: 200
+      knowledge_max_seq_len: 256
       index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
       corpus: ../data_of_ReGPT/Wiki-corpus/train/
       dynamic_sampler: false

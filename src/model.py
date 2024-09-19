@@ -63,9 +63,9 @@ class RAGForCausalLM(nn.Module):
             model.model.load_adapter(train_config['kg_model_name_or_path'], "sa_finetune")
         else:
             peft_config = LoraConfig(
-                lora_alpha=32,
+                lora_alpha=16,
                 lora_dropout=0.1,
-                r=16,
+                r=8,
                 bias='none',
                 task_type="CAUSAL_LM"
             )
