@@ -61,8 +61,9 @@ class RAGForCausalLM(nn.Module):
         import os
         if os.path.exists(os.path.join(train_config['kg_model_name_or_path'], 'adapter_config.json')):
             model.model.load_adapter(train_config['kg_model_name_or_path'], "sa_finetune")
+            print(f"Loading adapter from {train_config['kg_model_name_or_path']}")
         else:
-            exit()
+            print("Adding adapter from scratch")
             peft_config = LoraConfig(
                 lora_alpha=32,
                 lora_dropout=0.1,
