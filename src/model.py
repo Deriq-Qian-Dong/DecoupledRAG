@@ -408,6 +408,9 @@ class LanguageModelTrainer:
             return_dict=True,
         )
         hidden_states = outputs.past_key_values
+        if hidden_states is None:
+            print("Hidden states is None")
+            exit()
         # model.model.gradient_checkpointing_enable()
         return hidden_states, time() - start_time
 
