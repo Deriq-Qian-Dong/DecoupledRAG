@@ -60,7 +60,7 @@ class RAGForCausalLM(nn.Module):
         model = MODEL_CLASS[train_config['model_type']].from_pretrained(train_config['model_name_or_path'], config=config)          
         import os
         if os.path.exists(os.path.join(train_config['kg_model_name_or_path'], 'adapter_config.json')):
-            model.model.load_adapter(train_config['kg_model_name_or_path'], "sa_finetune")
+            model.load_adapter(train_config['kg_model_name_or_path'], "sa_finetune")
             print(f"Loading adapter from {train_config['kg_model_name_or_path']}")
         else:
             print("Adding adapter from scratch")
@@ -71,7 +71,7 @@ class RAGForCausalLM(nn.Module):
                 bias='none',
                 task_type="CAUSAL_LM"
             )
-            model.model.add_adapter(peft_config, "sa_finetune")
+            model.add_adapter(peft_config, "sa_finetune")
         self.add_adapter = True
         freeze_non_crossattention_parameters(model, train_config['freeze_retrieval_head'], train_config['freeze_lm_head'])
         if train_config['gradient_checkpointing']:
