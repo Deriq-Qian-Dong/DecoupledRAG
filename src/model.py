@@ -467,7 +467,6 @@ class LanguageModelTrainer:
                         if 'knowledge_input_ids' in batch:
                             knowledge_outputs, compute_time = self.compute_hidden_states(batch)
                             batch['knowledge_outputs'] = knowledge_outputs
-                            print(knowledge_outputs)
                             hidden_states_time += compute_time
                             batch.pop('knowledge_input_ids')
                         # Generate model predictions
