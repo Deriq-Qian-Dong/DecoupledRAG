@@ -475,10 +475,12 @@ class LanguageModelTrainer:
                         outputs = self.generate(batch, key)
                         outputs = outputs[:, batch['input_ids'].size(1):]
                         outputs = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+                        inputs = tokenizer.batch_decode(batch['input_ids'], skip_special_tokens=True)
 
                         # Calculate metrics for each sample
                         for i in range(len(outputs)):
                             total_sample_count += 1
+                            print(f"Answer: {answers[i]} | Prediction: {outputs[i]} | Input: {inputs[i]}")
                             for metric in metrics:
                                 metric_function = metrics_function_dict[metric]
                                 metrics_accumulated[metric] += metric_function(outputs[i], answers[i], tokenizer)
