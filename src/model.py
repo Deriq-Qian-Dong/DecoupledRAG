@@ -58,12 +58,12 @@ class RAGForCausalLM(nn.Module):
         config.kg_model_name_or_path = train_config['kg_model_name_or_path']
         config.freeze_retrieval_head = train_config['freeze_retrieval_head']
         model = MODEL_CLASS[train_config['model_type']].from_pretrained(train_config['model_name_or_path'], config=config)          
-        import os
-        if os.path.exists(os.path.join(train_config['kg_model_name_or_path'], 'adapter_config.json')):
-            model.load_adapter(train_config['kg_model_name_or_path'], "sa_finetune")
-            print(f"Loading adapter from {train_config['kg_model_name_or_path']}")
+        # import os
+        # if os.path.exists(os.path.join(train_config['kg_model_name_or_path'], 'adapter_config.json')):
+            # model.load_adapter(train_config['kg_model_name_or_path'], "sa_finetune")
+            # print(f"Loading adapter from {train_config['kg_model_name_or_path']}")
             # merge
-            model = model.merge_and_unload()
+            # model = model.merge_and_unload()
         self.add_adapter = False
         freeze_non_crossattention_parameters(model, train_config['freeze_retrieval_head'], train_config['freeze_lm_head'])
         if train_config['gradient_checkpointing']:

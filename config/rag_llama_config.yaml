@@ -2,10 +2,10 @@ trainer: RAGLanguageModelTrainer
 training:
   model_type: llama
   project_name: RAG_llama3-chat-ca-rag
-  model_name_or_path: ../llama3-chat/
-  tokenizer_name_or_path: ../llama3-chat/
-  # model_name_or_path: ../llama3-chat-sft/
-  # tokenizer_name_or_path: ../llama3-chat-sft/
+  # model_name_or_path: ../llama3-chat/
+  # tokenizer_name_or_path: ../llama3-chat/
+  model_name_or_path: ../llama3-chat-sft/
+  tokenizer_name_or_path: ../llama3-chat-sft/
   project_dir: output_ca
   kg_model_name_or_path: RAG-best
   num_layers_unfrozen: -1
