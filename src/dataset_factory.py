@@ -496,7 +496,7 @@ class QADataset4ChatTest(QADataset4Chat):
         # 将datasets shard
         num_samples = len(self.datasets)
         # 1000 samples per shard
-        num_shards = max(num_samples//100, 1)
+        num_shards = max(num_samples//1000, 1)
         self.datasets = self.datasets.shard(num_shards=num_shards, index=0)
         # flantten the datasets
         self.datasets = self.datasets.flatten_indices()
