@@ -403,16 +403,16 @@ class LanguageModelTrainer:
     
     @torch.no_grad()
     def compute_hidden_states(self, batch):
-        is_training = self.model.training        
+        # is_training = self.model.training        
         model = self.model
         start_time = time()
-        if is_training:
-            model.eval()
+        # if is_training:
+            # model.eval()
         outputs = model.model(input_ids=batch['knowledge_input_ids'],
             output_hidden_states=True,
             return_dict=True,
         )
-        hidden_states = outputs.past_key_values
+        hidden_states = outputs.hidden_states
         if hidden_states is None:
             print("Hidden states is None")
             exit()
@@ -420,8 +420,8 @@ class LanguageModelTrainer:
         # hidden_states = tuple(
         #     tuple(p.detach() for p in layer) for layer in hidden_states
         # )
-        if is_training:
-            model.train()
+        # if is_training:
+            # model.train()
         return hidden_states, time() - start_time
 
 

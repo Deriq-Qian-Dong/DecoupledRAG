@@ -336,12 +336,17 @@ class LlamaAttention(nn.Module):
         encoder_hidden_states: Optional[Tuple[torch.Tensor]] = None,
         retrieval_position: Optional[torch.LongTensor] = None,
         is_cross_attention: bool = False,
+        is_kv_cache: bool = False,
         **kwargs,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         bsz, q_len, _ = hidden_states.size()
-        # encoder_hidden_states = encoder_hidden_states.reshape(bsz, -1, self.hidden_size) if encoder_hidden_states is not None else None
+        if not is_kv_cache:
+            encoder_hidden_states = encoder_hidden_states.reshape(bsz, -1, self.hidden_size) if encoder_hidden_states is not None else None
         if encoder_hidden_states is not None:
-            kv_len = encoder_hidden_states[0].size(2)
+            if not is_kv_cache:
+                kv_len = encoder_hidden_states.size(1)
+            else:
+                kv_len = encoder_hidden_states[0].size(2)
         else:
             kv_len = q_len
 
@@ -365,19 +370,25 @@ class LlamaAttention(nn.Module):
         else:
             query_states = self.q_proj(hidden_states)
             if is_cross_attention:
-                key_states = encoder_hidden_states[0]  # shape: [bsz*doc, num_key_value_heads, kv_len, head_dim]
-                value_states = encoder_hidden_states[1]
+                if is_kv_cache:
+                    key_states = encoder_hidden_states[0]  # shape: [bsz*doc, num_key_value_heads, kv_len, head_dim]
+                    value_states = encoder_hidden_states[1]
+                else:
+                    key_states = self.k_proj(encoder_hidden_states)
+                    value_states = self.v_proj(encoder_hidden_states)
             else:
                 key_states = self.k_proj(hidden_states)
                 value_states = self.v_proj(hidden_states)
 
         query_states = query_states.view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
         if is_cross_attention:
-            # key_states = key_states.view(bsz, kv_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
-            # value_states = value_states.view(bsz, kv_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
-            num_docs = key_states.size(0)//bsz
-            key_states = key_states.view(bsz, num_docs, self.num_key_value_heads, kv_len, self.head_dim).transpose(1, 2).view(bsz, self.num_key_value_heads, num_docs*kv_len, self.head_dim)
-            value_states = value_states.view(bsz, num_docs, self.num_key_value_heads, kv_len, self.head_dim).transpose(1, 2).view(bsz, self.num_key_value_heads, num_docs*kv_len, self.head_dim)
+            if not is_kv_cache:
+                key_states = key_states.view(bsz, kv_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
+                value_states = value_states.view(bsz, kv_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
+            else:
+                num_docs = key_states.size(0)//bsz
+                key_states = key_states.view(bsz, num_docs, self.num_key_value_heads, kv_len, self.head_dim).transpose(1, 2).view(bsz, self.num_key_value_heads, num_docs*kv_len, self.head_dim)
+                value_states = value_states.view(bsz, num_docs, self.num_key_value_heads, kv_len, self.head_dim).transpose(1, 2).view(bsz, self.num_key_value_heads, num_docs*kv_len, self.head_dim)
         else:
             key_states = key_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
             value_states = value_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
@@ -1889,7 +1900,7 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
                 input_ids=knowledge_input_ids,
                 output_hidden_states=True,
                 return_dict=True,
-            ).past_key_values
+            ).hidden_states
         # print(knowledge_input_ids)
         # print(knowledge_outputs)
 
