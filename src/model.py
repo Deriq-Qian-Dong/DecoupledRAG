@@ -406,7 +406,6 @@ class LanguageModelTrainer:
         is_training = self.model.training        
         model = self.model
         start_time = time()
-        # model.model.gradient_checkpointing_disable()
         if is_training:
             model.eval()
         outputs = model.model(input_ids=batch['knowledge_input_ids'],
@@ -418,12 +417,11 @@ class LanguageModelTrainer:
             print("Hidden states is None")
             exit()
         # detach the hidden states
-        hidden_states = tuple(
-            tuple(p.detach() for p in layer) for layer in hidden_states
-        )
+        # hidden_states = tuple(
+        #     tuple(p.detach() for p in layer) for layer in hidden_states
+        # )
         if is_training:
             model.train()
-        # model.model.gradient_checkpointing_enable()
         return hidden_states, time() - start_time
 
 
