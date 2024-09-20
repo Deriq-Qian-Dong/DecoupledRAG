@@ -59,20 +59,20 @@ class RAGForCausalLM(nn.Module):
         config.freeze_retrieval_head = train_config['freeze_retrieval_head']
         model = MODEL_CLASS[train_config['model_type']].from_pretrained(train_config['model_name_or_path'], config=config)          
         import os
-        if os.path.exists(os.path.join(train_config['kg_model_name_or_path'], 'adapter_config.json')):
-            model.model.load_adapter(train_config['kg_model_name_or_path'], "sa_finetune")
-            print(f"Loading adapter from {train_config['kg_model_name_or_path']}")
-        else:
-            print("Adding adapter from scratch")
-            peft_config = LoraConfig(
-                lora_alpha=32,
-                lora_dropout=0.1,
-                r=16,
-                bias='none',
-                task_type="CAUSAL_LM"
-            )
-            model.model.add_adapter(peft_config, "sa_finetune")
-        self.add_adapter = True
+        # if os.path.exists(os.path.join(train_config['kg_model_name_or_path'], 'adapter_config.json')):
+        #     model.model.load_adapter(train_config['kg_model_name_or_path'], "sa_finetune")
+        #     print(f"Loading adapter from {train_config['kg_model_name_or_path']}")
+        # else:
+        #     print("Adding adapter from scratch")
+        #     peft_config = LoraConfig(
+        #         lora_alpha=32,
+        #         lora_dropout=0.1,
+        #         r=16,
+        #         bias='none',
+        #         task_type="CAUSAL_LM"
+        #     )
+            # model.model.add_adapter(peft_config, "sa_finetune")
+        self.add_adapter = False
         freeze_non_crossattention_parameters(model, train_config['freeze_retrieval_head'], train_config['freeze_lm_head'])
         if train_config['gradient_checkpointing']:
             model.gradient_checkpointing_enable()
