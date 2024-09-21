@@ -336,7 +336,7 @@ class LlamaAttention(nn.Module):
         encoder_hidden_states: Optional[Tuple[torch.Tensor]] = None,
         retrieval_position: Optional[torch.LongTensor] = None,
         is_cross_attention: bool = False,
-        is_kv_cache: bool = False,
+        is_kv_cache: bool = True,
         **kwargs,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         bsz, q_len, _ = hidden_states.size()

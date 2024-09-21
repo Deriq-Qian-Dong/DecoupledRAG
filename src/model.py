@@ -404,7 +404,7 @@ class LanguageModelTrainer:
             output_hidden_states=True,
             return_dict=True,
         )
-        hidden_states = outputs.hidden_states
+        hidden_states = outputs.past_key_values
         if hidden_states is None:
             print("Hidden states is None")
             exit()
