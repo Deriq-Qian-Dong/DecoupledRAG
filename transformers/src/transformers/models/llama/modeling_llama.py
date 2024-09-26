@@ -333,20 +333,15 @@ class LlamaAttention(nn.Module):
         output_attentions: bool = False,
         use_cache: bool = False,
         cache_position: Optional[torch.LongTensor] = None,
-        encoder_hidden_states: Optional[Tuple[torch.Tensor]] = None,
+        encoder_hidden_states: Optional[torch.Tensor] = None,
         retrieval_position: Optional[torch.LongTensor] = None,
         is_cross_attention: bool = False,
-        is_kv_cache: bool = True,
         **kwargs,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         bsz, q_len, _ = hidden_states.size()
-        if not is_kv_cache:
-            encoder_hidden_states = encoder_hidden_states.reshape(bsz, -1, self.hidden_size) if encoder_hidden_states is not None else None
+        encoder_hidden_states = encoder_hidden_states.reshape(bsz, -1, self.hidden_size) if encoder_hidden_states is not None else None
         if encoder_hidden_states is not None:
-            if not is_kv_cache:
-                kv_len = encoder_hidden_states.size(1)
-            else:
-                kv_len = encoder_hidden_states[0].size(2)
+            kv_len = encoder_hidden_states.size(1)
         else:
             kv_len = q_len
 
@@ -370,25 +365,16 @@ class LlamaAttention(nn.Module):
         else:
             query_states = self.q_proj(hidden_states)
             if is_cross_attention:
-                if is_kv_cache:
-                    key_states = encoder_hidden_states[0]  # shape: [bsz*doc, num_key_value_heads, kv_len, head_dim]
-                    value_states = encoder_hidden_states[1]
-                else:
-                    key_states = self.k_proj(encoder_hidden_states)
-                    value_states = self.v_proj(encoder_hidden_states)
+                key_states = self.k_proj(encoder_hidden_states)
+                value_states = self.v_proj(encoder_hidden_states)
             else:
                 key_states = self.k_proj(hidden_states)
                 value_states = self.v_proj(hidden_states)
 
         query_states = query_states.view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
         if is_cross_attention:
-            if not is_kv_cache:
-                key_states = key_states.view(bsz, kv_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
-                value_states = value_states.view(bsz, kv_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
-            else:
-                num_docs = key_states.size(0)//bsz
-                key_states = key_states.view(bsz, num_docs, self.num_key_value_heads, kv_len, self.head_dim).transpose(1, 2).view(bsz, self.num_key_value_heads, num_docs*kv_len, self.head_dim)
-                value_states = value_states.view(bsz, num_docs, self.num_key_value_heads, kv_len, self.head_dim).transpose(1, 2).view(bsz, self.num_key_value_heads, num_docs*kv_len, self.head_dim)
+            key_states = key_states.view(bsz, kv_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
+            value_states = value_states.view(bsz, kv_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
         else:
             key_states = key_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
             value_states = value_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
@@ -398,7 +384,6 @@ class LlamaAttention(nn.Module):
         if not is_cross_attention:
             query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
         else:
-            kv_len = key_states.size(2)
             position_ids = torch.arange(kv_len, device=hidden_states.device).unsqueeze(0)
             ca_cos, ca_sin = self.rotary_emb(value_states, position_ids)
             query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin, ca_cos, ca_sin, is_cross_attention=True)
@@ -410,8 +395,7 @@ class LlamaAttention(nn.Module):
 
         key_states = repeat_kv(key_states, self.num_key_value_groups)
         value_states = repeat_kv(value_states, self.num_key_value_groups)
-        # key_states shape: [bsz*doc, num_key_value_heads*self.num_key_value_groups, kv_len, head_dim]
-        # query_states shape: [bsz, num_heads, q_len, head_dim]
+
         attn_weights = torch.matmul(query_states, key_states.transpose(2, 3)) / math.sqrt(self.head_dim)
         # The shape of attn_weights is [bsz, num_heads, q_len, kv_len]
 
@@ -433,11 +417,6 @@ class LlamaAttention(nn.Module):
         #     mask_value = torch.full([], mask_value, dtype=attn_weights.dtype, device=attn_weights.device)
         #     attn_weights = torch.where(causal_mask_for_cross_attn, attn_weights.to(attn_weights.dtype), mask_value)
         attn_output = torch.matmul(attn_weights, value_states)
-        # if is_cross_attention:
-        #     # mean pooling
-        #     num_docs = attn_output.size(0)//bsz
-        #     attn_output = attn_output.view(bsz, num_docs, self.num_heads, q_len, self.head_dim)
-        #     attn_output = attn_output.mean(dim=1)
 
         if attn_output.size() != (bsz, self.num_heads, q_len, self.head_dim):
             raise ValueError(
@@ -751,13 +730,14 @@ LLAMA_ATTENTION_CLASSES = {
 }
 
 class LinearFusion(nn.Module):
-    def __init__(self, hidden_dim, rank=16, alpha=32, dropout_prob=0.0):
+    def __init__(self, hidden_dim, rank=16, alpha=32, dropout_prob=0.2):
         super(LinearFusion, self).__init__()
         # 初始化权重矩阵
         # self.W_C = nn.Parameter(torch.eye(hidden_dim, hidden_dim))
         self.W_A = nn.Parameter(torch.randn(hidden_dim, rank) * 0.01)  # 高斯初始化的矩阵
         self.W_B = nn.Parameter(torch.zeros(rank, hidden_dim))  # 零矩阵
-        # self.W_AB = nn.Parameter(torch.matmul(self.W_A, self.W_B))
+        # torch.nn.init.kaiming_uniform_(self.W_A, a=math.sqrt(5))
+        # torch.nn.init.zeros_(self.W_B)
         self.dropout_prob = dropout_prob
         self.rank = rank
         self.alpha = alpha
@@ -771,12 +751,8 @@ class LinearFusion(nn.Module):
         B = B.to(self.W_A.dtype)
         # Apply dropout
         B = nn.functional.dropout(B, p=self.dropout_prob, training=self.training)
-        # if self.training:
-        knowledge = torch.matmul(torch.matmul(B, self.W_A), self.W_B)
-        # else:
-            # knowledge = torch.matmul(B, self.W_AB)
         # 线性变换
-        C = A + self.alpha * knowledge
+        C = A + self.alpha * torch.matmul(torch.matmul(B, self.W_A), self.W_B)
         
         # 将结果转换回输入的数据类型
         C = C.to(dtype)
@@ -813,7 +789,7 @@ class LlamaDecoderLayer(nn.Module):
         output_attentions: Optional[bool] = False,
         use_cache: Optional[bool] = False,
         cache_position: Optional[torch.LongTensor] = None,
-        encoder_hidden_states: Optional[Tuple[torch.Tensor]] = None,
+        encoder_hidden_states: Optional[torch.Tensor] = None,
         retrieval_position: Optional[torch.LongTensor] = None,
         **kwargs,
     ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
@@ -861,7 +837,7 @@ class LlamaDecoderLayer(nn.Module):
 
         if self.add_cross_attention and encoder_hidden_states is not None:
             residual = hidden_states  # output of self-attention
-            # encoder_hidden_states = self.input_layernorm(encoder_hidden_states)
+            encoder_hidden_states = self.input_layernorm(encoder_hidden_states)
             hidden_states, _, _ = self.self_attn(
                 hidden_states=hidden_states,
                 attention_mask=attention_mask,
@@ -1077,9 +1053,9 @@ class LlamaModel(LlamaPreTrainedModel):
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
         cache_position: Optional[torch.LongTensor] = None,
-        encoder_hidden_states: Optional[Tuple[torch.Tensor]] = None,
+        encoder_hidden_states: Optional[torch.Tensor] = None,
         retrieval_position: Optional[torch.LongTensor] = None,
-        knowledge_outputs: Optional[Tuple[Tuple[torch.Tensor]]] = None,
+        knowledge_outputs: Optional[Tuple[torch.Tensor]] = None,
     ) -> Union[Tuple, BaseModelOutputWithPast]:
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
@@ -1861,7 +1837,7 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
         p_reps: Optional[torch.Tensor] = None,
         retrieval_position: Optional[torch.LongTensor] = None,
         knowledge_input_ids: Optional[torch.LongTensor] = None,
-        knowledge_outputs: Optional[Tuple[Tuple[torch.FloatTensor]]] = None,
+        knowledge_outputs: torch.Tensor = None,
     ) -> Union[Tuple, CausalLMOutputWithPast]:
         r"""
         Args:
@@ -1895,12 +1871,13 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         # self.model.set_adapter("knowledge_injector")
-        if knowledge_input_ids is not None and knowledge_outputs is None:
+        if knowledge_input_ids is not None:
             knowledge_outputs = self.model(
                 input_ids=knowledge_input_ids,
                 output_hidden_states=True,
                 return_dict=True,
             ).hidden_states
+        
         # print(knowledge_input_ids)
         # print(knowledge_outputs)
 
