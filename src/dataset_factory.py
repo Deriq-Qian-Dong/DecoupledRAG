@@ -393,7 +393,9 @@ class QADataset(Dataset):
 class QADataset4Chat(Dataset):
     def __init__(self, tokenizer, args):
         self.args = args
+        self.inference_with_explict_docs_for_test = args['inference_with_explict_docs_for_test']
         self.number_of_docs = args['number_of_docs']
+        self.knowledge_max_seq_len = args['knowledge_max_seq_len']
         print('number_of_docs:', self.number_of_docs, 'path:', args['data_name_or_path'])
         self.tokenizer = tokenizer
         self.setup_datasets()
@@ -408,11 +410,13 @@ class QADataset4Chat(Dataset):
         # # flantten the datasets
         # self.datasets = self.datasets.flatten_indices()
         self.num_samples = len(self.datasets)
-        input_ids_lengths = self.datasets['input_ids_length']
-        input_ids_lengths = [min(self.args['max_seq_len'], length) for length in input_ids_lengths]
-        self.total_tokens = sum(input_ids_lengths)
+        # input_ids_lengths = self.datasets['input_ids_length']
+        # input_ids_lengths = [min(self.args['max_seq_len'], length) for length in input_ids_lengths]
+        # self.total_tokens = sum(input_ids_lengths)
     
     def __getitem__(self, idx):
+        self.tokenizer.padding_side = 'left'
+        self.tokenizer.truncation_side = 'left'
         sample = self.datasets[idx]
         if 'query' in sample:
             query = sample['query']
@@ -423,15 +427,22 @@ class QADataset4Chat(Dataset):
         else:
             answer = sample['answer']
         # hits = self.searcher.search(query, 5)
-        retrieved_docs = self.corpus[sample['neighbors']]['text']
-        # references = "references:\n"
-        # for doc in retrieved_docs:
-            # references += doc+'\n'
-        query = query+'\nThe answer MUST in ONE OR FEW WORDS.'
+        retrieved_docs = self.corpus[sample['neighbors']]['text'][:self.number_of_docs]
+        neighbor_batch_input_ids = self.tokenizer(retrieved_docs,
+                                max_length=self.knowledge_max_seq_len,
+                                padding=True,
+                                truncation=True).input_ids
+        retrieved_docs = [self.tokenizer.decode(input_ids, skip_special_tokens=True) for input_ids in neighbor_batch_input_ids]
+        references = "References:\n"
+        for doc in retrieved_docs:
+            references += doc+'\n'
+        if not self.inference_with_explict_docs_for_test:
+            references = ''
+        query = references + query + '\nThe answer MUST in ONE OR FEW WORDS.'
         chat = [{'role': 'user', 'content': query}, {'role': 'assistant', 'content': answer}]
         chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=False)
         neighbor_embeddings = None
-        return chat, neighbor_embeddings, retrieved_docs, sample['input_ids_length']
+        return chat, neighbor_embeddings, retrieved_docs, 0
     
     def __len__(self):
         return self.num_samples
@@ -451,13 +462,15 @@ class QADataset4Chat(Dataset):
         for docs in retrieved_docs:
             all_retrieved_docs += docs[:self.number_of_docs]
         neighbor_batch = self.tokenizer(all_retrieved_docs,
-                                max_length=self.args['max_seq_len'],
+                                max_length=self.knowledge_max_seq_len,
                                 padding=True,
                                 truncation=True,
                                 return_tensors="pt")
         batch["labels"] = batch['input_ids']
         # batch['neighbor_embeddings'] = torch.tensor(neighbor_embeddings)
         batch['knowledge_input_ids'] = neighbor_batch['input_ids']
+        if self.inference_with_explict_docs_for_test:
+            batch['knowledge_input_ids'] = None
         return batch
 
     def filter_empty(self, example):
@@ -476,19 +489,21 @@ class QADataset4Chat(Dataset):
 @register_class
 class QADataset4ChatTest(QADataset4Chat):
     def __init__(self, tokenizer, args):
-        self.inference_with_explict_docs_for_test = args['inference_with_explict_docs_for_test']
         super().__init__(tokenizer, args)
 
     def setup_datasets(self):
         self.datasets = load_from_disk(self.args['data_name_or_path'])
         # 将datasets shard
-        self.datasets = self.datasets.shard(num_shards=100, index=0)
+        num_samples = len(self.datasets)
+        # 1000 samples per shard
+        num_shards = max(num_samples//100, 1)
+        self.datasets = self.datasets.shard(num_shards=num_shards, index=0)
         # flantten the datasets
         self.datasets = self.datasets.flatten_indices()
         self.num_samples = len(self.datasets)
-        input_ids_lengths = self.datasets['input_ids_length']
-        input_ids_lengths = [min(self.args['max_seq_len'], length) for length in input_ids_lengths]
-        self.total_tokens = sum(input_ids_lengths)
+        # input_ids_lengths = self.datasets['input_ids_length']
+        # input_ids_lengths = [min(self.args['max_seq_len'], length) for length in input_ids_lengths]
+        # self.total_tokens = sum(input_ids_lengths)
     
     def __getitem__(self, idx):
         sample = self.datasets[idx]
@@ -497,11 +512,16 @@ class QADataset4ChatTest(QADataset4Chat):
         else:
             query = sample['question']
         if 'answers' in sample:
-            answer = sample['answers'][0]
+            answers = sample['answers']
         else:
-            answer = sample['answer']
+            answers = [sample['answer']]
         # hits = self.searcher.search(query, 5)
         retrieved_docs = self.corpus[sample['neighbors']]['text'][:self.number_of_docs]
+        neighbor_batch_input_ids = self.tokenizer(retrieved_docs,
+                                max_length=self.knowledge_max_seq_len,
+                                padding=True,
+                                truncation=True).input_ids
+        retrieved_docs = [self.tokenizer.decode(input_ids, skip_special_tokens=True) for input_ids in neighbor_batch_input_ids]
         references = "References:\n"
         for doc in retrieved_docs:
             references += doc+'\n'
@@ -511,7 +531,7 @@ class QADataset4ChatTest(QADataset4Chat):
         chat = [{'role': 'user', 'content': query}]
         chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
         neighbor_embeddings = None
-        return chat, answer, retrieved_docs, neighbor_embeddings, sample['input_ids_length']
+        return chat, answers, retrieved_docs, neighbor_embeddings, 0
     
     def _collate_fn(self, elems):
         texts, answers, retrieved_docs, neighbor_embeddings, _ = zip(*elems)
@@ -527,23 +547,18 @@ class QADataset4ChatTest(QADataset4Chat):
         for docs in retrieved_docs:
             all_retrieved_docs += docs
         neighbor_batch = self.tokenizer(all_retrieved_docs,
-                                max_length=self.args['max_seq_len'],
+                                max_length=self.knowledge_max_seq_len,
                                 padding=True,
                                 truncation=True,
                                 return_tensors="pt")
         batch['knowledge_input_ids'] = neighbor_batch['input_ids']
         if self.inference_with_explict_docs_for_test:
             batch['knowledge_input_ids'] = None
-        batch['answers'] = self.tokenizer(answers,
-                                max_length=self.args['max_seq_len'],
-                                padding=True,
-                                truncation=True,
-                                return_tensors="pt")['input_ids']
+        batch['answers'] = answers
         return batch
 
     def set_epoch(self, epoch):
         pass
-
 
 @register_class
 class QADataset4Contrastive(Dataset):

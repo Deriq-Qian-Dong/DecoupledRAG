@@ -1,12 +1,13 @@
 trainer: RAGLanguageModelTrainer
 training:
   model_type: llama
-  project_name: RAG_llama3-chat
-  model_name_or_path: ../llama3-chat
-  tokenizer_name_or_path: ../llama3-chat
-  # model_name_or_path: ../llama3_chat_qa_sft/
-  # tokenizer_name_or_path: ../llama3_chat_qa_sft/
-  kg_model_name_or_path: ./output/RAG-best
+  project_name: RAG_llama3-chat-ca-rag
+  model_name_or_path: ../llama3-chat/
+  tokenizer_name_or_path: ../llama3-chat/
+  # model_name_or_path: ../llama3-chat-sft/
+  # tokenizer_name_or_path: ../llama3-chat-sft/
+  project_dir: output_ca
+  kg_model_name_or_path: RAG-best
   num_layers_unfrozen: -1
   gradient_checkpointing: true
   optimizer: 
@@ -22,11 +23,10 @@ training:
       total_iters: 10
   num_epochs: 100000
   log_with: tensorboard
-  project_dir: output/
   negatives_in_device: true
   negatives_x_device: true
   predict_from_last: 10000
-  eval_step: 100
+  eval_step: 1000
   start_from: 0
   skip_steps: 0
   cross_attention_activation_function: silu
@@ -34,100 +34,73 @@ training:
   kb_path: ../data_of_ReGPT/En-Wiki/phrases_embeddings.npy
   freeze_retrieval_head: true
   freeze_lm_head: true
+  metrics:
+    - f1
+    - accuracy
+  target_metric: accuracy
 
 dataset:
   number_of_docs: 20
   inference_with_explict_docs_for_test: false
   train:
-    # nq:
-    #   data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/nq/sorted_datasets_train
-    #   dataset_name: QADataset4Chat
-    #   batch_size: 1
-    #   num_epochs: 805
-    #   max_seq_len: 64
-    #   dynamic_sampler: false
-    #   corpus: ../data_of_ReGPT/Wiki-corpus/train
-    #   max_tokens: 4096
-    # hotpotqa_contrastive:
-    #   data_name_or_path: ../data_of_ReGPT/QA_datasets_contrastive_with_background_knowledge/hotpotqa/sorted_datasets_train/
-    #   dataset_name: QADataset4Contrastive
-    #   batch_size: 1
-    #   num_epochs: 805
-    #   max_seq_len: 256
-    #   dynamic_sampler: false
-    #   corpus: ../data_of_ReGPT/Wiki-corpus/train
-    #   max_tokens: 4096
-    # 2WikiMultihopQA_contrastive:
-    #   data_name_or_path: ../data_of_ReGPT/QA_datasets_contrastive_with_background_knowledge/2WikiMultihopQA/sorted_datasets_train/
-    #   dataset_name: QADataset4Contrastive
-    #   batch_size: 1
-    #   num_epochs: 805
-    #   max_seq_len: 256
-    #   dynamic_sampler: false
-    #   corpus: ../data_of_ReGPT/Wiki-corpus/train
-    #   max_tokens: 4096
-    # hotpotqa:
-    #   data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/hotpotqa/sorted_datasets_train/
-    #   dataset_name: QADataset4Chat
-    #   batch_size: 1
-    #   num_epochs: 805
-    #   max_seq_len: 64
-    #   dynamic_sampler: false
-    #   corpus: ../data_of_ReGPT/Wiki-corpus/train
-    #   max_tokens: 4096
-    2WikiMultihopQA:
-      data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/2WikiMultihopQA/sorted_datasets_train/
+    nq:
+      data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/nq/sorted_datasets_train
       dataset_name: QADataset4Chat
-      batch_size: 16
+      batch_size: 2
       num_epochs: 805
       max_seq_len: 64
+      knowledge_max_seq_len: 256
       dynamic_sampler: false
       corpus: ../data_of_ReGPT/Wiki-corpus/train
       max_tokens: 4096
-    # corpus_dataset:
-    #   data_name_or_path: ../data/data_of_ReGPT/Wiki-corpus/sorted_datasets_train/data-{:05d}-of-00805.arrow
-    #   dataset_name: RAGPretrainFromAFSDataset
-    #   batch_size: 24
-    #   num_epochs: 805
-    #   max_seq_len: 512
-    #   dynamic_sampler: true
-    #   corpus: ../data_of_ReGPT/Wiki-corpus/train
-    #   max_tokens: 4096
-    #   start_from: 23
+    complex_web_questions:
+      data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/complex_web_questions/train/
+      dataset_name: QADataset4Chat
+      batch_size: 2
+      num_epochs: 805
+      max_seq_len: 64
+      knowledge_max_seq_len: 256
+      dynamic_sampler: false
+      corpus: ../data_of_ReGPT/Wiki-corpus/train
+      max_tokens: 4096
+    2WikiMultihopQA:
+      data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/2WikiMultihopQA/sorted_datasets_train/
+      dataset_name: QADataset4Chat
+      batch_size: 2
+      num_epochs: 805
+      max_seq_len: 64
+      knowledge_max_seq_len: 256
+      dynamic_sampler: false
+      corpus: ../data_of_ReGPT/Wiki-corpus/train
+      max_tokens: 4096
   test:
-    # nq:
-    #   dataset_name: QADataset4ChatTest
-    #   batch_size: 4
-    #   data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/nq/sorted_datasets_test
-    #   max_seq_len: 64
-    #   max_new_tokens: 32
-    #   index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
-    #   corpus: ../data_of_ReGPT/Wiki-corpus/train/
-    #   dynamic_sampler: false
-    # msmarco_qa:
-    #   dataset_name: QADataset4ChatTest
-    #   batch_size: 4
-    #   data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/msmarco_qa/sorted_datasets_test
-    #   max_seq_len: 64
-    #   max_new_tokens: 32
-    #   index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
-    #   corpus: ../data_of_ReGPT/Wiki-corpus/train/
-    #   dynamic_sampler: false
-    hotpotqa:
+    complex_web_questions:
       dataset_name: QADataset4ChatTest
-      batch_size: 4
-      data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/hotpotqa/sorted_datasets_validation/
+      batch_size: 2
+      data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/complex_web_questions/validation/
+      max_seq_len: 64
+      knowledge_max_seq_len: 256
+      max_new_tokens: 32
+      index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
+      corpus: ../data_of_ReGPT/Wiki-corpus/train/
+      dynamic_sampler: false
+    nq:
+      dataset_name: QADataset4ChatTest
+      batch_size: 2
+      data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/nq/sorted_datasets_test
       max_seq_len: 64
       max_new_tokens: 32
+      knowledge_max_seq_len: 256
       index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
       corpus: ../data_of_ReGPT/Wiki-corpus/train/
       dynamic_sampler: false
     2WikiMultihopQA:
       dataset_name: QADataset4ChatTest
-      batch_size: 4
+      batch_size: 2
       data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/2WikiMultihopQA/sorted_datasets_dev/
       max_seq_len: 64
       max_new_tokens: 32
+      knowledge_max_seq_len: 256
       index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
       corpus: ../data_of_ReGPT/Wiki-corpus/train/
       dynamic_sampler: false

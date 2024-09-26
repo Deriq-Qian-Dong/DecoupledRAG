@@ -1522,7 +1522,7 @@ class GenerationMixin:
 
         # 7. determine generation mode
         generation_mode = generation_config.get_generation_mode(assistant_model)
-        print("generation_mode", generation_mode)
+        # print("generation_mode", generation_mode)
 
         if streamer is not None and (generation_config.num_beams > 1):
             raise ValueError(
