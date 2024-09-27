@@ -247,7 +247,7 @@ class LanguageModelTrainer:
         self.setup()
         self.best_perplexity = 1e10
         self.sampler = None
-        self.best_accuracy = 0.0
+        self.best_metric = 0.0
 
     def run(self):
         # self.test()

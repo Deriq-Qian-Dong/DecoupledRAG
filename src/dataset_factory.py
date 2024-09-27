@@ -428,13 +428,13 @@ class QADataset4Chat(Dataset):
         chat = [{'role': 'user', 'content': query}, {'role': 'assistant', 'content': answer}]
         chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=False)
         neighbor_embeddings = None
-        return chat, neighbor_embeddings, retrieved_docs, sample['input_ids_length']
+        return chat, neighbor_embeddings, retrieved_docs
     
     def __len__(self):
         return self.num_samples
     
     def _collate_fn(self, elems):
-        texts, neighbor_embeddings, retrieved_docs, _ = zip(*elems)
+        texts, neighbor_embeddings, retrieved_docs = zip(*elems)
         self.tokenizer.padding_side = 'left'
         self.tokenizer.truncation_side = 'left'
         batch = self.tokenizer(texts,
@@ -506,10 +506,10 @@ class QADataset4ChatTest(QADataset4Chat):
         chat = [{'role': 'user', 'content': query}]
         chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
         neighbor_embeddings = None
-        return chat, answers, retrieved_docs, neighbor_embeddings, sample['input_ids_length']
+        return chat, answers, retrieved_docs, neighbor_embeddings
     
     def _collate_fn(self, elems):
-        texts, answers, retrieved_docs, neighbor_embeddings, _ = zip(*elems)
+        texts, answers, retrieved_docs, neighbor_embeddings = zip(*elems)
         self.tokenizer.padding_side = 'left'
         self.tokenizer.truncation_side = 'left'
         batch = self.tokenizer(texts,
