@@ -479,7 +479,11 @@ class QADataset4ChatTest(QADataset4Chat):
     def setup_datasets(self):
         self.datasets = load_from_disk(self.args['data_name_or_path'])
         # 将datasets shard
-        self.datasets = self.datasets.shard(num_shards=1000, index=0)
+        num_samples = len(self.datasets)
+        # 1000 samples per shard
+        num_shards = max(num_samples//1000, 1)
+        # 将datasets shard
+        self.datasets = self.datasets.shard(num_shards=num_shards, index=0)
         # flantten the datasets
         self.datasets = self.datasets.flatten_indices()
         self.num_samples = len(self.datasets)
