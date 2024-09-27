@@ -235,6 +235,7 @@ class RAGForCausalLM(nn.Module):
 @register_class
 class LanguageModelTrainer:
     def __init__(self, config):
+        config['training']['kg_model_name_or_path'] = os.path.join(config['training']['project_dir'], config['training']['kg_model_name_or_path'])
         self.config = config
         generation_kwargs = config['generation_kwargs']
         self.config['training'].update(generation_kwargs)
