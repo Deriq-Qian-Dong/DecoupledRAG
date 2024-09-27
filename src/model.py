@@ -492,22 +492,66 @@ class LanguageModelTrainer:
         model = self.model
         outputs = model.module.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False)
         return outputs
+    
+    def _compute_f1(self, prediction, answer, tokenizer):
+        # Tokenize the prediction and answer
+        pred_tokens = tokenizer.tokenize(prediction)
+        answer_tokens = tokenizer.tokenize(answer)
 
+        # Calculate true positives, false positives, and false negatives
+        common_tokens = set(pred_tokens) & set(answer_tokens)
+        true_positive = len(common_tokens)
+        false_positive = len(set(pred_tokens) - common_tokens)
+        false_negative = len(set(answer_tokens) - common_tokens)
+
+        # Calculate precision, recall, and F1 score
+        precision = true_positive / (true_positive + false_positive) if (true_positive + false_positive) > 0 else 0.0
+        recall = true_positive / (true_positive + false_negative) if (true_positive + false_negative) > 0 else 0.0
+        f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
+
+        return f1
+    
+    def compute_f1(self, prediction, answers, tokenizer):
+        best_f1 = 0.0
+        for answer in answers:
+            best_f1 = max(self._compute_f1(prediction, answer, tokenizer), best_f1)
+        return best_f1
+    
+    def compute_accuracy(self, prediction, answers, tokenizer):
+        for answer in answers:
+            if answer == prediction:
+                return 1.0
+        return 0.0
+ 
     def test(self):
         model, tokenizer, optimizer, scheduler, test_dataloaders, accelerator, iter_count = self.model, self.tokenizer, self.optimizer, self.scheduler, self.test_dataloaders, self.accelerator, self.iter_count
         model.eval()
-        accuracy_list = []
+        
+        # Define the available metrics and corresponding functions
+        metrics_function_dict = {
+            'f1': self.compute_f1,
+            'accuracy': self.compute_accuracy,
+        }
+
+        # Determine which metrics to calculate from the config
+        metrics = self.config['training']['metrics']  # List of metrics to calculate, e.g., ['accuracy', 'f1']
+        target_metric = self.config['training']['target_metric']  # Used to save the best checkpoint, either 'accuracy' or 'f1'
+        
+        metrics_results_dict = {metric: [] for metric in metrics}
+        metrics_dict = {metric: {} for metric in metrics}
+
         with torch.no_grad():
-            for number_of_docs in [1,5,10,20]:
+            for number_of_docs in [20]:
             # for _ in range(1):
                 self.setup_test_dataloader(number_of_docs=number_of_docs)
                 test_dataloaders = self.test_dataloaders
                 results = []
                 for key in test_dataloaders:
                     number_of_docs = test_dataloaders[key].dataset.number_of_docs
-                    accuracy = 0.0
+                    # Prepare to accumulate metrics for this dataset
+                    metrics_accumulated = {metric: 0.0 for metric in metrics}
                     total_sample_count = 0
-                    print(f"Process {accelerator.process_index} | Dataset: {key} | Number of steps: {len(test_dataloaders[key])}")
+                    accelerator.print(f"Dataset: {key} | Number of steps: {len(test_dataloaders[key])}")
                     test_dataloader = test_dataloaders[key]
                     for batch in tqdm(test_dataloader, desc=f"Evaluation of step {iter_count}", disable=not accelerator.is_main_process):
                         batch = self.pop_unused_keys(batch)
@@ -515,37 +559,54 @@ class LanguageModelTrainer:
                         answers = batch.pop('answers')
                         # outputs = model.module.model.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False)
                         outputs = self.generate(batch, key)
-                        answers = tokenizer.batch_decode(answers, skip_special_tokens=True)
                         outputs = outputs[:, batch['input_ids'].size(1):]
                         outputs = tokenizer.batch_decode(outputs, skip_special_tokens=True)
                         inputs = tokenizer.batch_decode(batch['input_ids'], skip_special_tokens=True)
-                        for i in range(len(answers)):
+                        # Calculate metrics for each sample
+                        for i in range(len(outputs)):
                             total_sample_count += 1
-                            accelerator.print({"test/answers": answers[i], "test/outputs": outputs[i], "test/inputs": inputs[i]})
-                            if answers[i]==outputs[i]:
-                                accuracy += 1
-                    accuracy /= total_sample_count
-                    accuracy = torch.tensor(accuracy).to(accelerator.device)
+                            # print(f"Answer: {answers[i]} | Prediction: {outputs[i]} | Input: {inputs[i]}")
+                            for metric in metrics:
+                                metric_function = metrics_function_dict[metric]
+                                metrics_accumulated[metric] += metric_function(outputs[i], answers[i], tokenizer)
+                    
                     accelerator.wait_for_everyone()
-                    gathered_accuracy = accelerator.gather(accuracy)
-                    accuracy = gathered_accuracy.mean().item()
-                    accelerator.print(f"Step {iter_count} | Dataset: {key} | Accuracy: {accuracy:.4f}")
-                    accelerator.log({f"test/{key}/{number_of_docs}/accuracy": accuracy}, step=iter_count)
-                    results.append(float(accuracy))
-                mean_accuracy = np.mean(results)
-                accelerator.log({f"test/mean_accuracy_{number_of_docs}": mean_accuracy}, step=iter_count)
-                print(f"\033[31mStep {iter_count} | number_of_docs: {number_of_docs} | Mean Accuracy: {mean_accuracy:.4f}\033[0m")
-                accuracy_list.append(mean_accuracy)
-            mean_accuracy = np.mean(accuracy_list)
-            print(f"\033[31mStep {iter_count} | Mean Accuracy: {mean_accuracy:.4f}\033[0m")
-            accelerator.log({f"test/mean_accuracy": mean_accuracy}, step=iter_count)
+                    # Normalize metrics by total sample count
+                    for metric in metrics:
+                        metrics_accumulated[metric] /= total_sample_count
+                        metrics_accumulated[metric] = torch.tensor(metrics_accumulated[metric]).to(accelerator.device)
+
+                        gathered_metric = accelerator.gather(metrics_accumulated[metric])
+                        metric_result = gathered_metric.mean().item()
+                        metrics_results_dict[metric].append(float(metric_result))
+
+                        # Log the metric results
+                        accelerator.log({f"test/{key}/{number_of_docs}/{metric}": metric_result}, step=iter_count)
+                        accelerator.print(f"Step {iter_count} | Dataset: {key} | {metric.capitalize()}: {metric_result:.4f}")
+
+
+                # Log overall mean for each metric
+                for metric in metrics:
+                    mean_metric = np.mean(metrics_results_dict[metric])
+                    accelerator.log({f"test/mean_{metric}_{number_of_docs}": mean_metric}, step=iter_count)
+                    metrics_dict[metric][number_of_docs] = mean_metric
+
+            # Decide which metric to use for checkpoint saving based on target_metric
+            best_metric = metrics_dict[target_metric][20]
+            accelerator.print(f"\033[31mStep {iter_count} | Best {target_metric.capitalize()}: {best_metric:.4f}\033[0m")
+            accelerator.log({f"test/target_metric_{target_metric}": best_metric}, step=iter_count)
+
+            # Save best model checkpoint based on the target metric
             if accelerator.is_main_process:
-                if mean_accuracy>self.best_accuracy:
-                    self.best_accuracy = mean_accuracy
-                    accelerator.print(f"New best accuracy: {mean_accuracy:.4f}")
-                    accelerator.unwrap_model(model).save_pretrained(f"output/RAG-best/")
-                accelerator.unwrap_model(model).save_pretrained(f"output/RAG-new/")
+                if best_metric > self.best_metric:
+                    self.best_metric = best_metric
+                    accelerator.print(f"New best {target_metric.capitalize()}: {best_metric:.4f}")
+                    accelerator.unwrap_model(model).save_pretrained(f"{self.config['training']['project_dir']}/RAG-best/")
+                # Save the latest model checkpoint regardless of performance
+                accelerator.unwrap_model(model).save_pretrained(f"{self.config['training']['project_dir']}/RAG-new/")
+        
         model.train()
+                    
 
 @register_class
 class ReGPTLanguageModelTrainer(LanguageModelTrainer):
