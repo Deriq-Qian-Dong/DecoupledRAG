@@ -408,9 +408,6 @@ class QADataset4Chat(Dataset):
         # # flantten the datasets
         # self.datasets = self.datasets.flatten_indices()
         self.num_samples = len(self.datasets)
-        input_ids_lengths = self.datasets['input_ids_length']
-        input_ids_lengths = [min(self.args['max_seq_len'], length) for length in input_ids_lengths]
-        self.total_tokens = sum(input_ids_lengths)
     
     def __getitem__(self, idx):
         sample = self.datasets[idx]
@@ -486,9 +483,7 @@ class QADataset4ChatTest(QADataset4Chat):
         # flantten the datasets
         self.datasets = self.datasets.flatten_indices()
         self.num_samples = len(self.datasets)
-        input_ids_lengths = self.datasets['input_ids_length']
-        input_ids_lengths = [min(self.args['max_seq_len'], length) for length in input_ids_lengths]
-        self.total_tokens = sum(input_ids_lengths)
+
     
     def __getitem__(self, idx):
         sample = self.datasets[idx]
