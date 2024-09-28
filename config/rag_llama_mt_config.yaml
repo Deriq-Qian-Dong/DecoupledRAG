@@ -45,7 +45,7 @@ dataset:
     wizard_of_wikipedia:
       data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/wizard_of_wikipedia/train_flatten
       dataset_name: MultiTurnQADataset4Chat
-      batch_size: 2
+      batch_size: 8
       num_epochs: 805
       max_seq_len: 512
       knowledge_max_seq_len: 64
@@ -56,7 +56,7 @@ dataset:
   test:
     wizard_of_wikipedia:
       dataset_name: MultiTurnQADataset4ChatTest
-      batch_size: 2
+      batch_size: 8
       data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/wizard_of_wikipedia/test_flatten
       max_seq_len: 512
       knowledge_max_seq_len: 64
