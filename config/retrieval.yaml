@@ -22,8 +22,12 @@ warm_start_from: ''
 top_k: 50
 corpus_embeddings: ../data_of_ReGPT/Wiki-corpus/phrases_embeddings.npy
 dev_querys: 
-  - ../data_of_ReGPT/new_qa_datasets/wizard_of_wikipedia/train_flatten/
-  - ../data_of_ReGPT/new_qa_datasets/wizard_of_wikipedia/test_flatten/
+  - ../data_of_ReGPT/new_qa_datasets/zs/train
+  - ../data_of_ReGPT/new_qa_datasets/zs/test
+  - ../data_of_ReGPT/new_qa_datasets/trex/train
+  - ../data_of_ReGPT/new_qa_datasets/trex/test
+  # - ../data_of_ReGPT/new_qa_datasets/wizard_of_wikipedia/train_flatten/
+  # - ../data_of_ReGPT/new_qa_datasets/wizard_of_wikipedia/test_flatten/
   # - ../data_of_ReGPT/QA_datasets_wTop10/msmarco_qa/sorted_datasets_train/
   # - ../data_of_ReGPT/QA_datasets_wTop10/msmarco_qa/sorted_datasets_test/
   # - ../data_of_ReGPT/QA_datasets_wTop10/eli5/sorted_datasets_train
@@ -35,8 +39,12 @@ dev_querys:
   # - ../data_of_ReGPT/QA_datasets_woEmb/nq/sorted_datasets_train/
   # - ../data_of_ReGPT/QA_datasets_woEmb/nq/sorted_datasets_test/
 corpus_names: 
-  - wizard_of_wikipedia-train
-  - wizard_of_wikipedia-test
+  - zs-train
+  - zs-test
+  - trex-train
+  - trex-test
+  # - wizard_of_wikipedia-train
+  # - wizard_of_wikipedia-test
   # - msmarco_qa-train
   # - msmarco_qa-test
   # - eli5-train
