@@ -610,7 +610,7 @@ class MultiTurnQADataset4ChatTest(QADataset4ChatTest):
         answer = answers[-1]
         chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
         neighbor_embeddings = None
-        return chat, answer, retrieved_docs, neighbor_embeddings
+        return chat, [answer], retrieved_docs, neighbor_embeddings
 
 
 @register_class
