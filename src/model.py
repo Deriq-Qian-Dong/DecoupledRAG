@@ -566,7 +566,7 @@ class LanguageModelTrainer:
                         # Calculate metrics for each sample
                         for i in range(len(outputs)):
                             total_sample_count += 1
-                            # print(f"Answer: {answers[i]} | Prediction: {outputs[i]} | Input: {inputs[i]}")
+                            print(f"Answer: {answers[i]} | Prediction: {outputs[i]} | Input: {inputs[i]}")
                             for metric in metrics:
                                 metric_function = metrics_function_dict[metric]
                                 metrics_accumulated[metric] += metric_function(outputs[i], answers[i], tokenizer)
