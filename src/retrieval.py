@@ -93,7 +93,7 @@ def validate_multi_gpu(model, query_loader, passage_loader, epoch, args, writer,
             para_embs = corpus_embeddings[local_rank*shard_cnt:]
         else:
             para_embs = corpus_embeddings[local_rank*shard_cnt:(local_rank+1)*shard_cnt]
-        engine = torch.from_numpy(para_embs).cuda()
+        engine = torch.from_numpy(para_embs).half().cuda()
     qid_list = range(len(load_from_disk(args.dev_query)))
     qid_list = [str(qid) for qid in qid_list]
     search(engine, q_output_file_name, qid_list, f"{args.model_out_dir}/res.top%d.part%d.step%d.%s"%(top_k, local_rank, epoch, corpus_name), top_k=top_k, use_faiss=args.use_faiss)
