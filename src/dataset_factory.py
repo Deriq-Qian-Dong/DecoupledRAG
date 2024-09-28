@@ -448,7 +448,7 @@ class QADataset4Chat(Dataset):
         for docs in retrieved_docs:
             all_retrieved_docs += docs[:self.number_of_docs]
         neighbor_batch = self.tokenizer(all_retrieved_docs,
-                                max_length=self.args['max_seq_len'],
+                                max_length=self.args['knowledge_max_seq_len'],
                                 padding=True,
                                 truncation=True,
                                 return_tensors="pt")
@@ -526,7 +526,7 @@ class QADataset4ChatTest(QADataset4Chat):
         for docs in retrieved_docs:
             all_retrieved_docs += docs
         neighbor_batch = self.tokenizer(all_retrieved_docs,
-                                max_length=self.args['max_seq_len'],
+                                max_length=self.args['knowledge_max_seq_len'],
                                 padding=True,
                                 truncation=True,
                                 return_tensors="pt")
@@ -538,6 +538,67 @@ class QADataset4ChatTest(QADataset4Chat):
 
     def set_epoch(self, epoch):
         pass
+
+@register_class
+class MultiTurnQADataset4Chat(QADataset4Chat):
+    def __init__(self, tokenizer, args):
+        super().__init__(tokenizer, args)
+    
+    def __getitem__(self, idx):
+        sample = self.datasets[idx]
+        if 'query' in sample:
+            queries = sample['query']
+        else:
+            queries = sample['question']
+        if 'answers' in sample:
+            answers = sample['answers']
+        else:
+            answers = sample['answer']
+        # hits = self.searcher.search(query, 5)
+        retrieved_docs = self.corpus[sample['neighbors']]['text']
+        # references = "references:\n"
+        # for doc in retrieved_docs:
+            # references += doc+'\n'
+        chat = [{'role': "system", 'content': self.system_prompt}]
+        for qry,ans in zip(queries, answers):
+            chat.append({'role': 'user', 'content': qry})
+            chat.append({'role': 'assistant', 'content': ans})
+        chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=False)
+        neighbor_embeddings = None
+        return chat, neighbor_embeddings, retrieved_docs
+
+@register_class
+class MultiTurnQADataset4ChatTest(QADataset4ChatTest):
+    def __init__(self, tokenizer, args):
+        super().__init__(tokenizer, args)
+    
+    def __getitem__(self, idx):
+        sample = self.datasets[idx]
+        if 'query' in sample:
+            queries = sample['query']
+        else:
+            queries = sample['question']
+        if 'answers' in sample:
+            answers = sample['answers']
+        else:
+            answers = sample['answer']
+        # hits = self.searcher.search(query, 5)
+        retrieved_docs = self.corpus[sample['neighbors']]['text'][:self.number_of_docs]
+        references = "References:\n"
+        for doc in retrieved_docs:
+            references += doc+'\n'
+        if not self.inference_with_explict_docs_for_test:
+            references = ''
+        queries[-1] = references+queries[-1]
+        chat = [{'role': "system", 'content': self.system_prompt}]
+        for qry,ans in zip(queries[:-1], answers[:-1]):
+            chat.append({'role': 'user', 'content': qry})
+            chat.append({'role': 'assistant', 'content': ans})
+        chat.append({'role': 'user', 'content': queries[-1]})
+        answer = answers[-1]
+        chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
+        neighbor_embeddings = None
+        return chat, answer, retrieved_docs, neighbor_embeddings
 
 
 @register_class
