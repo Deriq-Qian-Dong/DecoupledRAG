@@ -513,12 +513,14 @@ class LanguageModelTrainer:
         return f1
     
     def compute_f1(self, prediction, answers, tokenizer):
+        assert isinstance(answers, list)
         best_f1 = 0.0
         for answer in answers:
             best_f1 = max(self._compute_f1(prediction, answer, tokenizer), best_f1)
         return best_f1
     
     def compute_accuracy(self, prediction, answers, tokenizer):
+        assert isinstance(answers, list)
         for answer in answers:
             if answer == prediction:
                 return 1.0
