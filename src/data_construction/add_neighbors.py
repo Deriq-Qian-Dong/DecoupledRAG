@@ -29,14 +29,12 @@ def add_neighbors_to_dataset(dataset_path, neighbors_file_path):
     return query
 
 if __name__ == '__main__':
-    dataset_paths = ['../data_of_ReGPT/QA_datasets_wTop10/nq/sorted_datasets_train/', '../data_of_ReGPT/QA_datasets_wTop10/nq/sorted_datasets_test/',
-                     '../data_of_ReGPT/QA_datasets_wTop10/eli5/sorted_datasets_train/', '../data_of_ReGPT/QA_datasets_wTop10/eli5/sorted_datasets_test/',
-                     '../data_of_ReGPT/QA_datasets_wTop10/msmarco_qa/sorted_datasets_train/', '../data_of_ReGPT/QA_datasets_wTop10/msmarco_qa/sorted_datasets_test/']
-    corpus_names = ['nq-train', 'nq-test', 'eli5-train', 'eli5-test', 'msmarco_qa-train', 'msmarco_qa-test']
+    dataset_paths = ['../data_of_ReGPT/new_qa_datasets/wizard_of_wikipedia/train_flatten/', '../data_of_ReGPT/new_qa_datasets/wizard_of_wikipedia/test_flatten/']
+    corpus_names = ['wizard_of_wikipedia-train', 'wizard_of_wikipedia-test']
     for dataset_path, corpus_name in zip(dataset_paths, corpus_names):
         print(f'Processing {corpus_name}...')
         # 调用函数
         neighbors_file_path = f'./output/res.top50.step0.{corpus_name}'
         query_with_neighbors = add_neighbors_to_dataset(dataset_path, neighbors_file_path)
-        query_with_neighbors.save_to_disk(dataset_path.replace('QA_datasets_wTop10', 'QA_datasets_wTop50'))
+        query_with_neighbors.save_to_disk(dataset_path.replace('new_qa_datasets', 'QA_datasets_wTop50'))
 
