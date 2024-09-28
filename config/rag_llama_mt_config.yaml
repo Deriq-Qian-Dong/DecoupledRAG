@@ -36,8 +36,7 @@ training:
   freeze_lm_head: true
   metrics:
     - f1
-    - accuracy
-  target_metric: accuracy
+  target_metric: f1
 
 dataset:
   number_of_docs: 20
