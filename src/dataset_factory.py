@@ -398,6 +398,7 @@ class QADataset4Chat(Dataset):
         self.tokenizer = tokenizer
         self.setup_datasets()
         self.corpus = load_from_disk(args['corpus'])
+        self.system_prompt = args['system_prompt']
         # self.searcher = LuceneSearcher(self.args['index_path'])
         # self.searcher.set_bm25(0.82, 0.68)
     
@@ -424,8 +425,7 @@ class QADataset4Chat(Dataset):
         # references = "references:\n"
         # for doc in retrieved_docs:
             # references += doc+'\n'
-        query = query+'\nThe answer MUST in ONE OR FEW WORDS.'
-        chat = [{'role': 'user', 'content': query}, {'role': 'assistant', 'content': answer}]
+        chat = [{'role': "system", 'content': self.system_prompt}, {'role': 'user', 'content': query}, {'role': 'assistant', 'content': answer}]
         chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=False)
         neighbor_embeddings = None
         return chat, neighbor_embeddings, retrieved_docs
@@ -506,8 +506,8 @@ class QADataset4ChatTest(QADataset4Chat):
             references += doc+'\n'
         if not self.inference_with_explict_docs_for_test:
             references = ''
-        query = references + query+'\nThe answer MUST in ONE OR FEW WORDS.'
-        chat = [{'role': 'user', 'content': query}]
+        query = references + query
+        chat = [{'role': "system", 'content': self.system_prompt}, {'role': 'user', 'content': query}]
         chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
         neighbor_embeddings = None
         return chat, answers, retrieved_docs, neighbor_embeddings
