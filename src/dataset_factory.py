@@ -571,7 +571,19 @@ class MultiTurnQADataset4Chat(QADataset4Chat):
 class MultiTurnQADataset4ChatTest(QADataset4ChatTest):
     def __init__(self, tokenizer, args):
         super().__init__(tokenizer, args)
-    
+
+    def setup_datasets(self):
+        self.datasets = load_from_disk(self.args['data_name_or_path'])
+        # 将datasets shard
+        num_samples = len(self.datasets)
+        # 1000 samples per shard
+        num_shards = max(num_samples//100, 1)
+        # 将datasets shard
+        self.datasets = self.datasets.shard(num_shards=num_shards, index=0)
+        # flantten the datasets
+        self.datasets = self.datasets.flatten_indices()
+        self.num_samples = len(self.datasets)
+
     def __getitem__(self, idx):
         sample = self.datasets[idx]
         if 'query' in sample:
