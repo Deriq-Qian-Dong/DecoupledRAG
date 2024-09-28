@@ -1,5 +1,5 @@
-batch_size: 256
-dev_batch_size: 256
+batch_size: 128
+dev_batch_size: 128
 q_max_seq_len: 512
 p_max_seq_len: 512
 retriever_model_name_or_path: ../data/RetroMAE_MSMARCO_distill/
