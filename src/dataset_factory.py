@@ -744,7 +744,11 @@ class QueryDataset(Dataset):
         return self.tokenizer(qrys, padding=True, truncation=True, return_tensors="pt", max_length=self.args.q_max_seq_len)
 
     def __getitem__(self, idx):
-        return self.collection[idx]
+        # 判断是否是list
+        if isinstance(self.collection[idx], list):
+            return self.collection[idx][-1]
+        else:
+            return self.collection[idx]
 
     def __len__(self):
         return self.num_samples

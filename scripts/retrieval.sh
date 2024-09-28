@@ -2,7 +2,7 @@ output_dir=output
 log_dir=${output_dir}/log
 mkdir -p ${output_dir}
 mkdir -p ${log_dir}
-export CUDA_VISIBLE_DEVICES=0,4
+export CUDA_VISIBLE_DEVICES=2,5
 sh scripts/set_gpu_num.sh
 yaml_file=$1
 # 如果yaml_file为空，则使用默认的配置文件
