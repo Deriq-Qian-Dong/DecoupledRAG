@@ -29,8 +29,9 @@ def add_neighbors_to_dataset(dataset_path, neighbors_file_path):
     return query
 
 if __name__ == '__main__':
-    dataset_paths = ['../data_of_ReGPT/new_qa_datasets/wizard_of_wikipedia/train_flatten/', '../data_of_ReGPT/new_qa_datasets/wizard_of_wikipedia/test_flatten/']
-    corpus_names = ['wizard_of_wikipedia-train', 'wizard_of_wikipedia-test']
+    dataset_paths = ['../data_of_ReGPT/new_qa_datasets/trex/train/', '../data_of_ReGPT/new_qa_datasets/trex/test/',
+                     '../data_of_ReGPT/new_qa_datasets/zs/train/', '../data_of_ReGPT/new_qa_datasets/zs/test']
+    corpus_names = ['trex-train', 'trex-test', 'zs-train', 'zs-test']
     for dataset_path, corpus_name in zip(dataset_paths, corpus_names):
         print(f'Processing {corpus_name}...')
         # 调用函数
