@@ -4,7 +4,7 @@ training:
   project_name: RAG_llama3-chat
   model_name_or_path: ../llama3-chat
   tokenizer_name_or_path: ../llama3-chat
-  kg_model_name_or_path: ./output/RAG-best
+  kg_model_name_or_path: RAG-best
   num_layers_unfrozen: -1
   gradient_checkpointing: true
   optimizer: 
@@ -20,7 +20,7 @@ training:
       total_iters: 10
   num_epochs: 100000
   log_with: tensorboard
-  project_dir: output/
+  project_dir: output_sa/
   negatives_in_device: true
   negatives_x_device: true
   predict_from_last: 10000
