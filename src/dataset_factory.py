@@ -399,6 +399,7 @@ class QADataset4Chat(Dataset):
         self.setup_datasets()
         self.corpus = load_from_disk(args['corpus'])
         self.system_prompt = args['system_prompt']
+        self.inference_with_explict_docs_for_test = args['inference_with_explict_docs_for_test']
         # self.searcher = LuceneSearcher(self.args['index_path'])
         # self.searcher.set_bm25(0.82, 0.68)
     
@@ -422,9 +423,12 @@ class QADataset4Chat(Dataset):
             answer = sample['answer']
         # hits = self.searcher.search(query, 5)
         retrieved_docs = self.corpus[sample['neighbors']]['text']
-        # references = "references:\n"
-        # for doc in retrieved_docs:
-            # references += doc+'\n'
+        references = "References:\n"
+        for doc in retrieved_docs:
+            references += doc+'\n'
+        if not self.inference_with_explict_docs_for_test:
+            references = ''
+        query = references + query
         chat = [{'role': "system", 'content': self.system_prompt}, {'role': 'user', 'content': query}, {'role': 'assistant', 'content': answer}]
         chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=False)
         neighbor_embeddings = None
@@ -473,7 +477,6 @@ class QADataset4Chat(Dataset):
 @register_class
 class QADataset4ChatTest(QADataset4Chat):
     def __init__(self, tokenizer, args):
-        self.inference_with_explict_docs_for_test = args['inference_with_explict_docs_for_test']
         super().__init__(tokenizer, args)
 
     def setup_datasets(self):
