@@ -244,13 +244,14 @@ class LanguageModelTrainer:
             self.config['dataset']['test'][key]['inference_with_explict_docs_for_test'] = self.config['dataset']['inference_with_explict_docs_for_test']
         for key in self.config['dataset']['train']:
             self.config['dataset']['train'][key]['number_of_docs'] = self.config['dataset']['number_of_docs']
+            self.config['dataset']['train'][key]['inference_with_explict_docs_for_test'] = self.config['dataset']['inference_with_explict_docs_for_test']
         self.setup()
         self.best_perplexity = 1e10
         self.sampler = None
         self.best_metric = 0.0
 
     def run(self):
-        self.test()
+        # self.test()
         for epoch in range(self.train_config['start_from'], self.train_config['num_epochs']):
             self.epoch = epoch
             self.set_epoch_to_dataset()
