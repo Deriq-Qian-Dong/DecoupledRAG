@@ -1,6 +1,6 @@
 git pull
 output_dir=output_sa
-export CUDA_VISIBLE_DEVICES=3,4
+export CUDA_VISIBLE_DEVICES=2,3,4,7
 log_dir=${output_dir}/log
 mkdir -p ${output_dir}
 mkdir -p ${log_dir}
