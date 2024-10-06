@@ -1,0 +1,103 @@
+trainer: LanguageModelTrainer
+training:
+  model_type: llama
+  project_name: RAG_llama3-chat-sa-re
+  model_name_or_path: ../llama3-chat
+  tokenizer_name_or_path: ../llama3-chat
+  project_dir: output_sa_re/
+  # model_name_or_path: ../llama3_chat_qa_sft/
+  # tokenizer_name_or_path: ../llama3_chat_qa_sft/
+  kg_model_name_or_path: RAG-best
+  num_layers_unfrozen: -1
+  gradient_checkpointing: true
+  optimizer: 
+    name: Lamb
+    kwargs:
+      lr: 1e-3
+      weight_decay: 0.0
+      betas: [0.9, 0.999]
+      eps: 1e-08
+  scheduler:
+    name: LinearLR
+    kwargs:
+      total_iters: 10
+  num_epochs: 100000
+  log_with: tensorboard
+  negatives_in_device: true
+  negatives_x_device: true
+  predict_from_last: 10000
+  eval_step: 500
+  start_from: 0
+  skip_steps: 0
+  cross_attention_activation_function: silu
+  add_cross_attention_layer_number: 31
+  kb_path: ../data_of_ReGPT/En-Wiki/phrases_embeddings.npy
+  freeze_retrieval_head: true
+  freeze_lm_head: true
+  metrics:
+    - f1
+    - accuracy
+  target_metric: accuracy
+
+dataset:
+  number_of_docs: 20
+  inference_with_explict_docs_for_test: true
+  train:
+    zs:
+      data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/zs/train/
+      dataset_name: QADataset4Chat
+      batch_size: 2
+      num_epochs: 805
+      max_seq_len: 2048
+      knowledge_max_seq_len: 64
+      dynamic_sampler: false
+      corpus: ../data_of_ReGPT/Wiki-corpus/train
+      system_prompt: "You are a helpful assistant. Please answer user question to the best of your ability. The answer MUST in ONE OR FEW WORDS."
+      max_tokens: 4096
+    trex:
+      data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/trex/train/
+      dataset_name: QADataset4Chat
+      batch_size: 2
+      num_epochs: 805
+      max_seq_len: 2048
+      knowledge_max_seq_len: 64
+      dynamic_sampler: false
+      corpus: ../data_of_ReGPT/Wiki-corpus/train
+      system_prompt: "You are a helpful assistant. Please fill in the [MASK] in the sentence."
+      max_tokens: 4096
+  test:
+    zs:
+      dataset_name: QADataset4ChatTest
+      batch_size: 4
+      data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/zs/test/
+      max_seq_len: 2048
+      knowledge_max_seq_len: 64
+      max_new_tokens: 128
+      index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
+      corpus: ../data_of_ReGPT/Wiki-corpus/train/
+      system_prompt: "You are a helpful assistant. Please answer user question to the best of your ability. The answer MUST in ONE OR FEW WORDS."
+      dynamic_sampler: false
+    trex:
+      dataset_name: QADataset4ChatTest
+      batch_size: 4
+      data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/trex/test/
+      max_seq_len: 2048
+      knowledge_max_seq_len: 64
+      max_new_tokens: 128
+      index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
+      corpus: ../data_of_ReGPT/Wiki-corpus/train/
+      system_prompt: "You are a helpful assistant. Please fill in the [MASK] in the sentence."
+      dynamic_sampler: false
+
+generation_kwargs:
+  min_length: 0
+  max_length: 512
+  do_sample: true
+  top_k: 5
+  top_p: 0.95
+
+RAG_kwargs:
+  faiss:
+    dimension: 768
+  retrieval_step: 10
+  topk: 6
