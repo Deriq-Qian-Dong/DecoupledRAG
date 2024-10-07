@@ -1,5 +1,5 @@
 git pull
-export CUDA_VISIBLE_DEVICES=0,1
+export CUDA_VISIBLE_DEVICES=0,1,3,5
 output_dir=output_ca_eli5g
 log_dir=${output_dir}/log
 mkdir -p ${output_dir}
