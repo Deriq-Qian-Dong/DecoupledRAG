@@ -26,7 +26,7 @@ training:
   negatives_in_device: true
   negatives_x_device: true
   predict_from_last: 10000
-  eval_step: 500
+  eval_step: 5000
   start_from: 0
   skip_steps: 0
   cross_attention_activation_function: silu
