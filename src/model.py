@@ -252,11 +252,11 @@ class LanguageModelTrainer:
 
     def run(self):
         self.test()
-        for epoch in range(self.train_config['start_from'], self.train_config['num_epochs']):
-            self.epoch = epoch
-            self.set_epoch_to_dataset()
-            self.train()
-            self.test()
+        # for epoch in range(self.train_config['start_from'], self.train_config['num_epochs']):
+        #     self.epoch = epoch
+        #     self.set_epoch_to_dataset()
+        #     self.train()
+        #     self.test()
 
     def set_epoch_to_dataset(self):
         number_of_docs_lst = [20]
@@ -415,20 +415,23 @@ class LanguageModelTrainer:
         return record
     
     def create_combined_loader(self, train_dataloaders):
-        # 创建一个无限循环的迭代器，包含所有 DataLoader 的名称和迭代器
+        # 创建一个计数器以跟踪每个 DataLoader 的结束次数
+        counters = {name: 0 for name in train_dataloaders}
         loaders = {name: iter(loader) for name, loader in train_dataloaders.items()}
-        keys = itertools.cycle(loaders.keys())
-        
+
         while True:
-            key = next(keys)
-            try:
-                batch = next(loaders[key])
-                yield key, batch
-            except StopIteration:
-                # 如果某个 DataLoader 遍历完了，就重新创建它的迭代器
-                loaders[key] = iter(train_dataloaders[key])
-                batch = next(loaders[key])
-                yield key, batch
+            for key in itertools.cycle(loaders.keys()):
+                # 如果所有的 dataloader 都遍历过，输出信息并终止while循环
+                if all(count >= 1 for count in counters.values()):
+                    return
+                try:
+                    # 尝试获取数据
+                    batch = next(loaders[key])
+                    yield key, batch
+                except StopIteration:
+                    # 该 dataloader 到末尾，重置迭代器并增加计数器
+                    loaders[key] = iter(train_dataloaders[key])
+                    counters[key] += 1
 
     def train(self):
         model, optimizer, train_dataloaders, scheduler, accelerator, epoch = self.model, self.optimizer, self.train_dataloaders, self.scheduler, self.accelerator, self.epoch
@@ -545,8 +548,8 @@ class LanguageModelTrainer:
         metrics_dict = {metric: {} for metric in metrics}
 
         with torch.no_grad():
-            # for number_of_docs in [1,3,5,10,20]:
-            for number_of_docs in [20]:
+            for number_of_docs in [1,3,5,10,20]:
+            # for number_of_docs in [20]:
             # for _ in range(1):
                 self.setup_test_dataloader(number_of_docs=number_of_docs)
                 test_dataloaders = self.test_dataloaders
