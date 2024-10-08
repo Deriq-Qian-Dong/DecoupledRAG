@@ -428,7 +428,7 @@ class QADataset4Chat(Dataset):
             references += doc+'\n'
         if not self.inference_with_explict_docs_for_test:
             references = ''
-        query = references + query
+        query = query + references
         chat = [{'role': "system", 'content': self.system_prompt}, {'role': 'user', 'content': query}, {'role': 'assistant', 'content': answer}]
         chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=False)
         neighbor_embeddings = None
@@ -511,7 +511,7 @@ class QADataset4ChatTest(QADataset4Chat):
             references += doc+'\n'
         if not self.inference_with_explict_docs_for_test:
             references = ''
-        query = references + query
+        query = query + references
         chat = [{'role': "system", 'content': self.system_prompt}, {'role': 'user', 'content': query}]
         chat = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
         neighbor_embeddings = None
