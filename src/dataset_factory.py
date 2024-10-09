@@ -423,7 +423,7 @@ class QADataset4Chat(Dataset):
             answer = sample['answer']
         # hits = self.searcher.search(query, 5)
         retrieved_docs = self.corpus[sample['neighbors']]['text']
-        references = "References:\n"
+        references = "\nAnswer the question based on the references.\nReferences:\n"
         for doc in retrieved_docs:
             references += doc+'\n'
         if not self.inference_with_explict_docs_for_test:
@@ -506,7 +506,7 @@ class QADataset4ChatTest(QADataset4Chat):
             answers = [sample['answer']]
         # hits = self.searcher.search(query, 5)
         retrieved_docs = self.corpus[sample['neighbors']]['text'][:self.number_of_docs]
-        references = "References:\n"
+        references = "\nAnswer the question based on the references.\nReferences:\n"
         for doc in retrieved_docs:
             references += doc+'\n'
         if not self.inference_with_explict_docs_for_test:
