@@ -1,0 +1,173 @@
+trainer: RAGLanguageModelTrainer
+training:
+  model_type: llama
+  project_name: RAG_llama2-chat-ca-rag
+  model_name_or_path: ../llama2-chat
+  tokenizer_name_or_path: ../llama2-chat
+  project_dir: output_ca_llama2/
+  # model_name_or_path: ../llama3_chat_qa_sft/
+  # tokenizer_name_or_path: ../llama3_chat_qa_sft/
+  kg_model_name_or_path: RAG-best
+  num_layers_unfrozen: -1
+  gradient_checkpointing: true
+  optimizer: 
+    name: Lamb
+    kwargs:
+      lr: 1e-3
+      weight_decay: 0.0
+      betas: [0.9, 0.999]
+      eps: 1e-08
+  scheduler:
+    name: LinearLR
+    kwargs:
+      total_iters: 10
+  num_epochs: 100000
+  log_with: tensorboard
+  negatives_in_device: true
+  negatives_x_device: true
+  predict_from_last: 10000
+  eval_step: 100
+  start_from: 0
+  skip_steps: 0
+  cross_attention_activation_function: silu
+  add_cross_attention_layer_number: 31
+  kb_path: ../data_of_ReGPT/En-Wiki/phrases_embeddings.npy
+  freeze_retrieval_head: true
+  freeze_lm_head: true
+  metrics:
+    - f1
+    - accuracy
+  target_metric: accuracy
+
+dataset:
+  number_of_docs: 20
+  inference_with_explict_docs_for_test: false
+  train:
+    # nq:
+    #   data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/nq/sorted_datasets_train
+    #   dataset_name: QADataset4Chat
+    #   batch_size: 1
+    #   num_epochs: 805
+    #   max_seq_len: 64
+    #   dynamic_sampler: false
+    #   corpus: ../data_of_ReGPT/Wiki-corpus/train
+    #   max_tokens: 4096
+    # hotpotqa_contrastive:
+    #   data_name_or_path: ../data_of_ReGPT/QA_datasets_contrastive_with_background_knowledge/hotpotqa/sorted_datasets_train/
+    #   dataset_name: QADataset4Contrastive
+    #   batch_size: 1
+    #   num_epochs: 805
+    #   max_seq_len: 256
+    #   dynamic_sampler: false
+    #   corpus: ../data_of_ReGPT/Wiki-corpus/train
+    #   max_tokens: 4096
+    # 2WikiMultihopQA_contrastive:
+    #   data_name_or_path: ../data_of_ReGPT/QA_datasets_contrastive_with_background_knowledge/2WikiMultihopQA/sorted_datasets_train/
+    #   dataset_name: QADataset4Contrastive
+    #   batch_size: 1
+    #   num_epochs: 805
+    #   max_seq_len: 256
+    #   dynamic_sampler: false
+    #   corpus: ../data_of_ReGPT/Wiki-corpus/train
+    #   max_tokens: 4096
+    # hotpotqa:
+    #   data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/hotpotqa/sorted_datasets_train/
+    #   dataset_name: QADataset4Chat
+    #   batch_size: 1
+    #   num_epochs: 805
+    #   max_seq_len: 64
+    #   dynamic_sampler: false
+    #   corpus: ../data_of_ReGPT/Wiki-corpus/train
+    #   max_tokens: 4096
+    # wizard_of_wikipedia:
+    #   data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/wizard_of_wikipedia/train_flatten
+    #   dataset_name: QADataset4Chat
+    #   batch_size: 16
+    #   num_epochs: 805
+    #   max_seq_len: 64
+    #   dynamic_sampler: false
+    #   corpus: ../data_of_ReGPT/Wiki-corpus/train
+    #   system_prompt: "You are a helpful assistant."
+    #   max_tokens: 4096
+    2WikiMultihopQA:
+      data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/2WikiMultihopQA/sorted_datasets_train/
+      dataset_name: QADataset4Chat
+      batch_size: 16
+      num_epochs: 805
+      max_seq_len: 64
+      knowledge_max_seq_len: 64
+      dynamic_sampler: false
+      corpus: ../data_of_ReGPT/Wiki-corpus/train
+      system_prompt: "You are a helpful assistant. Please answer user question to the best of your ability. The answer MUST in ONE OR FEW WORDS. The answer is within the question."
+      max_tokens: 4096
+      llama2: true
+    complex_web_questions:
+      data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/complex_web_questions/train/
+      dataset_name: QADataset4Chat
+      batch_size: 16
+      num_epochs: 805
+      max_seq_len: 64
+      knowledge_max_seq_len: 64
+      dynamic_sampler: false
+      corpus: ../data_of_ReGPT/Wiki-corpus/train
+      system_prompt: "You are a helpful assistant. Please answer user question to the best of your ability. The answer MUST in ONE OR FEW WORDS."
+      max_tokens: 4096
+      llama2: true
+    # corpus_dataset:
+    #   data_name_or_path: ../data/data_of_ReGPT/Wiki-corpus/sorted_datasets_train/data-{:05d}-of-00805.arrow
+    #   dataset_name: RAGPretrainFromAFSDataset
+    #   batch_size: 24
+    #   num_epochs: 805
+    #   max_seq_len: 512
+    #   dynamic_sampler: true
+    #   corpus: ../data_of_ReGPT/Wiki-corpus/train
+    #   max_tokens: 4096
+    #   start_from: 23
+  test:
+    2WikiMultihopQA:
+      dataset_name: QADataset4ChatTest
+      batch_size: 4
+      data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/2WikiMultihopQA/sorted_datasets_dev/
+      max_seq_len: 64
+      knowledge_max_seq_len: 64
+      max_new_tokens: 32
+      index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
+      corpus: ../data_of_ReGPT/Wiki-corpus/train/
+      system_prompt: "You are a helpful assistant. Please answer user question to the best of your ability. The answer MUST in ONE OR FEW WORDS. The answer is within the question."
+      dynamic_sampler: false
+      llama2: true
+    complex_web_questions:
+      dataset_name: QADataset4ChatTest
+      batch_size: 4
+      data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/complex_web_questions/validation/
+      max_seq_len: 64
+      knowledge_max_seq_len: 64
+      max_new_tokens: 32
+      index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
+      corpus: ../data_of_ReGPT/Wiki-corpus/train/
+      system_prompt: "You are a helpful assistant. Please answer user question to the best of your ability. The answer MUST in ONE OR FEW WORDS."
+      dynamic_sampler: false
+      llama2: true
+    # wizard_of_wikipedia:
+    #   dataset_name: QADataset4ChatTest
+    #   batch_size: 4
+    #   data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/wizard_of_wikipedia/test_flatten
+    #   max_seq_len: 64
+    #   max_new_tokens: 32
+    #   index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
+    #   corpus: ../data_of_ReGPT/Wiki-corpus/train/
+    #   system_prompt: "You are a helpful assistant."
+    #   dynamic_sampler: false
+
+generation_kwargs:
+  min_length: 0
+  max_length: 512
+  do_sample: true
+  top_k: 5
+  top_p: 0.95
+
+RAG_kwargs:
+  faiss:
+    dimension: 768
+  retrieval_step: 10
+  topk: 6

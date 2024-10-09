@@ -377,9 +377,8 @@ class LanguageModelTrainer:
         if accelerator.is_main_process:
             print_trainable_params_stats(model)
         if tokenizer.chat_template is None:
-            exit()
-            # template = '{% set loop_messages = messages %}\n{% for message in loop_messages %}\n{% if message[\'role\'] == \'user\' %}\nQuestion: {{ message[\'content\'] | trim }}\n{% elif message[\'role\'] == \'assistant\' %}\nAnswer: {{ message[\'content\'] | trim }}{% if loop.last and not add_generation_prompt %} <|end_of_text|>{% endif %}\n{% endif %}\n{% endfor %}\n{% if add_generation_prompt %}\nAnswer: {% endif %}'
-            # tokenizer.chat_template = template
+            template = '''{% set loop_messages = messages %}\n{% for message in loop_messages %}\n{% if message['role'] == 'user' %}\nQuestion: {{ message['content'] | trim }}\n{% elif message['role'] == 'assistant' %}\nAnswer: {{ message['content'] | trim }}{% if loop.last and not add_generation_prompt %}</s>{% endif %}\n{% elif message['role'] == 'system' %}\nInstruction: {{ message['content'] | trim }}\n{% endif %}\n{% endfor %}\n{% if add_generation_prompt %}\nAnswer: {% endif %}'''
+            tokenizer.chat_template = template
         self.tokenizer = tokenizer
         self.epoch = 0
         self.accelerator = accelerator

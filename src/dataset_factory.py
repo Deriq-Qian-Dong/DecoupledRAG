@@ -439,8 +439,12 @@ class QADataset4Chat(Dataset):
     
     def _collate_fn(self, elems):
         texts, neighbor_embeddings, retrieved_docs = zip(*elems)
-        self.tokenizer.padding_side = 'left'
-        self.tokenizer.truncation_side = 'left'
+        if self.args.get('llama2', False):
+            self.tokenizer.padding_side = 'right'
+            self.tokenizer.truncation_side = 'right'
+        else:
+            self.tokenizer.padding_side = 'left'
+            self.tokenizer.truncation_side = 'left'
         batch = self.tokenizer(texts,
                                 add_special_tokens=False,
                                 max_length=self.args['max_seq_len'],
