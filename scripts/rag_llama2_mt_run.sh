@@ -6,7 +6,7 @@ mkdir -p ${output_dir}
 mkdir -p ${log_dir}
 sh scripts/set_gpu_num.sh
 accelerate launch --main_process_port=29512 --config_file config/default_config.yaml\
-    src/main.py config/rag_llama_mt_config.yaml\
+    src/main.py config/rag_llama2_mt_config.yaml\
     | tee ${log_dir}/train.log  
 
 echo "=================done train=================="
