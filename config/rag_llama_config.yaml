@@ -1,3 +1,4 @@
+compare_speed: true
 trainer: RAGLanguageModelTrainer
 training:
   model_type: llama
