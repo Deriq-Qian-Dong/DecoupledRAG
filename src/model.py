@@ -495,7 +495,7 @@ class LanguageModelTrainer:
     def generate(self, batch, key):
         model = self.model
         if self.config['compare_speed']:
-            outputs = model.module.model.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False, pad_token_id=self.tokenizer.eos_token_id, min_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'])
+            outputs = model.module.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False, pad_token_id=self.tokenizer.eos_token_id, min_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'])
         else:
             outputs = model.module.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False, pad_token_id=self.tokenizer.eos_token_id)
         return outputs
@@ -714,5 +714,5 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
         if self.config['compare_speed']:
             outputs = model.module.model.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False, pad_token_id=self.tokenizer.eos_token_id, min_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'])
         else:
-            outputs = model.module.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False, pad_token_id=self.tokenizer.eos_token_id)
+            outputs = model.module.model.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False, pad_token_id=self.tokenizer.eos_token_id)
         return outputs
