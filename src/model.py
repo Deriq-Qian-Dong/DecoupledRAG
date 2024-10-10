@@ -242,6 +242,7 @@ class LanguageModelTrainer:
         for key in self.config['dataset']['test']:
             self.config['dataset']['test'][key]['number_of_docs'] = self.config['dataset']['number_of_docs']
             self.config['dataset']['test'][key]['inference_with_explict_docs_for_test'] = self.config['dataset']['inference_with_explict_docs_for_test']
+            self.config['dataset']['test'][key]['compare_speed'] = self.config.get('compare_speed', False)
         for key in self.config['dataset']['train']:
             self.config['dataset']['train'][key]['number_of_docs'] = self.config['dataset']['number_of_docs']
             self.config['dataset']['train'][key]['inference_with_explict_docs_for_test'] = self.config['dataset']['inference_with_explict_docs_for_test']
@@ -253,7 +254,7 @@ class LanguageModelTrainer:
     def run(self):
         self.test()
         # for epoch in range(self.train_config['start_from'], self.train_config['num_epochs']):
-        #     assert self.config['compare_speed'] == False
+        #     assert self.config.get('compare_speed', False) == False
         #     self.epoch = epoch
         #     self.set_epoch_to_dataset()
         #     self.train()
@@ -495,7 +496,7 @@ class LanguageModelTrainer:
 
     def generate(self, batch, key):
         model = self.model
-        if self.config['compare_speed']:
+        if self.config.get('compare_speed', False):
             outputs = model.module.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False, pad_token_id=self.tokenizer.eos_token_id, min_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'])
         else:
             outputs = model.module.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False, pad_token_id=self.tokenizer.eos_token_id)
@@ -712,7 +713,7 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
 
     def generate(self, batch, key):
         model = self.model
-        if self.config['compare_speed']:
+        if self.config.get('compare_speed', False):
             outputs = model.module.model.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False, pad_token_id=self.tokenizer.eos_token_id, min_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'])
         else:
             outputs = model.module.model.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False, pad_token_id=self.tokenizer.eos_token_id)
