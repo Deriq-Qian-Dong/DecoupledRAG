@@ -36,6 +36,18 @@ torch.manual_seed(random.randint(0, 1000000))
 optimizer_class = {"AdamW": FusedAdam, "Lamb": optim.Lamb, "DeepSpeedCPUAdam": DeepSpeedCPUAdam}
 scheduler_class = {"CosineAnnealingLR": CosineAnnealingLR, "LinearLR": LinearLR}
 
+def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
+    """
+    This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
+    num_key_value_heads, seqlen, head_dim) to (batch, num_attention_heads, seqlen, head_dim)
+    """
+    batch, num_key_value_heads, slen, head_dim = hidden_states.shape
+    if n_rep == 1:
+        return hidden_states
+    hidden_states = hidden_states[:, :, None, :, :].expand(batch, num_key_value_heads, n_rep, slen, head_dim)
+    return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
+
+
 def dataset_class(class_name):
     cls = registry.get_class(class_name)
     if cls:
@@ -558,6 +570,9 @@ class LanguageModelTrainer:
             bsz = key_states.size(0)//num_docs
             key_states = key_states.view(bsz, num_docs, model_config.num_key_value_heads, kv_len, model_config.head_dim).transpose(1, 2).view(bsz, model_config.num_key_value_heads, num_docs*kv_len, model_config.head_dim)
             value_states = value_states.view(bsz, num_docs, model_config.num_key_value_heads, kv_len, model_config.head_dim).transpose(1, 2).view(bsz, model_config.num_key_value_heads, num_docs*kv_len, model_config.head_dim)
+            num_key_value_groups = model_config.num_heads // model_config.num_key_value_heads
+            key_states = repeat_kv(key_states, num_key_value_groups)
+            value_states = repeat_kv(value_states, num_key_value_groups)
             new_hidden_states.append((key_states, value_states))
         return new_hidden_states, time() - start_time
     
