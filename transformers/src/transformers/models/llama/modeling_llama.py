@@ -333,15 +333,20 @@ class LlamaAttention(nn.Module):
         output_attentions: bool = False,
         use_cache: bool = False,
         cache_position: Optional[torch.LongTensor] = None,
-        encoder_hidden_states: Optional[torch.Tensor] = None,
+        encoder_hidden_states: Optional[Union[torch.Tensor, Tuple[torch.Tensor]]] = None,
         retrieval_position: Optional[torch.LongTensor] = None,
         is_cross_attention: bool = False,
+        is_kv_cache: bool = False,
         **kwargs,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         bsz, q_len, _ = hidden_states.size()
-        encoder_hidden_states = encoder_hidden_states.reshape(bsz, -1, self.hidden_size) if encoder_hidden_states is not None else None
+        if not is_kv_cache:
+            encoder_hidden_states = encoder_hidden_states.reshape(bsz, -1, self.hidden_size) if encoder_hidden_states is not None else None
         if encoder_hidden_states is not None:
-            kv_len = encoder_hidden_states.size(1)
+            if not is_kv_cache:
+                kv_len = encoder_hidden_states.size(1)
+            else:
+                kv_len = encoder_hidden_states[0].size(2)
         else:
             kv_len = q_len
 
@@ -365,16 +370,25 @@ class LlamaAttention(nn.Module):
         else:
             query_states = self.q_proj(hidden_states)
             if is_cross_attention:
-                key_states = self.k_proj(encoder_hidden_states)
-                value_states = self.v_proj(encoder_hidden_states)
+                if is_kv_cache:
+                    key_states = encoder_hidden_states[0]
+                    value_states = encoder_hidden_states[1]
+                else:   
+                    key_states = self.k_proj(encoder_hidden_states)
+                    value_states = self.v_proj(encoder_hidden_states)
             else:
                 key_states = self.k_proj(hidden_states)
                 value_states = self.v_proj(hidden_states)
 
         query_states = query_states.view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
         if is_cross_attention:
-            key_states = key_states.view(bsz, kv_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
-            value_states = value_states.view(bsz, kv_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
+            if not is_kv_cache:
+                key_states = key_states.view(bsz, kv_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
+                value_states = value_states.view(bsz, kv_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
+            else:
+                num_docs = key_states.size(0)//bsz
+                key_states = key_states.view(bsz, num_docs, self.num_key_value_heads, kv_len, self.head_dim).transpose(1, 2).view(bsz, self.num_key_value_heads, num_docs*kv_len, self.head_dim)
+                value_states = value_states.view(bsz, num_docs, self.num_key_value_heads, kv_len, self.head_dim).transpose(1, 2).view(bsz, self.num_key_value_heads, num_docs*kv_len, self.head_dim)
         else:
             key_states = key_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
             value_states = value_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
@@ -384,6 +398,7 @@ class LlamaAttention(nn.Module):
         if not is_cross_attention:
             query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
         else:
+            kv_len = key_states.size(2)
             position_ids = torch.arange(kv_len, device=hidden_states.device).unsqueeze(0)
             ca_cos, ca_sin = self.rotary_emb(value_states, position_ids)
             query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin, ca_cos, ca_sin, is_cross_attention=True)
@@ -789,7 +804,7 @@ class LlamaDecoderLayer(nn.Module):
         output_attentions: Optional[bool] = False,
         use_cache: Optional[bool] = False,
         cache_position: Optional[torch.LongTensor] = None,
-        encoder_hidden_states: Optional[torch.Tensor] = None,
+        encoder_hidden_states: Optional[Union[torch.Tensor, Tuple[torch.Tensor]]] = None,
         retrieval_position: Optional[torch.LongTensor] = None,
         **kwargs,
     ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
@@ -835,9 +850,12 @@ class LlamaDecoderLayer(nn.Module):
         hidden_states = self.mlp(hidden_states)
         hidden_states = residual + hidden_states
 
+        is_kv_cache = type(encoder_hidden_states) == tuple
+
         if self.add_cross_attention and encoder_hidden_states is not None:
             residual = hidden_states  # output of self-attention
-            encoder_hidden_states = self.input_layernorm(encoder_hidden_states)
+            if not is_kv_cache:
+                encoder_hidden_states = self.input_layernorm(encoder_hidden_states)
             hidden_states, _, _ = self.self_attn(
                 hidden_states=hidden_states,
                 attention_mask=attention_mask,
@@ -848,6 +866,7 @@ class LlamaDecoderLayer(nn.Module):
                 encoder_hidden_states=encoder_hidden_states,
                 retrieval_position=retrieval_position,
                 is_cross_attention=True,
+                is_kv_cache=is_kv_cache,
                 **kwargs,
             )
             hidden_states = self.gate_crossattention(residual, hidden_states)
@@ -1053,9 +1072,9 @@ class LlamaModel(LlamaPreTrainedModel):
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
         cache_position: Optional[torch.LongTensor] = None,
-        encoder_hidden_states: Optional[torch.Tensor] = None,
+        encoder_hidden_states: Optional[Union[torch.Tensor, Tuple[torch.Tensor]]] = None,
         retrieval_position: Optional[torch.LongTensor] = None,
-        knowledge_outputs: Optional[Tuple[torch.Tensor]] = None,
+        knowledge_outputs: Optional[Union[Tuple[Tuple[torch.Tensor]], Tuple[torch.Tensor]]] = None,
     ) -> Union[Tuple, BaseModelOutputWithPast]:
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
@@ -1833,7 +1852,7 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
         cache_position: Optional[torch.LongTensor] = None,
-        encoder_hidden_states: Optional[torch.Tensor] = None,
+        encoder_hidden_states: Optional[Union[torch.Tensor, Tuple[torch.Tensor]]] = None,
         p_reps: Optional[torch.Tensor] = None,
         retrieval_position: Optional[torch.LongTensor] = None,
         knowledge_input_ids: Optional[torch.LongTensor] = None,
@@ -1871,7 +1890,7 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         # self.model.set_adapter("knowledge_injector")
-        if knowledge_input_ids is not None:
+        if knowledge_input_ids is not None and knowledge_outputs is None:
             knowledge_outputs = self.model(
                 input_ids=knowledge_input_ids,
                 output_hidden_states=True,

@@ -528,7 +528,30 @@ class LanguageModelTrainer:
             if answer == prediction:
                 return 1.0
         return 0.0
- 
+    
+    @torch.no_grad()
+    def compute_hidden_states(self, batch):
+        # is_training = self.model.training        
+        model = self.model
+        start_time = time()
+        # if is_training:
+            # model.eval()
+        outputs = model.model(input_ids=batch['knowledge_input_ids'],
+            output_hidden_states=True,
+            return_dict=True,
+        )
+        hidden_states = outputs.past_key_values
+        if hidden_states is None:
+            print("Hidden states is None")
+            exit()
+        # detach the hidden states
+        # hidden_states = tuple(
+        #     tuple(p.detach() for p in layer) for layer in hidden_states
+        # )
+        # if is_training:
+            # model.train()
+        return hidden_states, time() - start_time
+    
     def test(self):
         model, tokenizer, optimizer, scheduler, test_dataloaders, accelerator, iter_count = self.model, self.tokenizer, self.optimizer, self.scheduler, self.test_dataloaders, self.accelerator, self.iter_count
         model.eval()
@@ -553,6 +576,8 @@ class LanguageModelTrainer:
                 self.setup_test_dataloader(number_of_docs=number_of_docs)
                 test_dataloaders = self.test_dataloaders
                 results = []
+                start_time = time()
+                hidden_states_time = 0
                 for key in test_dataloaders:
                     number_of_docs = test_dataloaders[key].dataset.number_of_docs
                     # Prepare to accumulate metrics for this dataset
@@ -560,10 +585,15 @@ class LanguageModelTrainer:
                     total_sample_count = 0
                     accelerator.print(f"Dataset: {key} | Number of steps: {len(test_dataloaders[key])}")
                     test_dataloader = test_dataloaders[key]
-                    for batch in tqdm(test_dataloader, desc=f"Evaluation of step {iter_count}", disable=not accelerator.is_main_process):
+                    for batch in tqdm(test_dataloader, desc=f"dataset: {key} | number_of_docs: {number_of_docs}", disable=not accelerator.is_main_process):
                         batch = self.pop_unused_keys(batch)
-                        batch = accelerator.prepare(batch)
                         answers = batch.pop('answers')
+                        batch = accelerator.prepare(batch)
+                        if 'knowledge_input_ids' in batch:
+                            knowledge_outputs, compute_time = self.compute_hidden_states(batch)
+                            batch['knowledge_outputs'] = knowledge_outputs
+                            hidden_states_time += compute_time
+                            batch.pop('knowledge_input_ids')
                         # outputs = model.module.model.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False)
                         outputs = self.generate(batch, key)
                         outputs = outputs[:, batch['input_ids'].size(1):]
@@ -591,8 +621,12 @@ class LanguageModelTrainer:
                         # Log the metric results
                         accelerator.log({f"test/{key}/{number_of_docs}/{metric}": metric_result}, step=iter_count)
                         accelerator.print(f"Step {iter_count} | Dataset: {key} | {metric.capitalize()}: {metric_result:.4f}")
-
-
+                end_time = time()
+                gpu_time = (end_time - start_time - hidden_states_time)*self.accelerator.num_processes
+                accelerator.log({f"test/{number_of_docs}/gpu_time": gpu_time}, step=iter_count)
+                accelerator.log({f"test/{number_of_docs}/hidden_states_time": hidden_states_time*self.accelerator.num_processes}, step=iter_count)
+                total_time = (end_time - start_time)*self.accelerator.num_processes
+                accelerator.log({f"test/{number_of_docs}/total_time": total_time}, step=iter_count)
                 # Log overall mean for each metric
                 for metric in metrics:
                     mean_metric = np.mean(metrics_results_dict[metric])
