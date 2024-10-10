@@ -385,10 +385,10 @@ class LlamaAttention(nn.Module):
             if not is_kv_cache:
                 key_states = key_states.view(bsz, kv_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
                 value_states = value_states.view(bsz, kv_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
-            else:
-                num_docs = key_states.size(0)//bsz
-                key_states = key_states.view(bsz, num_docs, self.num_key_value_heads, kv_len, self.head_dim).transpose(1, 2).view(bsz, self.num_key_value_heads, num_docs*kv_len, self.head_dim)
-                value_states = value_states.view(bsz, num_docs, self.num_key_value_heads, kv_len, self.head_dim).transpose(1, 2).view(bsz, self.num_key_value_heads, num_docs*kv_len, self.head_dim)
+            # else:
+                # num_docs = key_states.size(0)//bsz
+                # key_states = key_states.view(bsz, num_docs, self.num_key_value_heads, kv_len, self.head_dim).transpose(1, 2).view(bsz, self.num_key_value_heads, num_docs*kv_len, self.head_dim)
+                # value_states = value_states.view(bsz, num_docs, self.num_key_value_heads, kv_len, self.head_dim).transpose(1, 2).view(bsz, self.num_key_value_heads, num_docs*kv_len, self.head_dim)
         else:
             key_states = key_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
             value_states = value_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)

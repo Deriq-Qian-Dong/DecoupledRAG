@@ -189,6 +189,7 @@ class RAGForCausalLM(nn.Module):
         config.output_hidden_states = True
         config.kg_model_name_or_path = train_config['kg_model_name_or_path']
         config.freeze_retrieval_head = train_config['freeze_retrieval_head']
+        self.model_config = config
         model = MODEL_CLASS[train_config['model_type']].from_pretrained(train_config['model_name_or_path'], config=config)          
         # import os
         # if os.path.exists(os.path.join(train_config['kg_model_name_or_path'], 'adapter_config.json')):
@@ -301,6 +302,7 @@ class LanguageModelTrainer:
 
     def setup_model(self, train_config):
         model = AutoModelForCausalLM.from_pretrained(train_config['model_name_or_path'], use_cache=not train_config['gradient_checkpointing'])
+        self.model_config = model.config
         # freeze_bottom_causal_layers(model.base_model, train_config['num_layers_unfrozen'])
         # try:
         #     # llama2
@@ -535,12 +537,10 @@ class LanguageModelTrainer:
         return 0.0
     
     @torch.no_grad()
-    def compute_hidden_states(self, batch):
-        # is_training = self.model.training        
+    def compute_hidden_states(self, batch, num_docs):
         model = self.model
+        model_config = self.model_config
         start_time = time()
-        # if is_training:
-            # model.eval()
         outputs = model.model(input_ids=batch['knowledge_input_ids'],
             output_hidden_states=True,
             return_dict=True,
@@ -549,13 +549,13 @@ class LanguageModelTrainer:
         if hidden_states is None:
             print("Hidden states is None")
             exit()
-        # detach the hidden states
-        # hidden_states = tuple(
-        #     tuple(p.detach() for p in layer) for layer in hidden_states
-        # )
-        # if is_training:
-            # model.train()
-        return hidden_states, time() - start_time
+        key_states = hidden_states[0]
+        value_states = hidden_states[1]
+        kv_len = key_states.size(2)
+        bsz = key_states.size(0)//num_docs
+        key_states = key_states.view(bsz, num_docs, model_config.num_key_value_heads, kv_len, model_config.head_dim).transpose(1, 2).view(bsz, model_config.num_key_value_heads, num_docs*kv_len, model_config.head_dim)
+        value_states = value_states.view(bsz, num_docs, model_config.num_key_value_heads, kv_len, model_config.head_dim).transpose(1, 2).view(bsz, model_config.num_key_value_heads, num_docs*kv_len, model_config.head_dim)
+        return (key_states, value_states), time() - start_time
     
     def test(self):
         model, tokenizer, optimizer, scheduler, test_dataloaders, accelerator, iter_count = self.model, self.tokenizer, self.optimizer, self.scheduler, self.test_dataloaders, self.accelerator, self.iter_count
@@ -595,7 +595,7 @@ class LanguageModelTrainer:
                         answers = batch.pop('answers')
                         batch = accelerator.prepare(batch)
                         if 'knowledge_input_ids' in batch:
-                            knowledge_outputs, compute_time = self.compute_hidden_states(batch)
+                            knowledge_outputs, compute_time = self.compute_hidden_states(batch, number_of_docs)
                             batch['knowledge_outputs'] = knowledge_outputs
                             hidden_states_time += compute_time
                             batch.pop('knowledge_input_ids')
