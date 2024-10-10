@@ -59,7 +59,7 @@ dataset:
       batch_size: 8
       data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/wizard_of_wikipedia/test_flatten
       max_seq_len: 512
-      knowledge_max_seq_len: 64
+      knowledge_max_seq_len: 256
       max_new_tokens: 128
       index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
       corpus: ../data_of_ReGPT/Wiki-corpus/train/
