@@ -565,9 +565,12 @@ class MultiTurnQADataset4Chat(QADataset4Chat):
             answers = sample['answer']
         # hits = self.searcher.search(query, 5)
         retrieved_docs = self.corpus[sample['neighbors']]['text']
-        # references = "references:\n"
-        # for doc in retrieved_docs:
-            # references += doc+'\n'
+        references = "\nAnswer the question based on the references.\nReferences:\n"
+        for doc in retrieved_docs:
+            references += doc+'\n'
+        if not self.inference_with_explict_docs_for_test:
+            references = ''
+        queries[-1] = queries[-1] + references
         chat = [{'role': "system", 'content': self.system_prompt}]
         for qry,ans in zip(queries, answers):
             chat.append({'role': 'user', 'content': qry})
@@ -605,12 +608,12 @@ class MultiTurnQADataset4ChatTest(QADataset4ChatTest):
             answers = sample['answer']
         # hits = self.searcher.search(query, 5)
         retrieved_docs = self.corpus[sample['neighbors']]['text'][:self.number_of_docs]
-        references = "References:\n"
+        references = "\nAnswer the question based on the references.\nReferences:\n"
         for doc in retrieved_docs:
             references += doc+'\n'
         if not self.inference_with_explict_docs_for_test:
             references = ''
-        queries[-1] = references+queries[-1]
+        queries[-1] = queries[-1] + references
         chat = [{'role': "system", 'content': self.system_prompt}]
         for qry,ans in zip(queries[:-1], answers[:-1]):
             chat.append({'role': 'user', 'content': qry})
