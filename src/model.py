@@ -566,12 +566,12 @@ class LanguageModelTrainer:
         metrics = self.config['training']['metrics']  # List of metrics to calculate, e.g., ['accuracy', 'f1']
         target_metric = self.config['training']['target_metric']  # Used to save the best checkpoint, either 'accuracy' or 'f1'
         
-        metrics_results_dict = {metric: [] for metric in metrics}
         metrics_dict = {metric: {} for metric in metrics}
 
         with torch.no_grad():
             for number_of_docs in [1,3,5,10,20]:
             # for number_of_docs in [20]:
+                metrics_results_dict = {metric: [] for metric in metrics}
                 self.setup_test_dataloader(number_of_docs=number_of_docs)
                 test_dataloaders = self.test_dataloaders
                 results = []

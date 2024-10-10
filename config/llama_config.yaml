@@ -66,7 +66,7 @@ dataset:
   test:
     2WikiMultihopQA:
       dataset_name: QADataset4ChatTest
-      batch_size: 4
+      batch_size: 1
       data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/2WikiMultihopQA/sorted_datasets_dev/
       max_seq_len: 2048
       knowledge_max_seq_len: 64
@@ -77,7 +77,7 @@ dataset:
       dynamic_sampler: false
     complex_web_questions:
       dataset_name: QADataset4ChatTest
-      batch_size: 4
+      batch_size: 1
       data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/complex_web_questions/validation/
       max_seq_len: 2048
       knowledge_max_seq_len: 64
