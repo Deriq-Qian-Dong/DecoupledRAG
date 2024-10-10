@@ -252,11 +252,11 @@ class LanguageModelTrainer:
 
     def run(self):
         self.test()
-        # for epoch in range(self.train_config['start_from'], self.train_config['num_epochs']):
-        #     self.epoch = epoch
-        #     self.set_epoch_to_dataset()
-        #     self.train()
-        #     self.test()
+        for epoch in range(self.train_config['start_from'], self.train_config['num_epochs']):
+            self.epoch = epoch
+            self.set_epoch_to_dataset()
+            self.train()
+            self.test()
 
     def set_epoch_to_dataset(self):
         number_of_docs_lst = [20]
@@ -377,7 +377,8 @@ class LanguageModelTrainer:
         if accelerator.is_main_process:
             print_trainable_params_stats(model)
         if tokenizer.chat_template is None:
-            template = '''{% set loop_messages = messages %}\n{% for message in loop_messages %}\n{% if message['role'] == 'user' %}\nQuestion: {{ message['content'] | trim }}\n{% elif message['role'] == 'assistant' %}\nAnswer: {{ message['content'] | trim }}{% if loop.last and not add_generation_prompt %}</s>{% endif %}\n{% elif message['role'] == 'system' %}\nInstruction: {{ message['content'] | trim }}\n{% endif %}\n{% endfor %}\n{% if add_generation_prompt %}\nAnswer: {% endif %}'''
+            # template = '''{% set loop_messages = messages %}\n{% for message in loop_messages %}\n{% if message['role'] == 'user' %}\nQuestion: {{ message['content'] | trim }}\n{% elif message['role'] == 'assistant' %}\nAnswer: {{ message['content'] | trim }}{% if loop.last and not add_generation_prompt %}</s>{% endif %}\n{% elif message['role'] == 'system' %}\nInstruction: {{ message['content'] | trim }}\n{% endif %}\n{% endfor %}\n{% if add_generation_prompt %}\nAnswer: {% endif %}'''
+            template = "{% if messages[0]['role'] == 'system' %}{% set loop_messages = messages[1:] %}{% set system_message = messages[0]['content'] %}{% else %}{% set loop_messages = messages %}{% set system_message = false %}{% endif %}{% for message in loop_messages %}{% if (message['role'] == 'user') != (loop.index0 % 2 == 0) %}{{ raise_exception('Conversation roles must alternate user/assistant/user/assistant/...') }}{% endif %}{% if loop.index0 == 0 and system_message != false %}{% set content = '<<SYS>>\\n' + system_message + '\\n<</SYS>>\\n\\n' + message['content'] %}{% else %}{% set content = message['content'] %}{% endif %}{% if message['role'] == 'user' %}{{ bos_token + '[INST] ' + content.strip() + ' [/INST]' }}{% elif message['role'] == 'assistant' %}{{ ' '  + content.strip() + ' ' + eos_token }}{% endif %}{% endfor %}"
             tokenizer.chat_template = template
         self.tokenizer = tokenizer
         self.epoch = 0
@@ -547,8 +548,8 @@ class LanguageModelTrainer:
         metrics_dict = {metric: {} for metric in metrics}
 
         with torch.no_grad():
-            for number_of_docs in [1,3,5,10,20]:
-            # for number_of_docs in [20]:
+            # for number_of_docs in [1,3,5,10,20]:
+            for number_of_docs in [20]:
             # for _ in range(1):
                 self.setup_test_dataloader(number_of_docs=number_of_docs)
                 test_dataloaders = self.test_dataloaders
