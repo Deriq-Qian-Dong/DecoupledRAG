@@ -549,13 +549,17 @@ class LanguageModelTrainer:
         if hidden_states is None:
             print("Hidden states is None")
             exit()
-        key_states = hidden_states[0]
-        value_states = hidden_states[1]
-        kv_len = key_states.size(2)
-        bsz = key_states.size(0)//num_docs
-        key_states = key_states.view(bsz, num_docs, model_config.num_key_value_heads, kv_len, model_config.head_dim).transpose(1, 2).view(bsz, model_config.num_key_value_heads, num_docs*kv_len, model_config.head_dim)
-        value_states = value_states.view(bsz, num_docs, model_config.num_key_value_heads, kv_len, model_config.head_dim).transpose(1, 2).view(bsz, model_config.num_key_value_heads, num_docs*kv_len, model_config.head_dim)
-        return (key_states, value_states), time() - start_time
+        new_hidden_states = []
+        for layer_idx in range(len(hidden_states)):
+            encoder_hidden_states = hidden_states[layer_idx]
+            key_states = encoder_hidden_states[0]
+            value_states = encoder_hidden_states[1]
+            kv_len = key_states.size(2)
+            bsz = key_states.size(0)//num_docs
+            key_states = key_states.view(bsz, num_docs, model_config.num_key_value_heads, kv_len, model_config.head_dim).transpose(1, 2).view(bsz, model_config.num_key_value_heads, num_docs*kv_len, model_config.head_dim)
+            value_states = value_states.view(bsz, num_docs, model_config.num_key_value_heads, kv_len, model_config.head_dim).transpose(1, 2).view(bsz, model_config.num_key_value_heads, num_docs*kv_len, model_config.head_dim)
+            new_hidden_states.append((key_states, value_states))
+        return new_hidden_states, time() - start_time
     
     def test(self):
         model, tokenizer, optimizer, scheduler, test_dataloaders, accelerator, iter_count = self.model, self.tokenizer, self.optimizer, self.scheduler, self.test_dataloaders, self.accelerator, self.iter_count
