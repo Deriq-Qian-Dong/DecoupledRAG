@@ -568,6 +568,10 @@ class LanguageModelTrainer:
             value_states = encoder_hidden_states[1]
             kv_len = key_states.size(2)
             bsz = key_states.size(0)//num_docs
+            num_heads = model_config.num_attention_heads
+            model_config.num_heads = num_heads
+            head_dim = model_config.hidden_size // num_heads
+            model_config.head_dim = head_dim
             key_states = key_states.view(bsz, num_docs, model_config.num_key_value_heads, kv_len, model_config.head_dim).transpose(1, 2).view(bsz, model_config.num_key_value_heads, num_docs*kv_len, model_config.head_dim)
             value_states = value_states.view(bsz, num_docs, model_config.num_key_value_heads, kv_len, model_config.head_dim).transpose(1, 2).view(bsz, model_config.num_key_value_heads, num_docs*kv_len, model_config.head_dim)
             num_key_value_groups = model_config.num_heads // model_config.num_key_value_heads
