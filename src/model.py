@@ -598,7 +598,7 @@ class LanguageModelTrainer:
                         # outputs = model.module.model.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False)
                         outputs = self.generate(batch, key)
                         outputs = outputs[:, batch['input_ids'].size(1):]
-                        total_generated_tokens += outputs.size(1)
+                        total_generated_tokens += outputs.size(1)*outputs.size(0)
                         outputs = tokenizer.batch_decode(outputs, skip_special_tokens=True)
                         inputs = tokenizer.batch_decode(batch['input_ids'], skip_special_tokens=True)
                         # Calculate metrics for each sample
@@ -625,7 +625,7 @@ class LanguageModelTrainer:
                         accelerator.print(f"Step {iter_count} | Dataset: {key} | {metric.capitalize()}: {metric_result:.4f}")
                 end_time = time()
                 gpu_time = (end_time - start_time - hidden_states_time)*self.accelerator.num_processes
-                tokens_per_second = total_generated_tokens/gpu_time
+                tokens_per_second = self.accelerator.num_processes*total_generated_tokens/gpu_time
                 accelerator.log({f"test/{number_of_docs}/tokens_per_second": tokens_per_second}, step=iter_count)
                 accelerator.log({f"test/{number_of_docs}/gpu_time": gpu_time}, step=iter_count)
                 accelerator.log({f"test/{number_of_docs}/hidden_states_time": hidden_states_time*self.accelerator.num_processes}, step=iter_count)
