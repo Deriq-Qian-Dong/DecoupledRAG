@@ -1,0 +1,82 @@
+trainer: RAGLanguageModelTrainer
+training:
+  model_type: llama
+  project_name: RAG_llama2-chat-ca-mt
+  model_name_or_path: ../llama2-chat
+  tokenizer_name_or_path: ../llama2-chat
+  project_dir: output_ca_mt_llama2/
+  # model_name_or_path: ../llama3_chat_qa_sft/
+  # tokenizer_name_or_path: ../llama3_chat_qa_sft/
+  kg_model_name_or_path: RAG-best
+  num_layers_unfrozen: -1
+  gradient_checkpointing: true
+  optimizer: 
+    name: Lamb
+    kwargs:
+      lr: 1e-3
+      weight_decay: 0.0
+      betas: [0.9, 0.999]
+      eps: 1e-08
+  scheduler:
+    name: LinearLR
+    kwargs:
+      total_iters: 10
+  num_epochs: 100000
+  log_with: tensorboard
+  negatives_in_device: true
+  negatives_x_device: true
+  predict_from_last: 10000
+  eval_step: 500
+  start_from: 0
+  skip_steps: 0
+  cross_attention_activation_function: silu
+  add_cross_attention_layer_number: 31
+  kb_path: ../data_of_ReGPT/En-Wiki/phrases_embeddings.npy
+  freeze_retrieval_head: true
+  freeze_lm_head: true
+  metrics:
+    - f1
+  target_metric: f1
+
+dataset:
+  number_of_docs: 20
+  inference_with_explict_docs_for_test: false
+  train:
+    wizard_of_wikipedia:
+      data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/wizard_of_wikipedia/train_flatten
+      dataset_name: MultiTurnQADataset4Chat
+      batch_size: 8
+      num_epochs: 805
+      max_seq_len: 512
+      knowledge_max_seq_len: 64
+      dynamic_sampler: false
+      corpus: ../data_of_ReGPT/Wiki-corpus/train
+      system_prompt: "You are a helpful assistant."
+      max_tokens: 4096
+      llama2: true
+  test:
+    wizard_of_wikipedia:
+      dataset_name: MultiTurnQADataset4ChatTest
+      batch_size: 8
+      data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/wizard_of_wikipedia/test_flatten
+      max_seq_len: 512
+      knowledge_max_seq_len: 64
+      max_new_tokens: 128
+      index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
+      corpus: ../data_of_ReGPT/Wiki-corpus/train/
+      system_prompt: "You are a helpful assistant."
+      dynamic_sampler: false
+      llama2: true
+
+generation_kwargs:
+  min_length: 0
+  max_length: 512
+  do_sample: true
+  top_k: 5
+  top_p: 0.95
+
+RAG_kwargs:
+  faiss:
+    dimension: 768
+  retrieval_step: 10
+  topk: 6
