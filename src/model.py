@@ -572,7 +572,6 @@ class LanguageModelTrainer:
         with torch.no_grad():
             for number_of_docs in [1,3,5,10,20]:
             # for number_of_docs in [20]:
-            # for _ in range(1):
                 self.setup_test_dataloader(number_of_docs=number_of_docs)
                 test_dataloaders = self.test_dataloaders
                 results = []
@@ -626,6 +625,7 @@ class LanguageModelTrainer:
                 end_time = time()
                 gpu_time = (end_time - start_time - hidden_states_time)*self.accelerator.num_processes
                 tokens_per_second = self.accelerator.num_processes*total_generated_tokens/gpu_time
+                accelerator.log({f"test/{number_of_docs}/total_tokens": self.accelerator.num_processes*total_generated_tokens}, step=iter_count)
                 accelerator.log({f"test/{number_of_docs}/tokens_per_second": tokens_per_second}, step=iter_count)
                 accelerator.log({f"test/{number_of_docs}/gpu_time": gpu_time}, step=iter_count)
                 accelerator.log({f"test/{number_of_docs}/hidden_states_time": hidden_states_time*self.accelerator.num_processes}, step=iter_count)
@@ -633,8 +633,10 @@ class LanguageModelTrainer:
                 accelerator.log({f"test/{number_of_docs}/total_time": total_time}, step=iter_count)
                 # Log overall mean for each metric
                 for metric in metrics:
+                    print(metrics_results_dict[metric])
                     mean_metric = np.mean(metrics_results_dict[metric])
                     accelerator.log({f"test/mean_{metric}_{number_of_docs}": mean_metric}, step=iter_count)
+                    print(f"Step {iter_count} | Mean {metric.capitalize()}: {mean_metric:.4f}")
                     metrics_dict[metric][number_of_docs] = mean_metric
 
             # Decide which metric to use for checkpoint saving based on target_metric
