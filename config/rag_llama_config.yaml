@@ -129,7 +129,7 @@ dataset:
       data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/2WikiMultihopQA/sorted_datasets_dev/
       max_seq_len: 64
       knowledge_max_seq_len: 256
-      max_new_tokens: 32
+      max_new_tokens: 128
       index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
       corpus: ../data_of_ReGPT/Wiki-corpus/train/
       system_prompt: "You are a helpful assistant. Please answer user question to the best of your ability. The answer MUST in ONE OR FEW WORDS. The answer is within the question."
@@ -140,7 +140,7 @@ dataset:
       data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/complex_web_questions/validation/
       max_seq_len: 64
       knowledge_max_seq_len: 256
-      max_new_tokens: 32
+      max_new_tokens: 128
       index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
       corpus: ../data_of_ReGPT/Wiki-corpus/train/
       system_prompt: "You are a helpful assistant. Please answer user question to the best of your ability. The answer MUST in ONE OR FEW WORDS."
