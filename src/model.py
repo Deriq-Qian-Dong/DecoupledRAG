@@ -695,6 +695,7 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
 
     def setup_model(self, train_config):
         self.model = RAGForCausalLM(train_config)
+        self.model_config = self.model.model_config
 
     def compute_loss(self, outputs):
         lm_loss = outputs.loss
