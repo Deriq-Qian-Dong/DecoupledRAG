@@ -559,7 +559,7 @@ class LanguageModelTrainer:
         total_samples = input_ids.size(0)
 
         # Prepare a list to accumulate hidden states for all layers
-        accumulated_hidden_states = [[] for _ in range(len(model_config.num_hidden_layers))]
+        accumulated_hidden_states = [[] for _ in range(model_config.num_hidden_layers)]
 
         for i in range(0, total_samples, batch_size):
             batch_input_ids = input_ids[i:i + batch_size]
