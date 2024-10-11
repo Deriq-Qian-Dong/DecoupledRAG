@@ -560,7 +560,7 @@ class LanguageModelTrainer:
 
         # Prepare a list to accumulate hidden states for all layers
         accumulated_hidden_states = [[] for _ in range(model_config.num_hidden_layers)]
-        
+
         for i in range(0, total_samples, batch_size):
             batch_input_ids = input_ids[i:i + batch_size]
 
@@ -629,8 +629,8 @@ class LanguageModelTrainer:
         metrics_dict = {metric: {} for metric in metrics}
 
         with torch.no_grad():
-            for number_of_docs in [40, 50]:
-            # for number_of_docs in [1,3,5,10,20]:
+            # for number_of_docs in [40, 50]:
+            for number_of_docs in [1,3,5,10,20]:
             # for number_of_docs in [20]:
                 metrics_results_dict = {metric: [] for metric in metrics}
                 self.setup_test_dataloader(number_of_docs=number_of_docs)
