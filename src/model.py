@@ -560,7 +560,7 @@ class LanguageModelTrainer:
 
         # Prepare a list to accumulate hidden states for all layers
         accumulated_hidden_states = [[] for _ in range(model_config.num_hidden_layers)]
-
+        
         for i in range(0, total_samples, batch_size):
             batch_input_ids = input_ids[i:i + batch_size]
 
@@ -578,34 +578,37 @@ class LanguageModelTrainer:
                 encoder_hidden_states = hidden_states[layer_idx]
                 key_states = encoder_hidden_states[0]
                 value_states = encoder_hidden_states[1]
-                kv_len = key_states.size(2)
-                bsz = key_states.size(0) // num_docs
-                num_heads = model_config.num_attention_heads
-                head_dim = model_config.hidden_size // num_heads
-                num_key_value_heads = model_config.num_key_value_heads
 
-                # Reshape key and value states
-                key_states = key_states.view(bsz, num_docs, num_key_value_heads, kv_len, head_dim)\
-                                    .transpose(1, 2)\
-                                    .reshape(bsz, num_key_value_heads, num_docs * kv_len, head_dim)
-                value_states = value_states.view(bsz, num_docs, num_key_value_heads, kv_len, head_dim)\
-                                        .transpose(1, 2)\
-                                        .reshape(bsz, num_key_value_heads, num_docs * kv_len, head_dim)
-
-                num_key_value_groups = num_heads // num_key_value_heads
-
-                key_states = repeat_kv(key_states, num_key_value_groups)
-                value_states = repeat_kv(value_states, num_key_value_groups)
-
-                # Accumulate the hidden states for this layer
+                # Accumulate the hidden states for this layer (before any reshaping or manipulation)
                 accumulated_hidden_states[layer_idx].append((key_states, value_states))
 
-        # Concatenate the accumulated hidden states along the first dimension for each layer
+        # After all batches are processed, concatenate the hidden states along the first dimension
         new_hidden_states = []
         for layer_hidden_states in accumulated_hidden_states:
+            # Concatenate key and value states for each layer
             layer_key_states = torch.cat([item[0] for item in layer_hidden_states], dim=0)
             layer_value_states = torch.cat([item[1] for item in layer_hidden_states], dim=0)
-            new_hidden_states.append((layer_key_states, layer_value_states))
+
+            # Perform operations after concatenation
+            kv_len = layer_key_states.size(2)
+            bsz = layer_key_states.size(0) // num_docs
+            num_heads = model_config.num_attention_heads
+            head_dim = model_config.hidden_size // num_heads
+            num_key_value_heads = model_config.num_key_value_heads
+
+            # Reshape key and value states
+            key_states = layer_key_states.view(bsz, num_docs, num_key_value_heads, kv_len, head_dim)\
+                                        .transpose(1, 2)\
+                                        .reshape(bsz, num_key_value_heads, num_docs * kv_len, head_dim)
+            value_states = layer_value_states.view(bsz, num_docs, num_key_value_heads, kv_len, head_dim)\
+                                            .transpose(1, 2)\
+                                            .reshape(bsz, num_key_value_heads, num_docs * kv_len, head_dim)
+
+            num_key_value_groups = num_heads // num_key_value_heads
+            key_states = repeat_kv(key_states, num_key_value_groups)
+            value_states = repeat_kv(value_states, num_key_value_groups)
+
+            new_hidden_states.append((key_states, value_states))
 
         return new_hidden_states, time() - start_time
 
