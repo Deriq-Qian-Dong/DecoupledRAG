@@ -266,12 +266,12 @@ class LanguageModelTrainer:
 
     def run(self):
         self.test()
-        for epoch in range(self.train_config['start_from'], self.train_config['num_epochs']):
-            assert self.config.get('compare_speed', False) == False
-            self.epoch = epoch
-            self.set_epoch_to_dataset()
-            self.train()
-            self.test()
+        # for epoch in range(self.train_config['start_from'], self.train_config['num_epochs']):
+        #     assert self.config.get('compare_speed', False) == False
+        #     self.epoch = epoch
+        #     self.set_epoch_to_dataset()
+        #     self.train()
+        #     self.test()
 
     def set_epoch_to_dataset(self):
         number_of_docs_lst = [20]
@@ -629,9 +629,9 @@ class LanguageModelTrainer:
         metrics_dict = {metric: {} for metric in metrics}
 
         with torch.no_grad():
-            # for number_of_docs in [1,3,5,10,20]:
+            for number_of_docs in [1,3,5,10,20]:
             # for number_of_docs in [2,1,3,5,10,20,30,40,50]:
-            for number_of_docs in [20]:
+            # for number_of_docs in [20]:
                 metrics_results_dict = {metric: [] for metric in metrics}
                 self.setup_test_dataloader(number_of_docs=number_of_docs)
                 test_dataloaders = self.test_dataloaders
