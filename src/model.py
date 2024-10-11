@@ -549,37 +549,66 @@ class LanguageModelTrainer:
         return 0.0
     
     @torch.no_grad()
-    def compute_hidden_states(self, batch, num_docs):
+    def compute_hidden_states(self, batch, num_docs, batch_size=400):
         model = self.model
         model_config = self.model_config
         start_time = time()
-        outputs = model.model(input_ids=batch['knowledge_input_ids'],
-            output_hidden_states=True,
-            return_dict=True,
-        )
-        hidden_states = outputs.past_key_values
-        if hidden_states is None:
-            print("Hidden states is None")
-            exit()
+
+        # Split input_ids into smaller batches if batch_size is specified
+        input_ids = batch['knowledge_input_ids']
+        total_samples = input_ids.size(0)
+
+        # Prepare a list to accumulate hidden states for all layers
+        accumulated_hidden_states = [[] for _ in range(len(model_config.num_hidden_layers))]
+
+        for i in range(0, total_samples, batch_size):
+            batch_input_ids = input_ids[i:i + batch_size]
+
+            outputs = model.model(input_ids=batch_input_ids,
+                output_hidden_states=True,
+                return_dict=True,
+            )
+
+            hidden_states = outputs.past_key_values
+            if hidden_states is None:
+                print("Hidden states is None")
+                exit()
+
+            for layer_idx in range(len(hidden_states)):
+                encoder_hidden_states = hidden_states[layer_idx]
+                key_states = encoder_hidden_states[0]
+                value_states = encoder_hidden_states[1]
+                kv_len = key_states.size(2)
+                bsz = key_states.size(0) // num_docs
+                num_heads = model_config.num_attention_heads
+                head_dim = model_config.hidden_size // num_heads
+                num_key_value_heads = model_config.num_key_value_heads
+
+                # Reshape key and value states
+                key_states = key_states.view(bsz, num_docs, num_key_value_heads, kv_len, head_dim)\
+                                    .transpose(1, 2)\
+                                    .reshape(bsz, num_key_value_heads, num_docs * kv_len, head_dim)
+                value_states = value_states.view(bsz, num_docs, num_key_value_heads, kv_len, head_dim)\
+                                        .transpose(1, 2)\
+                                        .reshape(bsz, num_key_value_heads, num_docs * kv_len, head_dim)
+
+                num_key_value_groups = num_heads // num_key_value_heads
+
+                key_states = repeat_kv(key_states, num_key_value_groups)
+                value_states = repeat_kv(value_states, num_key_value_groups)
+
+                # Accumulate the hidden states for this layer
+                accumulated_hidden_states[layer_idx].append((key_states, value_states))
+
+        # Concatenate the accumulated hidden states along the first dimension for each layer
         new_hidden_states = []
-        for layer_idx in range(len(hidden_states)):
-            encoder_hidden_states = hidden_states[layer_idx]
-            key_states = encoder_hidden_states[0]
-            value_states = encoder_hidden_states[1]
-            kv_len = key_states.size(2)
-            bsz = key_states.size(0)//num_docs
-            num_heads = model_config.num_attention_heads
-            model_config.num_heads = num_heads
-            head_dim = model_config.hidden_size // num_heads
-            model_config.head_dim = head_dim
-            key_states = key_states.view(bsz, num_docs, model_config.num_key_value_heads, kv_len, model_config.head_dim).transpose(1, 2).view(bsz, model_config.num_key_value_heads, num_docs*kv_len, model_config.head_dim)
-            value_states = value_states.view(bsz, num_docs, model_config.num_key_value_heads, kv_len, model_config.head_dim).transpose(1, 2).view(bsz, model_config.num_key_value_heads, num_docs*kv_len, model_config.head_dim)
-            num_key_value_groups = model_config.num_heads // model_config.num_key_value_heads
-            key_states = repeat_kv(key_states, num_key_value_groups)
-            value_states = repeat_kv(value_states, num_key_value_groups)
-            new_hidden_states.append((key_states, value_states))
+        for layer_hidden_states in accumulated_hidden_states:
+            layer_key_states = torch.cat([item[0] for item in layer_hidden_states], dim=0)
+            layer_value_states = torch.cat([item[1] for item in layer_hidden_states], dim=0)
+            new_hidden_states.append((layer_key_states, layer_value_states))
+
         return new_hidden_states, time() - start_time
-    
+
     def test(self):
         model, tokenizer, optimizer, scheduler, test_dataloaders, accelerator, iter_count = self.model, self.tokenizer, self.optimizer, self.scheduler, self.test_dataloaders, self.accelerator, self.iter_count
         model.eval()
@@ -597,7 +626,7 @@ class LanguageModelTrainer:
         metrics_dict = {metric: {} for metric in metrics}
 
         with torch.no_grad():
-            for number_of_docs in [20, 30, 40, 50]:
+            for number_of_docs in [30, 40, 50]:
             # for number_of_docs in [1,3,5,10,20]:
             # for number_of_docs in [20]:
                 metrics_results_dict = {metric: [] for metric in metrics}
