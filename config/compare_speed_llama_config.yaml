@@ -1,3 +1,4 @@
+compare_speed: true
 trainer: LanguageModelTrainer
 training:
   model_type: llama
@@ -46,8 +47,8 @@ dataset:
       dataset_name: QADataset4Chat
       batch_size: 2
       num_epochs: 805
-      max_seq_len: 2048
-      knowledge_max_seq_len: 64
+      max_seq_len: 4096
+      knowledge_max_seq_len: 4096
       dynamic_sampler: false
       corpus: ../data_of_ReGPT/Wiki-corpus/train
       system_prompt: "You are a helpful assistant. Please answer user question to the best of your ability. The answer MUST in ONE OR FEW WORDS. The answer is within the question."
@@ -57,8 +58,8 @@ dataset:
       dataset_name: QADataset4Chat
       batch_size: 2
       num_epochs: 805
-      max_seq_len: 2048
-      knowledge_max_seq_len: 64
+      max_seq_len: 4096
+      knowledge_max_seq_len: 4096
       dynamic_sampler: false
       corpus: ../data_of_ReGPT/Wiki-corpus/train
       system_prompt: "You are a helpful assistant. Please answer user question to the best of your ability. The answer MUST in ONE OR FEW WORDS."
@@ -66,22 +67,22 @@ dataset:
   test:
     2WikiMultihopQA:
       dataset_name: QADataset4ChatTest
-      batch_size: 4
+      batch_size: 1
       data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/2WikiMultihopQA/sorted_datasets_dev/
-      max_seq_len: 2048
-      knowledge_max_seq_len: 64
-      max_new_tokens: 32
+      max_seq_len: 8192
+      knowledge_max_seq_len: 8192
+      max_new_tokens: 8
       index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
       corpus: ../data_of_ReGPT/Wiki-corpus/train/
       system_prompt: "You are a helpful assistant. Please answer user question to the best of your ability. The answer MUST in ONE OR FEW WORDS. The answer is within the question."
       dynamic_sampler: false
     complex_web_questions:
       dataset_name: QADataset4ChatTest
-      batch_size: 4
+      batch_size: 1
       data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/complex_web_questions/validation/
-      max_seq_len: 2048
-      knowledge_max_seq_len: 64
-      max_new_tokens: 32
+      max_seq_len: 8192
+      knowledge_max_seq_len: 8192
+      max_new_tokens: 8
       index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
       corpus: ../data_of_ReGPT/Wiki-corpus/train/
       system_prompt: "You are a helpful assistant. Please answer user question to the best of your ability. The answer MUST in ONE OR FEW WORDS."
