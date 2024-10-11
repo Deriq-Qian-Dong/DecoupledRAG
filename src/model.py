@@ -549,7 +549,7 @@ class LanguageModelTrainer:
         return 0.0
     
     @torch.no_grad()
-    def compute_hidden_states(self, batch, num_docs, batch_size=400):
+    def compute_hidden_states(self, batch, num_docs, batch_size=100):
         model = self.model
         model_config = self.model_config
         start_time = time()
