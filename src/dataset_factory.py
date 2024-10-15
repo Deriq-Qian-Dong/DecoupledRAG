@@ -478,6 +478,27 @@ class QADataset4Chat(Dataset):
         self.total_tokens = sum(input_ids_lengths)
         self.num_samples = len(self.datasets)
 
+
+def reorder_docs(scored_docs):
+    """
+    Reorder documents based on their relevance to the query.
+    The most relevant documents are placed at the beginning and end of the list,
+    while less relevant documents are placed in the middle.
+
+    :param docs: A list of document strings.
+    :return: A reordered list of documents.
+    """
+    # Placeholder function to score relevance; replace with actual scoring logic
+
+    # Reorder: place the most relevant at the start and end, less relevant in the middle
+    reordered_docs = []
+    for i, doc in enumerate(scored_docs):
+        if i % 2 == 0:
+            reordered_docs.append(doc)
+        else:
+            reordered_docs.insert(0, doc)
+
+    return reordered_docs
 @register_class
 class QADataset4ChatTest(QADataset4Chat):
     def __init__(self, tokenizer, args):
@@ -510,6 +531,9 @@ class QADataset4ChatTest(QADataset4Chat):
             answers = [sample['answer']]
         # hits = self.searcher.search(query, 5)
         retrieved_docs = self.corpus[sample['neighbors']]['text'][:self.number_of_docs]
+        # 在retrieved_docs中, 越相关越靠前, 越不相关越靠后
+        # 重排序reorder_docs，使得相关性高的文档在列表前边和后边，中间放相关性低的文档
+        retrieved_docs = reorder_docs(query, retrieved_docs)
         references = "\nAnswer the question based on the references.\nReferences:\n"
         for doc in retrieved_docs:
             references += doc+'\n'
