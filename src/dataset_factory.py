@@ -533,7 +533,7 @@ class QADataset4ChatTest(QADataset4Chat):
         retrieved_docs = self.corpus[sample['neighbors']]['text'][:self.number_of_docs]
         # 在retrieved_docs中, 越相关越靠前, 越不相关越靠后
         # 重排序reorder_docs，使得相关性高的文档在列表前边和后边，中间放相关性低的文档
-        retrieved_docs = reorder_docs(query, retrieved_docs)
+        retrieved_docs = reorder_docs(retrieved_docs)
         references = "\nAnswer the question based on the references.\nReferences:\n"
         for doc in retrieved_docs:
             references += doc+'\n'
