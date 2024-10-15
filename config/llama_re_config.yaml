@@ -66,17 +66,17 @@ dataset:
       system_prompt: "You are a helpful assistant. Please fill in the [MASK] in the sentence."
       max_tokens: 4096
   test:
-    zs:
-      dataset_name: QADataset4ChatTest
-      batch_size: 4
-      data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/zs/test/
-      max_seq_len: 2048
-      knowledge_max_seq_len: 64
-      max_new_tokens: 128
-      index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
-      corpus: ../data_of_ReGPT/Wiki-corpus/train/
-      system_prompt: "You are a helpful assistant. Please answer user question to the best of your ability. The answer MUST in ONE OR FEW WORDS."
-      dynamic_sampler: false
+    # zs:
+    #   dataset_name: QADataset4ChatTest
+    #   batch_size: 4
+    #   data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/zs/test/
+    #   max_seq_len: 2048
+    #   knowledge_max_seq_len: 64
+    #   max_new_tokens: 128
+    #   index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
+    #   corpus: ../data_of_ReGPT/Wiki-corpus/train/
+    #   system_prompt: "You are a helpful assistant. Please answer user question to the best of your ability. The answer MUST in ONE OR FEW WORDS."
+    #   dynamic_sampler: false
     trex:
       dataset_name: QADataset4ChatTest
       batch_size: 4
