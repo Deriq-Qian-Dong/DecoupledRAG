@@ -1,0 +1,72 @@
+trainer: RAGLanguageModelTrainer
+training:
+  model_type: llama
+  project_name: RAG_llama2-qasft
+  # model_name_or_path: ../SFT-llama3
+  # tokenizer_name_or_path: ../Llama-2-7b-chat-hf/
+  model_name_or_path: ../llama3-chat
+  tokenizer_name_or_path: ../llama3-chat
+  # kg_model_name_or_path: ../llama3-chat-top8
+  kg_model_name_or_path: ./output/RAG-best
+  num_layers_unfrozen: -1
+  gradient_checkpointing: true
+  optimizer: 
+    name: Lamb
+    kwargs:
+      lr: 1e-3
+      weight_decay: 0.0
+      betas: [0.9, 0.999]
+      eps: 1e-08
+  scheduler:
+    name: LinearLR
+    kwargs:
+      total_iters: 10
+  num_epochs: 2000
+  log_with: tensorboard
+  project_dir: output/
+  negatives_in_device: true
+  negatives_x_device: true
+  predict_from_last: 10000
+  eval_step: 100
+  start_from: 0
+  cross_attention_activation_function: silu
+  add_cross_attention_layer_number: 31
+  skip_steps: 0
+  max_tokens: 256
+  kb_path: ../data_of_ReGPT/marco/phrases_embeddings.npy
+  freeze_retrieval_head: true
+  freeze_lm_head: true
+
+dataset:
+  train:
+    dataset_name: QADataset4Chat
+    batch_size: 5
+    # data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train_gpt2_embeddings/
+    data_name_or_path: ../data_of_ReGPT/QA_datasets_WikiEmb/nq/sorted_datasets_train
+    # data_name_or_path: ../data_of_ReGPT/hotpotqaAnd2WikiMultihopQA/sorted_datasets_train_sub_reversed/
+    max_seq_len: 512
+    dynamic_sampler: true
+    index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
+    corpus: ../data_of_ReGPT/Wiki-corpus/train/
+  test:
+    dataset_name: QADataset4ChatTest
+    batch_size: 32
+    # data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_test_gpt2_embeddings/
+    data_name_or_path:  ../data_of_ReGPT/QA_datasets_WikiEmb/nq/sorted_datasets_test
+    max_seq_len: 512
+    max_new_tokens: 32
+    index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
+    corpus: ../data_of_ReGPT/Wiki-corpus/train/
+
+generation_kwargs:
+  min_length: 0
+  max_length: 512
+  do_sample: true
+  top_k: 5
+  top_p: 0.95
+
+RAG_kwargs:
+  faiss:
+    dimension: 768
+  retrieval_step: 10
+  topk: 6

@@ -1,0 +1,56 @@
+trainer: LanguageModelTrainer
+training:
+  project_name: gpt2-sft
+  model_name_or_path: ../gpt2
+  tokenizer_name_or_path: ../gpt2
+  num_layers_unfrozen: -1
+  gradient_checkpointing: true
+  optimizer: 
+    name: AdamW
+    kwargs:
+      lr: 0.0006
+      weight_decay: 0.0
+      betas: [0.9, 0.999]
+      eps: 1e-08
+  scheduler:
+    name: CosineAnnealingLR
+    kwargs:
+      T_max: 1000
+      eta_min: 0.0001
+  num_epochs: 10000
+  start_from: 0
+  eval_step: 1000
+  log_with: tensorboard
+  project_dir: output/
+
+dataset:
+  train:
+    dataset_name: CorpusPretrainDataset
+    data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_train_gpt2/
+    max_seq_len: 256
+    train_or_test: train
+    batch_size: 200
+  test:
+    dataset_name: CorpusPretrainDataset
+    data_name_or_path: ../data_of_ReGPT/marco/sorted_datasets_test_gpt2/
+    max_seq_len: 256
+    train_or_test: test
+    batch_size: 200
+
+generation_kwargs:
+  min_length: 0
+  max_length: 512
+  do_sample: false
+  top_k: 1
+  top_p: 1.0
+  num_return_sequences: 1
+
+ReGPT_kwargs:
+  faiss:
+    index_type: Flat
+    dimension: 4096
+    nprobe: 10000
+    phrases_path: ../phrases_WikiText-103/phrases_WikiText-103.npy
+    matrix_path: ../phrases_WikiText-103/phrases_embeddings_WikiText103_normalized.npy
+  negative_path: ../phrases_WikiText-103/phrases_embeddings_WikiText103_negatives.tsv
+  negative_depth: 101
