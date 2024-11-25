@@ -1,90 +1,23 @@
-ReGPT
-===
-**ReGPT:** Using **Re**trieve Technique to **Re**place the Embedding Layer of **GPT**
+# Decoupling Knowledge and Context: An Efficient and Effective Retrieval Augmented Generation Framework via Cross Attention
 
-## Requirements
-- Python 3.8+
-- 8*A100(40GB) at least
+## Overview
+Retrieval-Augmented Generation (RAG) systems enhance large language models (LLMs) with external knowledge. However, traditional RAG methods face challenges: they create lengthy contexts leading to slow inference, risk degrading LLM capabilities, and suffer from knowledge permutation sensitivity.
+
+We present DecoupledRAG, a novel framework that addresses these limitations by separating external knowledge from the context. Our approach uses cross-attention to inject knowledge directly during LLM inference, without modifying model parameters or input context. This innovation enables efficient and robust knowledge integration while maintaining model performance.
+
+## Installation
+To set up the environment, clone the repository and install the required dependencies:
 
 ```bash
 pip install -r requirements.txt
+sh scripts/update_transformers.sh
 ```
 
-## Data Preparation
-The corpus for Wikitext-103, Law-MT, and En-Wiki can be downloaded from [this link](https://pan.baidu.com/s/13JmmAZPN_5jLkSbS-V51rg) (with the code `ufhn`). 
+## Training
+To train the DecoupledRAG framework, run the following command:
+
 ```bash
-mkdir ../data_of_ReGPT
-```
-Then, you can put them into the `../data_of_ReGPT` folder and preprocess them by the following script:
-```bash
-python src/data_construction/preprocess_dataset.py WikiText-103
-python src/data_construction/preprocess_dataset.py Law-MT
-python src/data_construction/preprocess_dataset.py En-Wiki 
+sh scripts/rag_llama_run.sh
 ```
 
-
-For C4, you can download it from [huggingface](https://huggingface.co/datasets/c4) by the following script:
-```python
-from datasets import load_dataset
-
-dataset = load_dataset("c4", "en", split="train")
-dataset.save_to_disk("../data_of_ReGPT/c4_en")
-```
-
-
-
-## Training Pipeline
-<!-- pipeline: training phrase tokenizer-->
-First, we train a phrase tokenizer on the training set of Wikitext-103 with the tokenizer of `meta-llama/Llama-2-7b-hf` as the initialization. 
-```bash
-python src/data_construction/train_tokenizer.py WikiText-103 meta-llama/Llama-2-7b-hf 1000000
-```
-
-Then, the phrase tokenizer is saved in `../data_of_ReGPT/llama2-7b-phrase-tokenizer-trained-on-WikiText103/` and the phrases are saved in `../data_of_ReGPT/phrases_WikiText-103/phrases.npy`.
-
-<!-- pipeline: encoding phrases-->
-Subsequently, we need to encoding the phrases using a dense retrieval model.
-```bash
-python src/data_construction/compute_embedding_by_dense_retrieval.py WikiText-103 facebook/contriever
-```
-The embedding of phrases is saved in `../data_of_ReGPT/phrases_WikiText-103/phrases_embeddings.npy` and the normalized embedding is saved in `../data_of_ReGPT/phrases_WikiText-103/phrases_embeddings_normalized.npy`.
-
-To accelerate the training process, we also need to build a negative sample pool for each phrase. 
-```bash
-python src/data_construction/retrieve_negatives.py WikiText-103 1000000 101
-```
-The negative sample pool is saved in `../data_of_ReGPT/phrases_WikiText-103/negatives.tsv`.
-
-Now, we can train the ReGPT model on the training set of En-Wiki.
-
-
-The optimization includes two training stages.
-
-In the first stage, we train the ReGPT model with in-batch negatives (random negatives). 
-```bash
-sh scripts/rellama_run.sh config/rellama_config_stage1.yaml
-```
-
-<!-- add picture of loss -->
-![stage1TrainingLoss](pics/stage1.png)
-
-
-In the second stage, we train the ReGPT model with hard negatives. 
-```bash
-sh scripts/rellama_run.sh config/rellama_config_stage2.yaml
-```
-<!-- add picture of loss -->
-![stage2TrainingLoss](pics/stage2.png)
-
-
-### Evaluation
-TODO
-
-We can manually evaluate the generation performance of the ReGPT model by the following script:
-```bash
-python src/regpt_test.py
-```
-
-
-
-
+The evaluation results will be presented in tensorboard.
