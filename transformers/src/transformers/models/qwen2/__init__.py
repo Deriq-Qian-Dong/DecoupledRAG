@@ -45,6 +45,7 @@ else:
         "Qwen2Model",
         "Qwen2PreTrainedModel",
         "Qwen2ForSequenceClassification",
+        "Qwen2WithRetrievalHeadAndKnowledgeInjectorForCausalLM",
     ]
 
 
@@ -71,6 +72,7 @@ if TYPE_CHECKING:
             Qwen2ForSequenceClassification,
             Qwen2Model,
             Qwen2PreTrainedModel,
+            Qwen2WithRetrievalHeadAndKnowledgeInjectorForCausalLM,
         )
 
 
