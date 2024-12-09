@@ -264,35 +264,49 @@ class Qwen2Attention(nn.Module):
         past_key_value: Optional[Cache] = None,
         output_attentions: bool = False,
         use_cache: bool = False,
-        encoder_hidden_states: Optional[torch.Tensor] = None, 
+        encoder_hidden_states: Optional[Union[torch.Tensor, Tuple[torch.Tensor]]] = None,
         retrieval_position: Optional[torch.LongTensor] = None, # 如需检索位置，可添加此参数
         is_cross_attention: bool = False,                   
         is_kv_cache: bool = False,
         **kwargs,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         bsz, q_len, _ = hidden_states.size()
-
-        # 若是cross-attention，需要使用encoder_hidden_states来计算K、V
-        if encoder_hidden_states is not None and is_cross_attention:
-            # encoder_hidden_states: [bsz, seq_len_enc, hidden_size]
-            # Q来自hidden_states, K,V来自encoder_hidden_states
-            query_states = self.q_proj(hidden_states)
-            if is_kv_cache:
-                key_states, value_states = encoder_hidden_states
+        if not is_kv_cache:
+            encoder_hidden_states = encoder_hidden_states.reshape(bsz, -1, self.hidden_size) if encoder_hidden_states is not None else None
+        if encoder_hidden_states is not None:
+            if not is_kv_cache:
+                kv_len = encoder_hidden_states.size(1)
             else:
-                key_states = self.k_proj(encoder_hidden_states)
-                value_states = self.v_proj(encoder_hidden_states)
-            kv_len = encoder_hidden_states.size(1) if not is_kv_cache else key_states.size(2)
+                kv_len = encoder_hidden_states[0].size(2)
         else:
-            # self-attn情况
-            query_states = self.q_proj(hidden_states)
-            key_states = self.k_proj(hidden_states)
-            value_states = self.v_proj(hidden_states)
             kv_len = q_len
 
+        query_states = self.q_proj(hidden_states)
+        if is_cross_attention:
+            if is_kv_cache:
+                key_states = encoder_hidden_states[0]
+                value_states = encoder_hidden_states[1]
+            else:   
+                key_states = self.k_proj(encoder_hidden_states)
+                value_states = self.v_proj(encoder_hidden_states)
+        else:
+            key_states = self.k_proj(hidden_states)
+            value_states = self.v_proj(hidden_states)
+
+
         query_states = query_states.view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
-        key_states = key_states.view(bsz, kv_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
-        value_states = value_states.view(bsz, kv_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
+        if is_cross_attention:
+            if not is_kv_cache:
+                key_states = key_states.view(bsz, kv_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
+                value_states = value_states.view(bsz, kv_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
+            # else:
+                # num_docs = key_states.size(0)//bsz
+                # key_states = key_states.view(bsz, num_docs, self.num_key_value_heads, kv_len, self.head_dim).transpose(1, 2).view(bsz, self.num_key_value_heads, num_docs*kv_len, self.head_dim)
+                # value_states = value_states.view(bsz, num_docs, self.num_key_value_heads, kv_len, self.head_dim).transpose(1, 2).view(bsz, self.num_key_value_heads, num_docs*kv_len, self.head_dim)
+        else:
+            key_states = key_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
+            value_states = value_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
+
 
         kv_seq_len = key_states.shape[-2]
         if past_key_value is not None:
@@ -304,15 +318,18 @@ class Qwen2Attention(nn.Module):
                 )
             kv_seq_len += past_key_value.get_usable_length(kv_seq_len, self.layer_idx)
         cos, sin = self.rotary_emb(value_states, seq_len=kv_seq_len)
-        query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin, position_ids)
+        if not is_cross_attention:
+            query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin, position_ids)
+        else:
+            kv_len = key_states.size(2)
 
         if past_key_value is not None and not is_cross_attention:
             cache_kwargs = {"sin": sin, "cos": cos}
             key_states, value_states = past_key_value.update(key_states, value_states, self.layer_idx, cache_kwargs)
 
-        # repeat kv if needed
-        key_states = repeat_kv(key_states, self.num_key_value_groups)
-        value_states = repeat_kv(value_states, self.num_key_value_groups)
+        if not is_cross_attention or not is_kv_cache:
+            key_states = repeat_kv(key_states, self.num_key_value_groups)
+            value_states = repeat_kv(value_states, self.num_key_value_groups)
 
         attn_weights = torch.matmul(query_states, key_states.transpose(2, 3)) / math.sqrt(self.head_dim)
 
