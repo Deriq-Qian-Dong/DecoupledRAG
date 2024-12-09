@@ -2,8 +2,8 @@ trainer: LanguageModelTrainer
 training:
   model_type: llama
   project_name: RAG_qwen2-chat
-  model_name_or_path: ../qwen2.5-7B-chat/
-  tokenizer_name_or_path: ../qwen2.5-7B-chat/
+  model_name_or_path: ../Qwen2.5-7B-Instruct/
+  tokenizer_name_or_path: ../Qwen2.5-7B-Instruct/
   kg_model_name_or_path: RAG-best
   num_layers_unfrozen: -1
   gradient_checkpointing: true
