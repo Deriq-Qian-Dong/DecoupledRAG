@@ -265,13 +265,13 @@ class LanguageModelTrainer:
         self.best_metric = 0.0
 
     def run(self):
-        self.test()
-        # for epoch in range(self.train_config['start_from'], self.train_config['num_epochs']):
-        #     assert self.config.get('compare_speed', False) == False
-        #     self.epoch = epoch
-        #     self.set_epoch_to_dataset()
-        #     self.train()
-        #     self.test()
+        # self.test()
+        for epoch in range(self.train_config['start_from'], self.train_config['num_epochs']):
+            assert self.config.get('compare_speed', False) == False
+            self.epoch = epoch
+            self.set_epoch_to_dataset()
+            self.train()
+            self.test()
 
     def set_epoch_to_dataset(self):
         number_of_docs_lst = [20]
