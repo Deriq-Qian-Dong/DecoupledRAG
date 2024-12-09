@@ -484,10 +484,6 @@ class LanguageModelTrainer:
             batch = self._prepare_inputs(batch)
             batch = accelerator.prepare(batch)
             forward_time = time()
-            for name, param in accelerator.unwrap_model(model).model.named_parameters():
-                if param.requires_grad:
-                    param.retain_grad()
-                    # stats[f"grad/{name}"] = param.grad.norm().item()
             outputs = model(**batch)
             forward_time = time() - forward_time
             loss, stats = self.compute_loss(outputs)
@@ -496,10 +492,8 @@ class LanguageModelTrainer:
             stats = self.task_specific_stats(stats, model)
             backward_time = time()
             accelerator.backward(loss)
-            for name, param in accelerator.unwrap_model(model).model.named_parameters():
-                if param.requires_grad:
-                    print(name, param.grad)
-                    # stats[f"grad/{name}"] = param.grad.norm().item()
+            if accelerator.sync_gradients:
+                accelerator.clip_grad_value_(model.model.parameters(), 0.01)
             backward_time = time() - backward_time
             stats["time/forward"] = forward_time
             stats["time/backward"] = backward_time
