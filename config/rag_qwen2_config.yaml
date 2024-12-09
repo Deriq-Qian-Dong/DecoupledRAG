@@ -2,8 +2,8 @@ trainer: RAGLanguageModelTrainer
 training:
   model_type: qwen2
   project_name: RAG_qwen2-chat-ca-rag
-  model_name_or_path: ../qwen2.5-7B-chat/
-  tokenizer_name_or_path: ../qwen2.5-7B-chat/
+  model_name_or_path: ../Qwen2.5-7B-Instruct/
+  tokenizer_name_or_path: ../Qwen2.5-7B-Instruct/
   project_dir: output_ca_qwen2/
   # model_name_or_path: ../llama3_chat_qa_sft/
   # tokenizer_name_or_path: ../llama3_chat_qa_sft/
