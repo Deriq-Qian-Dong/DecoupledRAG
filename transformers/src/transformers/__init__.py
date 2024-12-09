@@ -3144,6 +3144,7 @@ else:
             "Qwen2ForSequenceClassification",
             "Qwen2Model",
             "Qwen2PreTrainedModel",
+            "Qwen2WithRetrievalHeadAndKnowledgeInjectorForCausalLM",
         ]
     )
     _import_structure["models.qwen2_moe"].extend(
