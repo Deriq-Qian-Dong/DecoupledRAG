@@ -70,7 +70,7 @@ class ReGPTForCausalLM(nn.Module):
         if train_config['gradient_checkpointing']:
             # model.enable_input_require_grads()
             model.gradient_checkpointing_enable()
-            model.enable_input_require_grads()
+        model.enable_input_require_grads()
         if 'lora_model_name_or_path' in train_config:    
             lora_config = LoraConfig.from_pretrained(train_config['lora_model_name_or_path'])
             torch.cuda.is_available = lambda : False
@@ -218,7 +218,7 @@ class RAGForCausalLM(nn.Module):
         freeze_non_crossattention_parameters(model, train_config['freeze_retrieval_head'], train_config['freeze_lm_head'])
         if train_config['gradient_checkpointing']:
             model.gradient_checkpointing_enable()
-            model.enable_input_require_grads()
+        model.enable_input_require_grads()
         if train_config['model_type']=='gpt2':
             model.base_model.wpe.weight.requires_grad = False
             model.base_model.get_input_embeddings().weight.requires_grad = False
@@ -326,7 +326,7 @@ class LanguageModelTrainer:
         # print_trainable_params_stats(model)
         if train_config['gradient_checkpointing']:
             model.gradient_checkpointing_enable()
-            model.enable_input_require_grads()
+        model.enable_input_require_grads()
         if os.path.exists(os.path.join(train_config['kg_model_name_or_path'], 'adapter_config.json')):
             model.load_adapter(train_config['kg_model_name_or_path'], "finetune")
         else:
