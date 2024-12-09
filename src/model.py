@@ -492,11 +492,6 @@ class LanguageModelTrainer:
             stats = self.task_specific_stats(stats, model)
             backward_time = time()
             accelerator.backward(loss)
-            if accelerator.sync_gradients:
-                # accelerator.clip_grad_norm_(model.model.parameters(), 0.01)
-                for name, param in model.named_parameters():
-                    if param.requires_grad:
-                        print(name, param.grad.norm())
             backward_time = time() - backward_time
             stats["time/forward"] = forward_time
             stats["time/backward"] = backward_time
