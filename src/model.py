@@ -487,7 +487,7 @@ class LanguageModelTrainer:
             outputs = model(**batch)
             forward_time = time() - forward_time
             loss, stats = self.compute_loss(outputs)
-            for name, param in model.named_parameters():
+            for name, param in accelerator.unwrap_model(model).named_parameters():
                 if param.requires_grad:
                     stats[f"grad/{name}"] = param.grad.norm().item()
             stats["training/seq_len"] = seq_len
