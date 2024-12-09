@@ -1218,7 +1218,6 @@ class Qwen2WithRetrievalHeadAndKnowledgeInjectorForCausalLM(Qwen2PreTrainedModel
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
-        cache_position: Optional[torch.LongTensor] = None,
         encoder_hidden_states: Optional[Union[torch.Tensor, Tuple[torch.Tensor]]] = None,
         p_reps: Optional[torch.Tensor] = None,
         retrieval_position: Optional[torch.LongTensor] = None,
@@ -1279,7 +1278,6 @@ class Qwen2WithRetrievalHeadAndKnowledgeInjectorForCausalLM(Qwen2PreTrainedModel
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
-            cache_position=cache_position,
             encoder_hidden_states=encoder_hidden_states,
             retrieval_position=retrieval_position,
             knowledge_outputs=knowledge_outputs,
@@ -1353,30 +1351,17 @@ class Qwen2WithRetrievalHeadAndKnowledgeInjectorForCausalLM(Qwen2PreTrainedModel
         past_key_values=None,
         attention_mask=None,
         inputs_embeds=None,
-        cache_position=None,
         use_cache=True,
         knowledge_outputs=None,
         knowledge_input_ids=None,
         **kwargs,
     ):
-        # With static cache, the `past_key_values` is None
-        # TODO joao: standardize interface for the different Cache classes and remove of this if
-        has_static_cache = False
-        if past_key_values is None:
-            past_key_values = getattr(getattr(self.model.layers[0], "self_attn", {}), "past_key_value", None)
-            has_static_cache = past_key_values is not None
-
-        past_length = 0
+        # Omit tokens covered by past_key_values
         if past_key_values is not None:
             if isinstance(past_key_values, Cache):
-                past_length = cache_position[0] if cache_position is not None else past_key_values.get_seq_length()
-                max_cache_length = (
-                    torch.tensor(past_key_values.get_max_length(), device=input_ids.device)
-                    if past_key_values.get_max_length() is not None
-                    else None
-                )
-                cache_length = past_length if max_cache_length is None else torch.min(max_cache_length, past_length)
-            # TODO joao: remove this `else` after `generate` prioritizes `Cache` objects
+                cache_length = past_key_values.get_seq_length()
+                past_length = past_key_values.seen_tokens
+                max_cache_length = past_key_values.get_max_length()
             else:
                 cache_length = past_length = past_key_values[0][0].shape[2]
                 max_cache_length = None
@@ -1413,26 +1398,13 @@ class Qwen2WithRetrievalHeadAndKnowledgeInjectorForCausalLM(Qwen2PreTrainedModel
         if inputs_embeds is not None and past_key_values is None:
             model_inputs = {"inputs_embeds": inputs_embeds}
         else:
-            # The `contiguous()` here is necessary to have a static stride during decoding. torchdynamo otherwise
-            # recompiles graphs as the stride of the inputs is a guard. Ref: https://github.com/huggingface/transformers/pull/29114
-            # TODO: use `next_tokens` directly instead.
-            model_inputs = {"input_ids": input_ids.contiguous()}
-
-        input_length = position_ids.shape[-1] if position_ids is not None else input_ids.shape[-1]
-        if cache_position is None:
-            cache_position = torch.arange(past_length, past_length + input_length, device=input_ids.device)
-        elif use_cache:
-            cache_position = cache_position[-input_length:]
-
-        if has_static_cache:
-            past_key_values = None
+            model_inputs = {"input_ids": input_ids}
 
         model_inputs.update(
             {
                 "position_ids": position_ids,
-                "cache_position": cache_position,
                 "past_key_values": past_key_values,
-                "use_cache": use_cache,
+                "use_cache": kwargs.get("use_cache"),
                 "attention_mask": attention_mask,
                 "knowledge_outputs": knowledge_outputs,
                 "knowledge_input_ids": knowledge_input_ids,
