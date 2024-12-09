@@ -4,7 +4,7 @@ training:
   project_name: RAG_llama3-chat-ca-rag
   model_name_or_path: ../llama3-chat
   tokenizer_name_or_path: ../llama3-chat
-  project_dir: output_ca/
+  project_dir: output_ca_test/
   # model_name_or_path: ../llama3_chat_qa_sft/
   # tokenizer_name_or_path: ../llama3_chat_qa_sft/
   kg_model_name_or_path: RAG-best
