@@ -199,7 +199,7 @@ class LinearFusion(nn.Module):
         # 初始化权重矩阵
         # self.W_C = nn.Parameter(torch.eye(hidden_dim, hidden_dim))
         self.W_A = nn.Parameter(torch.randn(hidden_dim, rank) * 0.01)  # 高斯初始化的矩阵
-        self.W_B = nn.Parameter(torch.zeros(rank, hidden_dim))  # 零矩阵
+        self.W_B = nn.Parameter(torch.randn(hidden_dim, rank) * 0.01)  # 高斯初始化的矩阵
         # torch.nn.init.kaiming_uniform_(self.W_A, a=math.sqrt(5))
         # torch.nn.init.zeros_(self.W_B)
         self.dropout_prob = dropout_prob
