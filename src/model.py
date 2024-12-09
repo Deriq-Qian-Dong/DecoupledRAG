@@ -335,7 +335,13 @@ class LanguageModelTrainer:
                 lora_dropout=0.1,
                 r=16,
                 bias='none',
-                task_type="CAUSAL_LM"
+                task_type="CAUSAL_LM",
+                target_modules=[
+                        "q_proj",
+                        "k_proj",
+                        "v_proj",
+                        "o_proj",
+                        ],
             )
             model.add_adapter(peft_config, "finetune")
         self.model = model
