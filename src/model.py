@@ -499,7 +499,7 @@ class LanguageModelTrainer:
             for name, param in accelerator.unwrap_model(model).model.named_parameters():
                 if param.requires_grad:
                     print(name, param.grad)
-                    stats[f"grad/{name}"] = param.grad.norm().item()
+                    # stats[f"grad/{name}"] = param.grad.norm().item()
             backward_time = time() - backward_time
             stats["time/forward"] = forward_time
             stats["time/backward"] = backward_time
