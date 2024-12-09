@@ -1100,9 +1100,18 @@ class Qwen2Model(Qwen2PreTrainedModel):
         all_self_attns = () if output_attentions else None
         next_decoder_cache = None
 
-        for decoder_layer in self.layers:
+        num_hidden_layers = len(self.layers)
+        num_knowledge_layers = len(knowledge_outputs) if knowledge_outputs is not None else 0
+
+        for layer_idx, decoder_layer in enumerate(self.layers):
             if output_hidden_states:
                 all_hidden_states += (hidden_states,)
+
+            if decoder_layer.add_cross_attention and knowledge_outputs is not None:
+                encoder_hidden_states = knowledge_outputs[layer_idx]
+            else:
+                encoder_hidden_states = None
+
 
             if self.gradient_checkpointing and self.training:
                 layer_outputs = self._gradient_checkpointing_func(
