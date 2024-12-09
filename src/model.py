@@ -368,7 +368,9 @@ class LanguageModelTrainer:
         dataset_config = config['dataset']
         train_config, dataset_config = self.setup_config(train_config, dataset_config)
         tokenizer = AutoTokenizer.from_pretrained(train_config['tokenizer_name_or_path'])
-        tokenizer.pad_token = tokenizer.eos_token
+        if tokenizer.pad_token is None:
+            tokenizer.pad_token = tokenizer.eos_token
+            tokenizer.pad_token_id = tokenizer.eos_token_id
         train_config['eos_token_id'] = tokenizer.eos_token_id
         
         self.setup_model(train_config)
@@ -511,9 +513,9 @@ class LanguageModelTrainer:
     def generate(self, batch, key):
         model = self.model
         if self.config.get('compare_speed', False):
-            outputs = model.module.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False, pad_token_id=self.tokenizer.eos_token_id, min_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'])
+            outputs = model.module.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False, pad_token_id=self.tokenizer.pad_token_id, min_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'])
         else:
-            outputs = model.module.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False, pad_token_id=self.tokenizer.eos_token_id)
+            outputs = model.module.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False, pad_token_id=self.tokenizer.pad_token_id)
         return outputs
     
     def _compute_f1(self, prediction, answer, tokenizer):
@@ -771,7 +773,7 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
     def generate(self, batch, key):
         model = self.model
         if self.config.get('compare_speed', False):
-            outputs = model.module.model.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False, pad_token_id=self.tokenizer.eos_token_id, min_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'])
+            outputs = model.module.model.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False, pad_token_id=self.tokenizer.pad_token_id, min_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'])
         else:
-            outputs = model.module.model.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False, pad_token_id=self.tokenizer.eos_token_id)
+            outputs = model.module.model.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False, pad_token_id=self.tokenizer.pad_token_id)
         return outputs
