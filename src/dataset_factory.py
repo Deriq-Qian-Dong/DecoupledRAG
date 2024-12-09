@@ -509,7 +509,7 @@ class QADataset4ChatTest(QADataset4Chat):
         # 将datasets shard
         num_samples = len(self.datasets)
         # 1000 samples per shard
-        num_shards = max(num_samples//1000, 1)
+        num_shards = max(num_samples//100, 1)
         if 'eli5' in self.args['data_name_or_path'] or self.args['compare_speed']:
             num_shards = max(num_samples//10, 1)
         # 将datasets shard
