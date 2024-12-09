@@ -492,7 +492,7 @@ class LanguageModelTrainer:
             stats = self.task_specific_stats(stats, model)
             backward_time = time()
             accelerator.backward(loss)
-            for name, param in accelerator.unwrap_model(model).parameters():
+            for name, param in accelerator.unwrap_model(model).model.named_parameters():
                 if param.requires_grad:
                     print(param)
                     # stats[f"grad/{name}"] = param.grad.norm().item()
