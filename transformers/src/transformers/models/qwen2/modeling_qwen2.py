@@ -194,7 +194,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
 
 
 class LinearFusion(nn.Module):
-    def __init__(self, hidden_dim, rank=16, alpha=32, dropout_prob=0.2):
+    def __init__(self, hidden_dim, rank=16, alpha=32, dropout_prob=0.1):
         super(LinearFusion, self).__init__()
         # 初始化权重矩阵
         # self.W_C = nn.Parameter(torch.eye(hidden_dim, hidden_dim))
