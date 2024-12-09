@@ -640,7 +640,7 @@ class LanguageModelTrainer:
         with torch.no_grad():
             # for number_of_docs in [3,5,10,20]:
             # for number_of_docs in [2,1,3,5,10,20,30,40,50]:
-            for number_of_docs in [10,20]:
+            for number_of_docs in [20]:
                 metrics_results_dict = {metric: [] for metric in metrics}
                 self.setup_test_dataloader(number_of_docs=number_of_docs)
                 test_dataloaders = self.test_dataloaders
