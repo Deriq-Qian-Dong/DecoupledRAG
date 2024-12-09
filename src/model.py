@@ -23,7 +23,7 @@ from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR
 from registry import registry, register_class
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModel, AutoConfig
 try:
-    from transformers import GPT2LMandRetrievalHeadsModel, LlamaWithRetrievalHeadForCausalLM, LlamaWithRetrievalHeadForInference, LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM
+    from transformers import GPT2LMandRetrievalHeadsModel, LlamaWithRetrievalHeadForCausalLM, LlamaWithRetrievalHeadForInference, LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM, Qwen2WithRetrievalHeadAndKnowledgeInjectorForCausalLM
 except:
     GPT2LMandRetrievalHeadsModel, LlamaWithRetrievalHeadForCausalLM, LlamaWithRetrievalHeadForInference = None, None, None
 from peft import LoraConfig, get_peft_model, PeftModel, TaskType
@@ -187,7 +187,7 @@ class ReGPTForCausalLM(nn.Module):
                 input_ids = torch.cat([input_ids, next_input_ids], dim=-1)
         return input_ids
 
-MODEL_CLASS = {'gpt2': GPT2LMandRetrievalHeadsModel, 'llama': LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM}
+MODEL_CLASS = {'gpt2': GPT2LMandRetrievalHeadsModel, 'llama': LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM, 'qwen2': Qwen2WithRetrievalHeadAndKnowledgeInjectorForCausalLM}
 @register_class
 class RAGForCausalLM(nn.Module):
     def __init__(self, train_config):
