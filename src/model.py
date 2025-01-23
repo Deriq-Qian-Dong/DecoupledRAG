@@ -201,6 +201,7 @@ class RAGForCausalLM(nn.Module):
         config.output_hidden_states = True
         config.kg_model_name_or_path = train_config['kg_model_name_or_path']
         config.freeze_retrieval_head = train_config['freeze_retrieval_head']
+        config.knowledge_max_seq_len = train_config['knowledge_max_seq_len']
         self.model_config = config
         model = MODEL_CLASS[train_config['model_type']].from_pretrained(train_config['model_name_or_path'], config=config)          
         # import os

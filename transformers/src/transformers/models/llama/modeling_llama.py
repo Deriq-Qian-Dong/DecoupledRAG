@@ -1787,6 +1787,7 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
         # self.retrieval_head = nn.Linear(config.hidden_size, config.faiss_dimension, bias=True)
         # self.negatives_x_device = config.negatives_x_device
         self.freeze_retrieval_head = True
+        self.config = config
         # Initialize weights and apply final processing
         self.post_init()
 
@@ -1838,6 +1839,98 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
 
         return all_tensors
     
+    def strided_sampling_hidden_states(self, hidden_states, attention_mask, max_length):
+        """
+        根据attention mask对hidden states进行跨步采样，处理left padding的情况
+        
+        Args:
+            hidden_states: 模型输出的隐藏状态 [batch_size, seq_len, hidden_dim]
+            attention_mask: 注意力掩码 [batch_size, seq_len]
+            max_length: 目标序列长度
+        
+        Returns:
+            采样后的hidden states: [batch_size, max_length, hidden_dim]
+            采样后的attention mask: [batch_size, max_length]
+        """
+        import torch
+        
+        batch_size, seq_len, hidden_dim = hidden_states.shape
+        device = hidden_states.device
+        
+        sampled_states = []
+        sampled_masks = []
+        
+        for batch_idx in range(batch_size):
+            # 获取当前样本的有效长度(非padding的长度)
+            valid_length = attention_mask[batch_idx].sum().item()
+            # 获取padding的起始位置（从右往左数valid_length个位置）
+            start_pos = seq_len - valid_length
+            batch_hidden = hidden_states[batch_idx]  # [seq_len, hidden_dim]
+            
+            if valid_length <= max_length:
+                # 如果有效长度小于等于目标长度
+                # 计算需要的左侧padding长度
+                left_padding_length = max_length - valid_length
+                
+                # 获取原始序列的有效部分
+                valid_hidden = batch_hidden[start_pos:]
+                valid_mask = attention_mask[batch_idx][start_pos:]
+                
+                # 创建左侧padding
+                hidden_padding = torch.zeros(left_padding_length, hidden_dim, device=device)
+                mask_padding = torch.zeros(left_padding_length, device=device)
+                
+                # 按照left padding的方式拼接
+                sampled_batch = torch.cat([hidden_padding, valid_hidden])
+                sampled_mask = torch.cat([mask_padding, valid_mask])
+                
+            else:
+                # 对超长序列进行跨步采样
+                # 只对有效部分进行采样
+                valid_hidden = batch_hidden[start_pos:]
+                
+                stride = valid_length / max_length
+                indices = torch.tensor([min(int(i * stride), valid_length-1) for i in range(max_length)], 
+                                    device=device)
+                
+                sampled_batch = valid_hidden[indices]
+                # 采样后的位置都是有效的
+                sampled_mask = torch.ones(max_length, device=device)
+            
+            sampled_states.append(sampled_batch)
+            sampled_masks.append(sampled_mask)
+        
+        # 堆叠所有batch的结果
+        sampled_hidden_states = torch.stack(sampled_states)  # [batch_size, max_length, hidden_dim]
+        sampled_attention_mask = torch.stack(sampled_masks)  # [batch_size, max_length]
+        
+        return sampled_hidden_states, sampled_attention_mask
+
+    def strided_sampling_all_hidden_states(self, all_hidden_states, attention_mask, max_length):
+        """
+        对所有层的hidden states进行跨步采样
+        
+        Args:
+            all_hidden_states: 所有层的隐藏状态，tuple of tensors, 每个tensor shape: [batch_size, seq_len, hidden_dim]
+            attention_mask: 注意力掩码 [batch_size, seq_len]
+            max_length: 目标序列长度
+        
+        Returns:
+            list of sampled hidden states: 每个元素shape: [batch_size, max_length, hidden_dim]
+        """
+        sampled_all_layers = []
+        
+        # 对每一层都进行采样
+        for layer_hidden_states in all_hidden_states:
+            sampled_layer, sampled_mask = self.strided_sampling_hidden_states(
+                layer_hidden_states,
+                attention_mask,
+                max_length
+            )
+            sampled_all_layers.append(sampled_layer)
+        
+        return tuple(sampled_all_layers)
+
     @add_start_docstrings_to_model_forward(LLAMA_INPUTS_DOCSTRING)
     @replace_return_docstrings(output_type=CausalLMOutputWithPast, config_class=_CONFIG_FOR_DOC)
     def forward(
@@ -1857,6 +1950,7 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
         p_reps: Optional[torch.Tensor] = None,
         retrieval_position: Optional[torch.LongTensor] = None,
         knowledge_input_ids: Optional[torch.LongTensor] = None,
+        knowledge_attention_mask: Optional[torch.Tensor] = None,
         knowledge_outputs: torch.Tensor = None,
     ) -> Union[Tuple, CausalLMOutputWithPast]:
         r"""
@@ -1894,9 +1988,16 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
         if knowledge_input_ids is not None and knowledge_outputs is None:
             knowledge_outputs = self.model(
                 input_ids=knowledge_input_ids,
+                attention_mask=knowledge_attention_mask,
                 output_hidden_states=True,
                 return_dict=True,
             ).hidden_states
+            
+        knowledge_outputs = self.strided_sampling_all_hidden_states(
+            knowledge_outputs,
+            knowledge_attention_mask,
+            self.config.knowledge_max_seq_len
+        )
         
         # print(knowledge_input_ids)
         # print(knowledge_outputs)
@@ -1991,6 +2092,7 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
         use_cache=True,
         knowledge_outputs=None,
         knowledge_input_ids=None,
+        knowledge_attention_mask=None,
         **kwargs,
     ):
         # With static cache, the `past_key_values` is None
@@ -2070,6 +2172,7 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
                 "attention_mask": attention_mask,
                 "knowledge_outputs": knowledge_outputs,
                 "knowledge_input_ids": knowledge_input_ids,
+                "knowledge_attention_mask": knowledge_attention_mask,
             }
         )
         return model_inputs

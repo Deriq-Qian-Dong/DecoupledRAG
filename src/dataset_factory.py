@@ -463,6 +463,7 @@ class QADataset4Chat(Dataset):
         batch["labels"] = batch['input_ids']
         # batch['neighbor_embeddings'] = torch.tensor(neighbor_embeddings)
         batch['knowledge_input_ids'] = neighbor_batch['input_ids']
+        batch['knowledge_attention_mask'] = neighbor_batch['attention_mask']
         return batch
 
     def filter_empty(self, example):
@@ -564,8 +565,10 @@ class QADataset4ChatTest(QADataset4Chat):
                                 truncation=True,
                                 return_tensors="pt")
         batch['knowledge_input_ids'] = neighbor_batch['input_ids']
+        batch['knowledge_attention_mask'] = neighbor_batch['attention_mask']
         if self.inference_with_explict_docs_for_test:
             batch['knowledge_input_ids'] = None
+            batch['knowledge_attention_mask'] = None
         batch['answers'] = answers
         return batch
 
