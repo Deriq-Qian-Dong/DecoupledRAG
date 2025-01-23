@@ -660,7 +660,7 @@ class LanguageModelTrainer:
                         batch = self.pop_unused_keys(batch)
                         answers = batch.pop('answers')
                         batch = accelerator.prepare(batch)
-                        if 'knowledge_input_ids' in batch:
+                        if 'knowledge_input_ids' in batch and batch['knowledge_input_ids'] is not None:
                             knowledge_outputs, compute_time = self.compute_hidden_states(batch, number_of_docs)
                             batch['knowledge_outputs'] = knowledge_outputs
                             hidden_states_time += compute_time
