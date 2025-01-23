@@ -7,5 +7,5 @@ fi
 message="$message at $time"
 git add .
 git commit -m "$message"
-git push tsinghua master
-git push qc master
+git push
+git push xhs master
