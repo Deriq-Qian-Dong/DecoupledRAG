@@ -573,6 +573,33 @@ class QADataset4ChatTest(QADataset4Chat):
         pass
 
 @register_class
+class QADataset4ChatTestForComparison(QADataset4ChatTest):
+    def __init__(self, tokenizer, args):
+        super().__init__(tokenizer, args)
+
+    def __getitem__(self, idx):
+        sample = self.datasets[idx]
+        if 'query' in sample:
+            query = sample['query']
+        else:
+            query = sample['question']
+        answer = sample['answer']
+        # hits = self.searcher.search(query, 5)
+        retrieved_docs = self.corpus[sample['neighbors']]['text'][:self.number_of_docs]
+        # 在retrieved_docs中, 越相关越靠前, 越不相关越靠后
+        # 重排序reorder_docs，使得相关性高的文档在列表前边和后边，中间放相关性低的文档
+        retrieved_docs = reorder_docs(retrieved_docs)
+        references = "\nAnswer the question based on the references.\nReferences:\n"
+        for doc in retrieved_docs:
+            references += doc+'\n'
+        chat_without_knowledge = [{'role': "system", 'content': self.system_prompt}, {'role': 'user', 'content': query}]
+        chat_without_knowledge = self.tokenizer.apply_chat_template(chat_without_knowledge, tokenize=False, add_generation_prompt=True)
+        query = query + references
+        chat_with_knowledge = [{'role': "system", 'content': self.system_prompt}, {'role': 'user', 'content': query}]
+        chat_with_knowledge = self.tokenizer.apply_chat_template(chat_with_knowledge, tokenize=False, add_generation_prompt=True)
+        return chat_without_knowledge, chat_with_knowledge, answer, retrieved_docs
+    
+@register_class
 class MultiTurnQADataset4Chat(QADataset4Chat):
     def __init__(self, tokenizer, args):
         super().__init__(tokenizer, args)
