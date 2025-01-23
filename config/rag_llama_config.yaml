@@ -39,7 +39,7 @@ training:
   target_metric: accuracy
 
 dataset:
-  number_of_docs: 20
+  number_of_docs: 5
   inference_with_explict_docs_for_test: true
   train:
     2WikiMultihopQA:
