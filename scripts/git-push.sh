@@ -8,5 +8,5 @@ message="$message at $time"
 git add .
 git commit -m "$message"
 git push origin master
-git push xhs master:qian
+git push xhs qian:qian
 
