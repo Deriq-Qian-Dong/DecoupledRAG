@@ -1992,12 +1992,12 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
                 output_hidden_states=True,
                 return_dict=True,
             ).hidden_states
-            
-        knowledge_outputs = self.strided_sampling_all_hidden_states(
-            knowledge_outputs,
-            knowledge_attention_mask,
-            self.config.knowledge_max_seq_len
-        )
+        if knowledge_outputs is not None:
+            knowledge_outputs = self.strided_sampling_all_hidden_states(
+                knowledge_outputs,
+                knowledge_attention_mask,
+                self.config.knowledge_max_seq_len
+            )
         
         # print(knowledge_input_ids)
         # print(knowledge_outputs)
