@@ -8,4 +8,4 @@ message="$message at $time"
 git add .
 git commit -m "$message"
 git push
-git push xhs master
+git push xhs master:qian
