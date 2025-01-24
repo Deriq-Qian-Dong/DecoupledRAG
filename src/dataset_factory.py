@@ -569,6 +569,8 @@ class QADataset4ChatTest(QADataset4Chat):
         if self.inference_with_explict_docs_for_test:
             batch['knowledge_input_ids'] = None
             batch['knowledge_attention_mask'] = None
+            batch.pop('knowledge_input_ids')
+            batch.pop('knowledge_attention_mask')
         batch['answers'] = answers
         return batch
 
