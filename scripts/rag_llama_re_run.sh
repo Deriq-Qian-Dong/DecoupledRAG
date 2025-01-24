@@ -1,5 +1,5 @@
 git pull
-export CUDA_VISIBLE_DEVICES=1,2
+export CUDA_VISIBLE_DEVICES=0,5
 output_dir=output_ca_re
 log_dir=${output_dir}/log
 mkdir -p ${output_dir}
