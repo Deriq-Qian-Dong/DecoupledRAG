@@ -267,7 +267,7 @@ class LanguageModelTrainer:
         self.best_metric = 0.0
 
     def run(self):
-        self.test()
+        # self.test()
         for epoch in range(self.train_config['start_from'], self.train_config['num_epochs']):
             assert self.config.get('compare_speed', False) == False
             self.epoch = epoch
@@ -481,13 +481,13 @@ class LanguageModelTrainer:
             self.iter_count += 1
             total_time = time()
             batch = self.pop_unused_keys(batch)
+            seq_len = batch['input_ids'].size(1)
+            batch_size = batch.input_ids.shape[0]
+            batch = self._prepare_inputs(batch)
             if 'knowledge_input_ids' in batch and batch['knowledge_input_ids'] is not None:
                 knowledge_outputs, compute_time = self.compute_hidden_states(batch, self.number_of_docs)
                 batch['knowledge_outputs'] = knowledge_outputs
                 batch.pop('knowledge_input_ids')
-            seq_len = batch['input_ids'].size(1)
-            batch_size = batch.input_ids.shape[0]
-            batch = self._prepare_inputs(batch)
             batch = accelerator.prepare(batch)
             forward_time = time()
             outputs = model(**batch)
