@@ -1853,7 +1853,7 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
             采样后的attention mask: [batch_size, max_length]
         """
         import torch
-        
+        print("hidden_states:", hidden_states)
         batch_size, seq_len, hidden_dim = hidden_states.shape
         device = hidden_states.device
         
