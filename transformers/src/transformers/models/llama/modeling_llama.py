@@ -1869,6 +1869,10 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
             # 普通hidden states: [batch_size, seq_len, hidden_dim]
             batch_size, seq_len, hidden_dim = hidden_states.shape
         
+        # 确保attention_mask的形状正确
+        assert attention_mask.shape == (batch_size, seq_len), \
+            f"Attention mask shape {attention_mask.shape} does not match expected shape {(batch_size, seq_len)}"
+        
         sampled_states_k = []
         sampled_states_v = []
         sampled_masks = []
@@ -1876,8 +1880,10 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
         for batch_idx in range(batch_size):
             # 获取当前样本的有效长度(非padding的长度)
             valid_length = attention_mask[batch_idx].sum().item()
+            valid_length = max(1, valid_length)  # 确保valid_length至少为1
+            
             # 获取padding的起始位置（从右往左数valid_length个位置）
-            start_pos = seq_len - valid_length
+            start_pos = max(0, seq_len - valid_length)  # 确保start_pos不为负
             
             if is_kv_cache:
                 batch_hidden_k = hidden_states[0][batch_idx]  # [num_heads, seq_len, head_dim]
@@ -1916,21 +1922,21 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
                 
             else:
                 # 对超长序列进行跨步采样
-                stride = valid_length / max_length
-                indices = torch.tensor([min(int(i * stride), valid_length-1) for i in range(max_length)], 
-                                    device=device)
+                # 使用float计算以避免整数除法的截断
+                stride = float(valid_length - 1) / (max_length - 1) if max_length > 1 else 1.0
+                
+                # 生成采样索引
+                indices = []
+                for i in range(max_length):
+                    idx = min(int(i * stride + start_pos), seq_len - 1)
+                    indices.append(idx)
+                indices = torch.tensor(indices, device=device)
                 
                 if is_kv_cache:
-                    # 只对有效部分进行采样
-                    valid_hidden_k = batch_hidden_k[:, start_pos:]  # [num_heads, valid_length, head_dim]
-                    valid_hidden_v = batch_hidden_v[:, start_pos:]
-                    
-                    sampled_batch_k = valid_hidden_k[:, indices]  # [num_heads, max_length, head_dim]
-                    sampled_batch_v = valid_hidden_v[:, indices]
+                    sampled_batch_k = batch_hidden_k[:, indices]  # [num_heads, max_length, head_dim]
+                    sampled_batch_v = batch_hidden_v[:, indices]
                 else:
-                    # 只对有效部分进行采样
-                    valid_hidden = batch_hidden[start_pos:]
-                    sampled_batch = valid_hidden[indices]
+                    sampled_batch = batch_hidden[indices]
                     
                 # 采样后的位置都是有效的
                 sampled_mask = torch.ones(max_length, device=device)
