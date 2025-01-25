@@ -716,7 +716,7 @@ class LanguageModelTrainer:
                 key_states = encoder_hidden_states[0]
                 value_states = encoder_hidden_states[1]
                 # 跨步采样hidden states
-                key_states, value_states = self.strided_sampling_hidden_states((key_states, value_states), batch_attention_masks, self.model_config['knowledge_max_seq_len'])
+                key_states, value_states = self.strided_sampling_hidden_states((key_states, value_states), batch_attention_masks, self.model_config.knowledge_max_seq_len)
                 # Accumulate the hidden states for this layer (before any reshaping or manipulation)
                 accumulated_hidden_states[layer_idx].append((key_states, value_states))
 
