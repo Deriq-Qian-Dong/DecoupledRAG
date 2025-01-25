@@ -2045,8 +2045,6 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
                 output_hidden_states=True,
                 return_dict=True,
             ).hidden_states
-            print(f'knowledge_outputs shape: {knowledge_outputs[0].shape}')
-        if knowledge_outputs is not None:
             knowledge_outputs = self.strided_sampling_all_hidden_states(
                 knowledge_outputs,
                 knowledge_attention_mask,
