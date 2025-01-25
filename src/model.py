@@ -694,12 +694,7 @@ class LanguageModelTrainer:
                         accelerator.log({f"test/{key}/{number_of_docs}/{metric}": metric_result}, step=iter_count)
                         accelerator.print(f"Step {iter_count} | Dataset: {key} | {metric.capitalize()}: {metric_result:.4f}")
                 end_time = time()
-                gpu_time = (end_time - start_time - hidden_states_time)*self.accelerator.num_processes
-                tokens_per_second = self.accelerator.num_processes*total_generated_tokens/gpu_time
                 accelerator.log({f"test/{number_of_docs}/total_tokens": self.accelerator.num_processes*total_generated_tokens}, step=iter_count)
-                accelerator.log({f"test/{number_of_docs}/tokens_per_second": tokens_per_second}, step=iter_count)
-                accelerator.log({f"test/{number_of_docs}/gpu_time": gpu_time}, step=iter_count)
-                accelerator.log({f"test/{number_of_docs}/hidden_states_time": hidden_states_time*self.accelerator.num_processes}, step=iter_count)
                 total_time = (end_time - start_time)*self.accelerator.num_processes
                 accelerator.log({f"test/{number_of_docs}/total_time": total_time}, step=iter_count)
                 # Log overall mean for each metric
