@@ -1918,7 +1918,9 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
             list of sampled hidden states: 每个元素shape: [batch_size, max_length, hidden_dim]
         """
         sampled_all_layers = []
-        
+        # 打印all_hidden_states的信息
+        print("all_hidden_states shape:", [hidden_states.shape for hidden_states in all_hidden_states])
+        print(f'all_hidden_states size: {len(all_hidden_states)}')
         # 对每一层都进行采样
         for layer_hidden_states in all_hidden_states:
             sampled_layer, sampled_mask = self.strided_sampling_hidden_states(
@@ -1996,7 +1998,7 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
                 knowledge_outputs,
                 knowledge_attention_mask,
                 self.config.knowledge_max_seq_len
-            ).hidden_states
+            )
         
         # print(knowledge_input_ids)
         # print(knowledge_outputs)
