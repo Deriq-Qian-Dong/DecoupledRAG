@@ -260,13 +260,14 @@ class LanguageModelTrainer:
         for key in self.config['dataset']['train']:
             self.config['dataset']['train'][key]['number_of_docs'] = self.config['dataset']['number_of_docs']
             self.config['dataset']['train'][key]['inference_with_explict_docs_for_test'] = self.config['dataset']['inference_with_explict_docs_for_test']
+        self.number_of_docs = self.config['dataset']['number_of_docs']
         self.setup()
         self.best_perplexity = 1e10
         self.sampler = None
         self.best_metric = 0.0
 
     def run(self):
-        # self.test()
+        self.test()
         for epoch in range(self.train_config['start_from'], self.train_config['num_epochs']):
             assert self.config.get('compare_speed', False) == False
             self.epoch = epoch
@@ -480,6 +481,10 @@ class LanguageModelTrainer:
             self.iter_count += 1
             total_time = time()
             batch = self.pop_unused_keys(batch)
+            if 'knowledge_input_ids' in batch and batch['knowledge_input_ids'] is not None:
+                knowledge_outputs, compute_time = self.compute_hidden_states(batch, self.number_of_docs)
+                batch['knowledge_outputs'] = knowledge_outputs
+                batch.pop('knowledge_input_ids')
             seq_len = batch['input_ids'].size(1)
             batch_size = batch.input_ids.shape[0]
             batch = self._prepare_inputs(batch)
@@ -558,6 +563,127 @@ class LanguageModelTrainer:
                 return 1.0
         return 0.0
     
+    def strided_sampling_hidden_states(self, hidden_states, attention_mask, max_length):
+        """
+        根据attention mask对hidden states进行跨步采样，处理left padding的情况
+        
+        Args:
+            hidden_states: 可以是以下两种格式之一:
+                - 普通hidden states: [batch_size, seq_len, hidden_dim]
+                - 单层kv cache: tuple of 2 tensors, 每个tensor shape为 [batch_size, num_heads, seq_len, head_dim]
+            attention_mask: 注意力掩码 [batch_size, seq_len]
+            max_length: 目标序列长度
+        
+        Returns:
+            采样后的hidden states (与输入格式相同):
+                - 普通hidden states: [batch_size, max_length, hidden_dim]
+                - 单层kv cache: tuple of 2 tensors, 每个tensor shape为 [batch_size, num_heads, max_length, head_dim]
+            采样后的attention mask: [batch_size, max_length]
+        """
+        import torch
+        device = attention_mask.device
+        
+        # 判断输入是否为kv cache
+        is_kv_cache = isinstance(hidden_states, tuple)
+        
+        if is_kv_cache:
+            # kv cache: tuple of [batch_size, num_heads, seq_len, head_dim]
+            batch_size, num_heads, seq_len, head_dim = hidden_states[0].shape
+        else:
+            # 普通hidden states: [batch_size, seq_len, hidden_dim]
+            batch_size, seq_len, hidden_dim = hidden_states.shape
+        
+        # 确保attention_mask的形状正确
+        assert attention_mask.shape == (batch_size, seq_len), \
+            f"Attention mask shape {attention_mask.shape} does not match expected shape {(batch_size, seq_len)}"
+        
+        sampled_states_k = []
+        sampled_states_v = []
+        sampled_masks = []
+        
+        for batch_idx in range(batch_size):
+            # 获取当前样本的有效长度(非padding的长度)
+            valid_length = attention_mask[batch_idx].sum().item()
+            valid_length = max(1, valid_length)  # 确保valid_length至少为1
+            
+            # 获取padding的起始位置（从右往左数valid_length个位置）
+            start_pos = max(0, seq_len - valid_length)  # 确保start_pos不为负
+            
+            if is_kv_cache:
+                batch_hidden_k = hidden_states[0][batch_idx]  # [num_heads, seq_len, head_dim]
+                batch_hidden_v = hidden_states[1][batch_idx]  # [num_heads, seq_len, head_dim]
+            else:
+                batch_hidden = hidden_states[batch_idx]  # [seq_len, hidden_dim]
+                
+            if valid_length <= max_length:
+                # 如果有效长度小于等于目标长度
+                # 计算需要的左侧padding长度
+                left_padding_length = max_length - valid_length
+                
+                if is_kv_cache:
+                    # 获取原始序列的有效部分
+                    valid_hidden_k = batch_hidden_k[:, start_pos:]  # [num_heads, valid_length, head_dim]
+                    valid_hidden_v = batch_hidden_v[:, start_pos:]
+                    
+                    # 创建左侧padding
+                    hidden_padding = torch.zeros(num_heads, left_padding_length, head_dim, device=device)
+                    
+                    # 按照left padding的方式拼接
+                    sampled_batch_k = torch.cat([hidden_padding, valid_hidden_k], dim=1)  # [num_heads, max_length, head_dim]
+                    sampled_batch_v = torch.cat([hidden_padding, valid_hidden_v], dim=1)
+                else:
+                    # 获取原始序列的有效部分
+                    valid_hidden = batch_hidden[start_pos:]
+                    # 创建左侧padding
+                    hidden_padding = torch.zeros(left_padding_length, hidden_dim, device=device)
+                    # 按照left padding的方式拼接
+                    sampled_batch = torch.cat([hidden_padding, valid_hidden])
+                
+                # 处理attention mask
+                valid_mask = attention_mask[batch_idx][start_pos:]
+                mask_padding = torch.zeros(left_padding_length, device=device)
+                sampled_mask = torch.cat([mask_padding, valid_mask])
+                
+            else:
+                # 对超长序列进行跨步采样
+                # 使用float计算以避免整数除法的截断
+                stride = float(valid_length - 1) / (max_length - 1) if max_length > 1 else 1.0
+                
+                # 生成采样索引
+                indices = []
+                for i in range(max_length):
+                    idx = min(int(i * stride + start_pos), seq_len - 1)
+                    indices.append(idx)
+                indices = torch.tensor(indices, device=device)
+                
+                if is_kv_cache:
+                    sampled_batch_k = batch_hidden_k[:, indices]  # [num_heads, max_length, head_dim]
+                    sampled_batch_v = batch_hidden_v[:, indices]
+                else:
+                    sampled_batch = batch_hidden[indices]
+                    
+                # 采样后的位置都是有效的
+                sampled_mask = torch.ones(max_length, device=device)
+            
+            if is_kv_cache:
+                sampled_states_k.append(sampled_batch_k)
+                sampled_states_v.append(sampled_batch_v)
+            else:
+                sampled_states_k.append(sampled_batch)
+            sampled_masks.append(sampled_mask)
+        
+        # 堆叠所有batch的结果
+        if is_kv_cache:
+            sampled_hidden_states = (
+                torch.stack(sampled_states_k),  # [batch_size, num_heads, max_length, head_dim]
+                torch.stack(sampled_states_v)   # [batch_size, num_heads, max_length, head_dim]
+            )
+        else:
+            sampled_hidden_states = torch.stack(sampled_states_k)  # [batch_size, max_length, hidden_dim]
+        sampled_attention_mask = torch.stack(sampled_masks)  # [batch_size, max_length]
+        
+        return sampled_hidden_states
+
     @torch.no_grad()
     def compute_hidden_states(self, batch, num_docs, batch_size=20):
         model = self.model
@@ -566,6 +692,7 @@ class LanguageModelTrainer:
 
         # Split input_ids into smaller batches if batch_size is specified
         input_ids = batch['knowledge_input_ids']
+        attention_masks = batch['knowledge_attention_mask']
         total_samples = input_ids.size(0)
 
         # Prepare a list to accumulate hidden states for all layers
@@ -573,7 +700,7 @@ class LanguageModelTrainer:
 
         for i in range(0, total_samples, batch_size):
             batch_input_ids = input_ids[i:i + batch_size]
-
+            batch_attention_masks = attention_masks[i:i + batch_size]
             outputs = model.model(input_ids=batch_input_ids,
                 output_hidden_states=True,
                 return_dict=True,
@@ -588,7 +715,8 @@ class LanguageModelTrainer:
                 encoder_hidden_states = hidden_states[layer_idx]
                 key_states = encoder_hidden_states[0]
                 value_states = encoder_hidden_states[1]
-
+                # 跨步采样hidden states
+                key_states, value_states = self.strided_sampling_hidden_states((key_states, value_states), batch_attention_masks, self.model_config['knowledge_max_seq_len'])
                 # Accumulate the hidden states for this layer (before any reshaping or manipulation)
                 accumulated_hidden_states[layer_idx].append((key_states, value_states))
 
@@ -660,11 +788,11 @@ class LanguageModelTrainer:
                         batch = self.pop_unused_keys(batch)
                         answers = batch.pop('answers')
                         batch = accelerator.prepare(batch)
-                        # if 'knowledge_input_ids' in batch and batch['knowledge_input_ids'] is not None:
-                            # knowledge_outputs, compute_time = self.compute_hidden_states(batch, number_of_docs)
-                            # batch['knowledge_outputs'] = knowledge_outputs
-                            # hidden_states_time += compute_time
-                            # batch.pop('knowledge_input_ids')
+                        if 'knowledge_input_ids' in batch and batch['knowledge_input_ids'] is not None:
+                            knowledge_outputs, compute_time = self.compute_hidden_states(batch, number_of_docs)
+                            batch['knowledge_outputs'] = knowledge_outputs
+                            hidden_states_time += compute_time
+                            batch.pop('knowledge_input_ids')
                         # outputs = model.module.model.generate(**batch, max_new_tokens=self.config['dataset']['test'][key]['max_new_tokens'], do_sample=False)
                         outputs = self.generate(batch, key)
                         outputs = outputs[:, batch['input_ids'].size(1):]
