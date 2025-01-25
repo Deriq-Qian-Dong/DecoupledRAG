@@ -1844,19 +1844,33 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
         根据attention mask对hidden states进行跨步采样，处理left padding的情况
         
         Args:
-            hidden_states: 模型输出的隐藏状态 [batch_size, seq_len, hidden_dim]
+            hidden_states: 可以是以下两种格式之一:
+                - 普通hidden states: [batch_size, seq_len, hidden_dim]
+                - 单层kv cache: tuple of 2 tensors, 每个tensor shape为 [batch_size, num_heads, seq_len, head_dim]
             attention_mask: 注意力掩码 [batch_size, seq_len]
             max_length: 目标序列长度
         
         Returns:
-            采样后的hidden states: [batch_size, max_length, hidden_dim]
+            采样后的hidden states (与输入格式相同):
+                - 普通hidden states: [batch_size, max_length, hidden_dim]
+                - 单层kv cache: tuple of 2 tensors, 每个tensor shape为 [batch_size, num_heads, max_length, head_dim]
             采样后的attention mask: [batch_size, max_length]
         """
         import torch
-        batch_size, seq_len, hidden_dim = hidden_states.shape
-        device = hidden_states.device
+        device = attention_mask.device
         
-        sampled_states = []
+        # 判断输入是否为kv cache
+        is_kv_cache = isinstance(hidden_states, tuple)
+        
+        if is_kv_cache:
+            # kv cache: tuple of [batch_size, num_heads, seq_len, head_dim]
+            batch_size, num_heads, seq_len, head_dim = hidden_states[0].shape
+        else:
+            # 普通hidden states: [batch_size, seq_len, hidden_dim]
+            batch_size, seq_len, hidden_dim = hidden_states.shape
+        
+        sampled_states_k = []
+        sampled_states_v = []
         sampled_masks = []
         
         for batch_idx in range(batch_size):
@@ -1864,43 +1878,78 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
             valid_length = attention_mask[batch_idx].sum().item()
             # 获取padding的起始位置（从右往左数valid_length个位置）
             start_pos = seq_len - valid_length
-            batch_hidden = hidden_states[batch_idx]  # [seq_len, hidden_dim]
             
+            if is_kv_cache:
+                batch_hidden_k = hidden_states[0][batch_idx]  # [num_heads, seq_len, head_dim]
+                batch_hidden_v = hidden_states[1][batch_idx]  # [num_heads, seq_len, head_dim]
+            else:
+                batch_hidden = hidden_states[batch_idx]  # [seq_len, hidden_dim]
+                
             if valid_length <= max_length:
                 # 如果有效长度小于等于目标长度
                 # 计算需要的左侧padding长度
                 left_padding_length = max_length - valid_length
                 
-                # 获取原始序列的有效部分
-                valid_hidden = batch_hidden[start_pos:]
+                if is_kv_cache:
+                    # 获取原始序列的有效部分
+                    valid_hidden_k = batch_hidden_k[:, start_pos:]  # [num_heads, valid_length, head_dim]
+                    valid_hidden_v = batch_hidden_v[:, start_pos:]
+                    
+                    # 创建左侧padding
+                    hidden_padding = torch.zeros(num_heads, left_padding_length, head_dim, device=device)
+                    
+                    # 按照left padding的方式拼接
+                    sampled_batch_k = torch.cat([hidden_padding, valid_hidden_k], dim=1)  # [num_heads, max_length, head_dim]
+                    sampled_batch_v = torch.cat([hidden_padding, valid_hidden_v], dim=1)
+                else:
+                    # 获取原始序列的有效部分
+                    valid_hidden = batch_hidden[start_pos:]
+                    # 创建左侧padding
+                    hidden_padding = torch.zeros(left_padding_length, hidden_dim, device=device)
+                    # 按照left padding的方式拼接
+                    sampled_batch = torch.cat([hidden_padding, valid_hidden])
+                
+                # 处理attention mask
                 valid_mask = attention_mask[batch_idx][start_pos:]
-                
-                # 创建左侧padding
-                hidden_padding = torch.zeros(left_padding_length, hidden_dim, device=device)
                 mask_padding = torch.zeros(left_padding_length, device=device)
-                
-                # 按照left padding的方式拼接
-                sampled_batch = torch.cat([hidden_padding, valid_hidden])
                 sampled_mask = torch.cat([mask_padding, valid_mask])
                 
             else:
                 # 对超长序列进行跨步采样
-                # 只对有效部分进行采样
-                valid_hidden = batch_hidden[start_pos:]
-                
                 stride = valid_length / max_length
                 indices = torch.tensor([min(int(i * stride), valid_length-1) for i in range(max_length)], 
                                     device=device)
                 
-                sampled_batch = valid_hidden[indices]
+                if is_kv_cache:
+                    # 只对有效部分进行采样
+                    valid_hidden_k = batch_hidden_k[:, start_pos:]  # [num_heads, valid_length, head_dim]
+                    valid_hidden_v = batch_hidden_v[:, start_pos:]
+                    
+                    sampled_batch_k = valid_hidden_k[:, indices]  # [num_heads, max_length, head_dim]
+                    sampled_batch_v = valid_hidden_v[:, indices]
+                else:
+                    # 只对有效部分进行采样
+                    valid_hidden = batch_hidden[start_pos:]
+                    sampled_batch = valid_hidden[indices]
+                    
                 # 采样后的位置都是有效的
                 sampled_mask = torch.ones(max_length, device=device)
             
-            sampled_states.append(sampled_batch)
+            if is_kv_cache:
+                sampled_states_k.append(sampled_batch_k)
+                sampled_states_v.append(sampled_batch_v)
+            else:
+                sampled_states_k.append(sampled_batch)
             sampled_masks.append(sampled_mask)
         
         # 堆叠所有batch的结果
-        sampled_hidden_states = torch.stack(sampled_states)  # [batch_size, max_length, hidden_dim]
+        if is_kv_cache:
+            sampled_hidden_states = (
+                torch.stack(sampled_states_k),  # [batch_size, num_heads, max_length, head_dim]
+                torch.stack(sampled_states_v)   # [batch_size, num_heads, max_length, head_dim]
+            )
+        else:
+            sampled_hidden_states = torch.stack(sampled_states_k)  # [batch_size, max_length, hidden_dim]
         sampled_attention_mask = torch.stack(sampled_masks)  # [batch_size, max_length]
         
         return sampled_hidden_states, sampled_attention_mask
@@ -1918,9 +1967,6 @@ class LlamaWithRetrievalHeadAndKnowledgeInjectorForCausalLM(LlamaPreTrainedModel
             list of sampled hidden states: 每个元素shape: [batch_size, max_length, hidden_dim]
         """
         sampled_all_layers = []
-        # 打印all_hidden_states的信息
-        print("all_hidden_states shape:", [hidden_states.shape for hidden_states in all_hidden_states])
-        print(f'all_hidden_states size: {len(all_hidden_states)}')
         # 对每一层都进行采样
         for layer_hidden_states in all_hidden_states:
             sampled_layer, sampled_mask = self.strided_sampling_hidden_states(
