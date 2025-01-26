@@ -712,7 +712,7 @@ class LanguageModelTrainer:
                 print("Hidden states is None")
                 exit()
 
-            for layer_idx in range(len(hidden_states)):
+            for layer_idx in range(len(accumulated_hidden_states)):
                 encoder_hidden_states = hidden_states[layer_idx]
                 if self.gradient_checkpointing:
                     encoder_hidden_states = self.strided_sampling_hidden_states(encoder_hidden_states, batch_attention_masks, self.model_config.knowledge_max_seq_len)
