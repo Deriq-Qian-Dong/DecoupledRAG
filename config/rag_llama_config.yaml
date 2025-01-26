@@ -4,7 +4,7 @@ training:
   project_name: RAG_llama3-chat-ca-rag
   model_name_or_path: ../llama3-chat
   tokenizer_name_or_path: ../llama3-chat
-  project_dir: output_ca_test/
+  project_dir: output_ca/
   kg_model_name_or_path: RAG-best
   num_layers_unfrozen: -1
   gradient_checkpointing: false
@@ -24,7 +24,7 @@ training:
   negatives_in_device: true
   negatives_x_device: true
   predict_from_last: 10000
-  eval_step: 100
+  eval_step: 1000
   start_from: 0
   skip_steps: 0
   cross_attention_activation_function: silu
