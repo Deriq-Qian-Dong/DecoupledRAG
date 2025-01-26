@@ -53,6 +53,17 @@ dataset:
       corpus: ../data_of_ReGPT/Wiki-corpus/train
       system_prompt: "You are a helpful assistant. Please answer user question to the best of your ability. The answer MUST in ONE OR FEW WORDS. The answer is within the question."
       max_tokens: 4096
+    complex_web_questions:
+      data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/complex_web_questions/train/
+      dataset_name: QADataset4Chat
+      batch_size: 16
+      num_epochs: 805
+      max_seq_len: 64
+      knowledge_max_seq_len: 256
+      dynamic_sampler: false
+      corpus: ../data_of_ReGPT/Wiki-corpus/train
+      system_prompt: "You are a helpful assistant. Please answer user question to the best of your ability. The answer MUST in ONE OR FEW WORDS."
+      max_tokens: 4096
   test:
     2WikiMultihopQA:
       dataset_name: QADataset4ChatTest
@@ -64,6 +75,17 @@ dataset:
       index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
       corpus: ../data_of_ReGPT/Wiki-corpus/train/
       system_prompt: "You are a helpful assistant. Please answer user question to the best of your ability. The answer MUST in ONE OR FEW WORDS. The answer is within the question."
+      dynamic_sampler: false
+    complex_web_questions:
+      dataset_name: QADataset4ChatTest
+      batch_size: 4
+      data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/complex_web_questions/validation/
+      max_seq_len: 64
+      knowledge_max_seq_len: 256
+      max_new_tokens: 32
+      index_path: ../data_of_ReGPT/Wiki-corpus/bm25_index/
+      corpus: ../data_of_ReGPT/Wiki-corpus/train/
+      system_prompt: "You are a helpful assistant. Please answer user question to the best of your ability. The answer MUST in ONE OR FEW WORDS."
       dynamic_sampler: false
 
 generation_kwargs:
