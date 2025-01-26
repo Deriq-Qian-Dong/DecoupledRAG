@@ -316,7 +316,6 @@ class LanguageModelTrainer:
 
     def setup_model(self, train_config):
         model = AutoModelForCausalLM.from_pretrained(train_config['model_name_or_path'], use_cache=not train_config['gradient_checkpointing'])
-        self.gradient_checkpointing = train_config['gradient_checkpointing']
         self.model_config = model.config
         # freeze_bottom_causal_layers(model.base_model, train_config['num_layers_unfrozen'])
         # try:
@@ -732,7 +731,7 @@ class LanguageModelTrainer:
             if self.gradient_checkpointing:
                 # Concatenate key and value states for each layer
                 layer_hidden_states = torch.cat(layer_hidden_states, dim=0)
-                
+
                 # Perform operations after concatenation
                 kv_len = layer_hidden_states.size(1)
                 bsz = layer_hidden_states.size(0) // num_docs
@@ -901,6 +900,7 @@ class RAGLanguageModelTrainer(LanguageModelTrainer):
         self.config = config
         RAG_kwargs = config['RAG_kwargs']
         self.config['training'].update(RAG_kwargs)
+        self.gradient_checkpointing = self.config['training']['gradient_checkpointing']
         super(RAGLanguageModelTrainer, self).__init__(config)
 
     def setup_model(self, train_config):
