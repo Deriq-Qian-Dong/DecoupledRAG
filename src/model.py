@@ -316,6 +316,7 @@ class LanguageModelTrainer:
 
     def setup_model(self, train_config):
         model = AutoModelForCausalLM.from_pretrained(train_config['model_name_or_path'], use_cache=not train_config['gradient_checkpointing'])
+        self.gradient_checkpointing = train_config['gradient_checkpointing']
         self.model_config = model.config
         # freeze_bottom_causal_layers(model.base_model, train_config['num_layers_unfrozen'])
         # try:
@@ -705,48 +706,68 @@ class LanguageModelTrainer:
                 output_hidden_states=True,
                 return_dict=True,
             )
-
             hidden_states = outputs.past_key_values
+            if self.gradient_checkpointing:
+                hidden_states = outputs.hidden_states
             if hidden_states is None:
                 print("Hidden states is None")
                 exit()
 
             for layer_idx in range(len(hidden_states)):
                 encoder_hidden_states = hidden_states[layer_idx]
-                key_states = encoder_hidden_states[0]
-                value_states = encoder_hidden_states[1]
-                # 跨步采样hidden states
-                key_states, value_states = self.strided_sampling_hidden_states((key_states, value_states), batch_attention_masks, self.model_config.knowledge_max_seq_len)
-                # Accumulate the hidden states for this layer (before any reshaping or manipulation)
-                accumulated_hidden_states[layer_idx].append((key_states, value_states))
+                if self.gradient_checkpointing:
+                    encoder_hidden_states = self.strided_sampling_hidden_states(encoder_hidden_states, batch_attention_masks, self.model_config.knowledge_max_seq_len)
+                    accumulated_hidden_states[layer_idx].append(encoder_hidden_states)
+                else:
+                    key_states = encoder_hidden_states[0]
+                    value_states = encoder_hidden_states[1]
+                    # 跨步采样hidden states
+                    key_states, value_states = self.strided_sampling_hidden_states((key_states, value_states), batch_attention_masks, self.model_config.knowledge_max_seq_len)
+                    # Accumulate the hidden states for this layer (before any reshaping or manipulation)
+                    accumulated_hidden_states[layer_idx].append((key_states, value_states))
 
         # After all batches are processed, concatenate the hidden states along the first dimension
         new_hidden_states = []
         for layer_hidden_states in accumulated_hidden_states:
-            # Concatenate key and value states for each layer
-            layer_key_states = torch.cat([item[0] for item in layer_hidden_states], dim=0)
-            layer_value_states = torch.cat([item[1] for item in layer_hidden_states], dim=0)
+            if self.gradient_checkpointing:
+                # Concatenate key and value states for each layer
+                layer_hidden_states = torch.cat(layer_hidden_states, dim=0)
+                
+                # Perform operations after concatenation
+                kv_len = layer_hidden_states.size(1)
+                bsz = layer_hidden_states.size(0) // num_docs
+                num_heads = model_config.num_attention_heads
+                hidden_dim = model_config.hidden_size
 
-            # Perform operations after concatenation
-            kv_len = layer_key_states.size(2)
-            bsz = layer_key_states.size(0) // num_docs
-            num_heads = model_config.num_attention_heads
-            head_dim = model_config.hidden_size // num_heads
-            num_key_value_heads = model_config.num_key_value_heads
+                # Reshape hidden states
+                layer_hidden_states = layer_hidden_states.view(bsz, num_docs, kv_len, hidden_dim)\
+                                                        .reshape(bsz, num_docs*kv_len, hidden_dim)
+                new_hidden_states.append(layer_hidden_states)
+            else:
+                # Concatenate key and value states for each layer
+                layer_key_states = torch.cat([item[0] for item in layer_hidden_states], dim=0)
+                layer_value_states = torch.cat([item[1] for item in layer_hidden_states], dim=0)
 
-            # Reshape key and value states
-            key_states = layer_key_states.view(bsz, num_docs, num_key_value_heads, kv_len, head_dim)\
-                                        .transpose(1, 2)\
-                                        .reshape(bsz, num_key_value_heads, num_docs * kv_len, head_dim)
-            value_states = layer_value_states.view(bsz, num_docs, num_key_value_heads, kv_len, head_dim)\
+                # Perform operations after concatenation
+                kv_len = layer_key_states.size(2)
+                bsz = layer_key_states.size(0) // num_docs
+                num_heads = model_config.num_attention_heads
+                head_dim = model_config.hidden_size // num_heads
+                num_key_value_heads = model_config.num_key_value_heads
+
+                # Reshape key and value states
+                key_states = layer_key_states.view(bsz, num_docs, num_key_value_heads, kv_len, head_dim)\
                                             .transpose(1, 2)\
                                             .reshape(bsz, num_key_value_heads, num_docs * kv_len, head_dim)
+                value_states = layer_value_states.view(bsz, num_docs, num_key_value_heads, kv_len, head_dim)\
+                                                .transpose(1, 2)\
+                                                .reshape(bsz, num_key_value_heads, num_docs * kv_len, head_dim)
 
-            num_key_value_groups = num_heads // num_key_value_heads
-            key_states = repeat_kv(key_states, num_key_value_groups)
-            value_states = repeat_kv(value_states, num_key_value_groups)
+                num_key_value_groups = num_heads // num_key_value_heads
+                key_states = repeat_kv(key_states, num_key_value_groups)
+                value_states = repeat_kv(value_states, num_key_value_groups)
 
-            new_hidden_states.append((key_states, value_states))
+                new_hidden_states.append((key_states, value_states))
 
         return new_hidden_states, time() - start_time
 
