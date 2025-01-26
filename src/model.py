@@ -685,7 +685,7 @@ class LanguageModelTrainer:
         return sampled_hidden_states
 
     @torch.no_grad()
-    def compute_hidden_states(self, batch, num_docs, batch_size=20):
+    def compute_hidden_states(self, batch, num_docs, batch_size=2):
         model = self.model
         model_config = self.model_config
         start_time = time()
