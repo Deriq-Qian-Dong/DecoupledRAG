@@ -7,7 +7,7 @@ training:
   project_dir: output_ca_test
   kg_model_name_or_path: RAG-best
   num_layers_unfrozen: -1
-  gradient_checkpointing: false
+  gradient_checkpointing: true
   optimizer: 
     name: Lamb
     kwargs:
@@ -24,7 +24,7 @@ training:
   negatives_in_device: true
   negatives_x_device: true
   predict_from_last: 10000
-  eval_step: 1000
+  eval_step: 100
   start_from: 0
   skip_steps: 0
   cross_attention_activation_function: silu
@@ -45,7 +45,7 @@ dataset:
     2WikiMultihopQA:
       data_name_or_path: ../data_of_ReGPT/QA_datasets_wTop50/2WikiMultihopQA/sorted_datasets_train/
       dataset_name: QADataset4Chat
-      batch_size: 1
+      batch_size: 16
       num_epochs: 805
       max_seq_len: 64
       knowledge_max_seq_len: 256
@@ -67,7 +67,7 @@ dataset:
   test:
     2WikiMultihopQA:
       dataset_name: QADataset4ChatTest
-      batch_size: 1
+      batch_size: 8
       data_name_or_path:  ../data_of_ReGPT/QA_datasets_wTop50/2WikiMultihopQA/sorted_datasets_dev/
       max_seq_len: 64
       knowledge_max_seq_len: 256
