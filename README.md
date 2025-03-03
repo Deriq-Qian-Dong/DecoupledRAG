@@ -21,3 +21,32 @@ sh scripts/rag_llama_run.sh
 ```
 
 The evaluation results will be presented in tensorboard.
+
+### Configuration
+All configuration files can be found in the `config` directory. You can check and modify the corresponding yaml files according to your needs.
+
+### Training Scripts
+We provide several training scripts in the `scripts` directory:
+
+- `llama_run.sh`: Train the base LLaMA model
+- `rag_llama_run.sh`: Train the DecoupledRAG model with LLaMA
+
+To start training, simply run the corresponding script. For example:
+
+```bash
+# Train DecoupledRAG with LLaMA
+sh scripts/rag_llama_run.sh
+```
+
+### Monitoring Training Progress
+You can monitor the training progress using TensorBoard. We provide a script to launch TensorBoard:
+
+```bash
+sh scripts/tensorboard.sh
+```
+
+This will start TensorBoard server and display various metrics including:
+- Training and validation loss curves
+- Evaluation metrics (F1 score, accuracy)
+
+Access the TensorBoard interface through your web browser to visualize these metrics in real-time.
